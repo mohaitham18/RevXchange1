@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - RevXChange</title>
+
+  <link rel="stylesheet" href="../css/base/reset.css" />
+  <link rel="stylesheet" href="../css/base/variables.css" />
+  <link rel="stylesheet" href="../css/base/typography.css" />
+  <link rel="stylesheet" href="../css/base/style.css" />
+  <link rel="stylesheet" href="../css/pages/admin.css" />
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="brand-mark">RX</div>
+        <div>
+          <h2>RevXChange</h2>
+          <span>Admin Panel</span>
+        </div>
+      </div>
+
+      <nav class="admin-menu">
+        <a href="#" class="active">Dashboard</a>
+         <a href="#">Automation API</a>
+        <a href="#">Pending Listings</a>
+        <a href="#">Approved Cars</a>
+        <a href="#">Rejected Cars</a>
+        <a href="#">Users</a>
+        <a href="#">Buy Requests</a>
+        <a href="#">Rent Requests</a>
+        <a href="#">Settings</a>
+        <a href="#" id="logoutBtn">Logout</a>
+      </nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p>Monitor users, listings, and requests.</p>
+        </div>
+
+        <div class="admin-topbar-right">
+          <input type="text" placeholder="Search..." class="admin-search" />
+          <div class="admin-avatar">A</div>
+        </div>
+      </header>
+
+      <section class="stats-grid">
+        <div class="stat-card">
+          <h3>1,248</h3>
+          <p>Total Users</p>
+        </div>
+        <div class="stat-card">
+          <h3>584</h3>
+          <p>Total Listings</p>
+        </div>
+        <div class="stat-card">
+          <h3>26</h3>
+          <p>Pending Approvals</p>
+        </div>
+        <div class="stat-card">
+          <h3>41</h3>
+          <p>Open Requests</p>
+        </div>
+      </section>
+
+      <section class="admin-panel">
+        <div class="panel-header">
+          <h2>Pending Listings</h2>
+          <button class="panel-btn">View All</button>
+        </div>
+
+        <div class="admin-table">
+          <div class="table-row table-head">
+            <span>Car</span>
+            <span>Seller</span>
+            <span>Price</span>
+            <span>Status</span>
+            <span>Actions</span>
+          </div>
+
+          <div class="table-row">
+            <span>BMW 320i 2020</span>
+            <span>Karim Ahmed</span>
+            <span>1,650,000 EGP</span>
+            <span><span class="status pending">Pending</span></span>
+            <span class="actions">
+              <button class="approve-btn">Approve</button>
+              <button class="reject-btn">Reject</button>
+            </span>
+          </div>
+
+          <div class="table-row">
+            <span>Kia Sportage 2022</span>
+            <span>Sara Tarek</span>
+            <span>980,000 EGP</span>
+            <span><span class="status pending">Pending</span></span>
+            <span class="actions">
+              <button class="approve-btn">Approve</button>
+              <button class="reject-btn">Reject</button>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-lower-grid">
+        <div class="admin-panel">
+          <div class="panel-header">
+            <h2>Recent Users</h2>
+          </div>
+          <ul class="simple-list">
+            <li>Karim Ahmed</li>
+            <li>Youssef Ehab</li>
+            <li>Youssef El Shenawy</li>
+            <li>Jonthan George</li>
+          </ul>
+        </div>
+
+        <div class="admin-panel">
+          <div class="panel-header">
+            <h2>Recent Requests</h2>
+          </div>
+          <ul class="simple-list">
+            <li>Purchase request for Mercedes C200</li>
+            <li>Rental request for Hyundai Elantra</li>
+            <li>Listing edit request from user #284</li>
+            <li>Complaint on seller account</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../js/admin.js"></script>
+</body>
+</html>

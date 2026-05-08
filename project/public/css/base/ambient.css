@@ -1,0 +1,50 @@
+/* ═══════════════════════════════════════════════════════════
+   RevXChange — Ambient Background + Hero Melt Border
+   ═══════════════════════════════════════════════════════════ */
+
+/* Canvas behind everything */
+#rxAmbientCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+
+body {
+  background: transparent !important;
+}
+
+/* Hero above canvas so melt SVG can hang below it */
+.hero-bg {
+  position: relative;
+  z-index: 2;
+  overflow: visible !important;
+}
+
+/* Everything else above canvas */
+section:not(.hero-bg),
+footer,
+.sell-layout,
+.scene {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Melt border ──────────────────────────────────────────── */
+.rx-melt-wrap {
+  position: absolute;
+  bottom: -72px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 99;
+  pointer-events: none;
+  line-height: 0;
+}
+
+.rx-melt-wrap svg {
+  display: block;
+  width: 100%;
+  height: 74px;
+}

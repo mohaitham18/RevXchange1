@@ -1,0 +1,20 @@
+:root {
+  --primary: #5a0f1c; /* wine red */
+  --primary-dark: #3e0a13;
+  --secondary: #c0c0c0; /* silver */
+  --background: #f8f9fb;
+  --white: #ffffff;
+  --text-dark: #1a1a1a;
+  --text-light: #777;
+
+  --section-padding: 60px;
+  --container-width: 1200px;
+
+  --radius: 12px;
+
+  --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+
+
+  --color-bg: var(--background);
+  --text-primary: var(--text-dark);
+}

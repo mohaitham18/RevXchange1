@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — RevXChange</title>
+
+    <link rel="stylesheet" href="../css/base/reset.css">
+    <link rel="stylesheet" href="../css/base/variables.css">
+    <link rel="stylesheet" href="../css/base/typography.css">
+    <link rel="stylesheet" href="../css/base/style.css">
+    <link rel="stylesheet" href="../css/components/navbar.css">
+    <link rel="stylesheet" href="../css/components/cara.css">
+    <link rel="stylesheet" href="../css/base/dashboard.css">
+</head>
+
+<body>
+
+    <!-- ── Universal Navbar ──────────────────────────────────── -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/images/Logo.png" alt="RevXChange Logo">
+            </a>
+            <ul class="nav-links">
+                <li><a href="used-cars.html">Used Cars</a></li>
+                <li><a href="buy-cars.html">New Cars</a></li>
+                <li><a href="#">Auctioned Cars</a></li>
+                <li>
+                    <a href="#" class="cara-nav-link" id="caraNavBtn">
+                        <svg class="cara-icon" viewBox="0 0 24 24" fill="none" width="15" height="15">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8.5 13C8.5 10.5 10.1 8.8 12 8.8C13.9 8.8 15.5 10.5 15.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="9.5" cy="15" r="1.1" fill="currentColor"/>
+              <circle cx="14.5" cy="15" r="1.1" fill="currentColor"/>
+            </svg>
+                        <span class="cara-text">Cara AI</span>
+                        <span class="cara-spark"></span>
+                        <span class="cara-spark"></span>
+                        <span class="cara-spark"></span>
+                        <span class="cara-spark"></span>
+                        <span class="cara-spark"></span>
+                    </a>
+                </li>
+                <li><a href="communities.html">Car Communities</a></li>
+                <span class="nav-indicator" id="navIndicator"></span>
+            </ul>
+            <div class="nav-actions">
+                <button class="lang-btn">🌐 عربي</button>
+                <a href="sell-car.html" class="sell-btn">+ Sell My Car</a>
+                <a href="login.html" class="login-btn" id="loginBtn">Login</a>
+                <div class="profile-menu hidden" id="profileMenu">
+                    <button class="profile-trigger" id="profileTrigger">
+            <div class="profile-avatar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+            </div>
+            <span class="profile-name" id="profileName">User</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </button>
+                    <ul class="dropdown" id="dropdownMenu">
+                        <li class="dropdown-header">
+                            <div class="dropdown-avatar">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                </svg>
+                            </div>
+                            <span id="dropdownName">User</span>
+                        </li>
+                        <li><a href="dashboard.html?tab=ads">My Ads</a></li>
+                        <li><a href="dashboard.html?tab=saved">Saved Ads</a></li>
+                        <li><a href="dashboard.html?tab=posts">My Posts</a></li>
+                        <li><a href="dashboard.html?tab=settings">Settings</a></li>
+                        <li class="dropdown-logout">
+                            <a href="#" id="logoutBtn">
+                Logout
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                </svg>
+              </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ── Dashboard ──────────────────────────────────────────── -->
+    <div class="dash-page">
+        <div class="container">
+
+            <!-- User Header -->
+            <div class="dash-header">
+                <div class="dash-avatar">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+          </svg>
+                </div>
+                <div class="dash-header-info">
+                    <h1 id="dashUserName">Welcome back</h1>
+                    <p>Manage your listings, saved cars, posts and account settings.</p>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="dash-tabs">
+                <button class="dash-tab active" data-tab="ads">My Ads</button>
+                <button class="dash-tab" data-tab="saved">Saved Ads</button>
+                <button class="dash-tab" data-tab="posts">My Posts</button>
+                <button class="dash-tab" data-tab="settings">Settings</button>
+            </div>
+
+            <!-- ── Tab: My Ads ───────────────────────────────────── -->
+            <div class="dash-panel active" id="tab-ads">
+                <div class="dash-panel-header">
+                    <h2>My Ads</h2>
+                    <a href="sell-car.html" class="dash-action-btn">+ New Listing</a>
+                </div>
+                <div class="dash-ads-grid" id="myAdsGrid"></div>
+            </div>
+
+            <!-- ── Tab: Saved Ads ────────────────────────────────── -->
+            <div class="dash-panel" id="tab-saved">
+                <div class="dash-panel-header">
+                    <h2>Saved Ads</h2>
+                </div>
+                <div class="dash-ads-grid" id="savedAdsGrid"></div>
+            </div>
+
+            <!-- ── Tab: My Posts ─────────────────────────────────── -->
+            <div class="dash-panel" id="tab-posts">
+                <div class="dash-panel-header">
+                    <h2>My Posts</h2>
+                </div>
+                <div class="dash-posts-list" id="myPostsList"></div>
+            </div>
+
+            <!-- ── Tab: Settings ─────────────────────────────────── -->
+            <div class="dash-panel" id="tab-settings">
+                <div class="dash-settings-grid">
+
+                    <!-- Profile Info -->
+                    <div class="dash-settings-card">
+                        <h3>Profile Information</h3>
+                        <div class="dash-form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="settingName" placeholder="Your full name">
+                        </div>
+                        <div class="dash-form-group">
+                            <label>Email Address</label>
+                            <input type="email" id="settingEmail" placeholder="you@example.com">
+                        </div>
+                        <div class="dash-form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="settingPhone" placeholder="+20 100 000 0000">
+                        </div>
+                        <button class="dash-save-btn" id="saveProfileBtn">Save Changes</button>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="dash-settings-card">
+                        <h3>Change Password</h3>
+                        <div class="dash-form-group">
+                            <label>Current Password</label>
+                            <input type="password" placeholder="Enter current password">
+                        </div>
+                        <div class="dash-form-group">
+                            <label>New Password</label>
+                            <input type="password" placeholder="Enter new password">
+                        </div>
+                        <div class="dash-form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" placeholder="Confirm new password">
+                        </div>
+                        <button class="dash-save-btn">Update Password</button>
+                    </div>
+
+                    <!-- Language -->
+                    <div class="dash-settings-card">
+                        <h3>Language</h3>
+                        <p class="dash-settings-desc">Choose your preferred language for the site.</p>
+                        <div class="dash-lang-options">
+                            <button class="dash-lang-btn active" data-lang="en">🌐 English</button>
+                            <button class="dash-lang-btn" data-lang="ar">🌐 العربية</button>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="dash-settings-card dash-danger-card">
+                        <h3>Account Actions</h3>
+                        <p class="dash-settings-desc">Permanently delete your account and all your data. This cannot be undone.</p>
+                        <button class="dash-delete-btn">Delete My Account</button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="../js/navbar.js"></script>
+    <script src="../js/cara.js"></script>
+    <script src="../js/dashboard.js"></script>
+</body>
+
+</html>

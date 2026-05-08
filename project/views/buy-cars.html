@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Cars - RevXChange</title>
+
+  <link rel="stylesheet" href="../css/base/reset.css" />
+  <link rel="stylesheet" href="../css/base/variables.css" />
+  <link rel="stylesheet" href="../css/base/typography.css" />
+  <link rel="stylesheet" href="../css/base/style.css" />
+  <link rel="stylesheet" href="../css/components/navbar.css" />
+  <link rel="stylesheet" href="../css/components/cara.css" />
+  <link rel="stylesheet" href="../css/pages/buy-cars.css" />
+</head>
+<body>
+
+  <!-- ── Universal Navbar ──────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="container">
+
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/images/Logo.png" alt="RevXChange Logo">
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="used-cars.html">Used Cars</a></li>
+        <li><a href="buy-cars.html">New Cars</a></li>
+        <li><a href="#">Auctioned Cars</a></li>
+        <li>
+          <a href="#" class="cara-nav-link" id="caraNavBtn">
+            <svg class="cara-icon" viewBox="0 0 24 24" fill="none" width="15" height="15">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8.5 13C8.5 10.5 10.1 8.8 12 8.8C13.9 8.8 15.5 10.5 15.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="9.5" cy="15" r="1.1" fill="currentColor"/>
+              <circle cx="14.5" cy="15" r="1.1" fill="currentColor"/>
+            </svg>
+            <span class="cara-text">Cara AI</span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+          </a>
+        </li>
+        <li><a href="communities.html">Car Communities</a></li>
+        <span class="nav-indicator" id="navIndicator"></span>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="lang-btn">🌐 عربي</button>
+        <a href="sell-car.html" class="sell-btn">+ Sell My Car</a>
+        <a href="login.html" class="login-btn" id="loginBtn">Login</a>
+
+        <div class="profile-menu hidden" id="profileMenu">
+          <button class="profile-trigger" id="profileTrigger">
+            <div class="profile-avatar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+            </div>
+            <span class="profile-name" id="profileName">User</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </button>
+
+          <ul class="dropdown" id="dropdownMenu">
+            <li class="dropdown-header">
+              <div class="dropdown-avatar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                </svg>
+              </div>
+              <span id="dropdownName">User</span>
+            </li>
+            <li><a href="dashboard.html?tab=ads">My Ads</a></li>
+            <li><a href="dashboard.html?tab=saved">Saved Ads</a></li>
+            <li><a href="dashboard.html?tab=posts">My Posts</a></li>
+            <li><a href="dashboard.html?tab=settings">Settings</a></li>
+            <li class="dropdown-logout">
+              <a href="#" id="logoutBtn">
+                Logout
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero ──────────────────────────────────────────────── -->
+  <section class="bc-hero">
+    <div class="container">
+      <div class="bc-hero-content">
+        <span class="bc-tag">Brand New Vehicles</span>
+        <h1>Browse New Cars</h1>
+        <p>Explore the latest models from top brands, with official prices and full specs.</p>
+        <div class="bc-search-bar">
+          <input type="text" id="bcSearchInput" placeholder="Search by brand, model, or year…">
+          <button id="bcSearchBtn">Search</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Top Brands ─────────────────────────────────────────── -->
+  <section class="bc-section">
+    <div class="container">
+      <div class="bc-brands-box">
+        <h2 class="bc-section-title">Top Brands</h2>
+        <div class="bc-brands-grid" id="bcBrandsGrid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Listings ───────────────────────────────────────────── -->
+  <section class="bc-section">
+    <div class="container">
+      <div class="bc-listings-header">
+        <h2 class="bc-section-title">Top Searched New Cars</h2>
+        <span class="bc-count" id="bcCount"></span>
+      </div>
+      <div class="bc-grid" id="bcGrid"></div>
+    </div>
+  </section>
+
+  <!-- ── Modal ─────────────────────────────────────────────── -->
+  <div class="bc-overlay bc-hidden" id="bcOverlay">
+    <div class="bc-modal">
+      <button class="bc-modal-close" id="bcModalClose">✕</button>
+      <div class="bc-modal-top">
+        <div class="bc-modal-img-wrap">
+          <img id="bcModalImg" src="" alt="">
+        </div>
+        <div class="bc-modal-info">
+          <p class="bc-modal-breadcrumb">New Car</p>
+          <h2 id="bcModalTitle"></h2>
+          <div class="bc-modal-prices">
+            <div>
+              <span class="bc-price-label">Official Price</span>
+              <span class="bc-price-val" id="bcModalOfficial"></span>
+            </div>
+            <div>
+              <span class="bc-price-label">Market Price</span>
+              <span class="bc-price-val" id="bcModalMarket"></span>
+            </div>
+          </div>
+          <p class="bc-modal-warranty" id="bcModalWarranty"></p>
+        </div>
+      </div>
+      <div class="bc-table">
+        <div class="bc-table-head">
+          <span>Classes</span>
+          <span>Official Price</span>
+          <span>Market Price</span>
+        </div>
+        <div id="bcTableBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/buy-cars.js"></script>
+  <script src="../js/navbar.js"></script>
+  <script src="../js/cara.js"></script>
+</body>
+</html>

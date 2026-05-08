@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login – RevXChange</title>
+  <link rel="stylesheet" href="../css/base/reset.css">
+  <link rel="stylesheet" href="../css/base/variables.css">
+  <link rel="stylesheet" href="../css/base/typography.css">
+  <link rel="stylesheet" href="../css/components/navbar.css">
+  <link rel="stylesheet" href="../css/pages/login.css">
+</head>
+
+ 
+<body>
+
+  <div class="bg"></div>
+  <div class="bg-grid"></div>
+
+
+  <a href="../index.html" class="back-home">
+    <div class="back-arrow">←</div>
+    Back to home
+  </a>
+
+  
+  <div class="scene"> 
+    <div class="card-3d" id="card"> <!-- da el main div-->
+
+      <!-- da el card -->
+      <div class="card-face card-front">
+        <div class="card-logo">
+          <div class="logo-mark">RX</div>
+          <div class="logo-text">RevXChange</div>
+        </div>
+        
+        <h1 class="card-title">Welcome back</h1>
+        <p class="card-subtitle">Sign in to your account to continue</p>
+
+        <div class="form-group">
+          <label>Email address</label>
+          <input type="email" id="loginEmail" placeholder="you@example.com">
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password">
+        </div>
+
+        <div class="form-row">
+          <label class="remember-me">
+            <input type="checkbox">
+            <span>Remember me</span>
+          </label>
+          <a href="#" class="forgot-link">Forgot password?</a>
+        </div>
+
+        <button class="btn-primary" onclick="signIn()">Sign In</button>
+
+        <div class="divider"><span>or continue with</span></div>
+
+        <p class="switch-text">
+          Don't have an account? <a href="#" onclick="flipCard()">Create one</a>
+        </p>
+      </div>
+
+      <!--Register -->
+      <div class="card-face card-back">
+        <div class="card-logo">
+          <div class="logo-mark">RX</div>
+          <div class="logo-text">Rev<span>X</span>Change</div>
+        </div>
+
+        <h1 class="card-title">Create account</h1>
+        <p class="card-subtitle">Join thousands of car buyers & sellers</p>
+
+        <div class="form-group">
+          <label>Full name</label>
+          <input type="text" id="regName" placeholder="Your full name">
+        </div>
+
+        <div class="form-group">
+          <label>Email address</label>
+          <input type="email" id="regEmail" placeholder="you@example.com">
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" placeholder="Create a strong password" id="regPassword" oninput="checkStrength(this.value)">
+          <div class="strength-bar">
+            <div class="strength-seg" id="s1"></div>
+            <div class="strength-seg" id="s2"></div>
+            <div class="strength-seg" id="s3"></div>
+            <div class="strength-seg" id="s4"></div>
+          </div>
+        </div>
+
+        <button class="btn-primary" style="margin-top: 8px;">Create Account</button>
+
+        <div class="divider"><span>or sign up with</span></div>
+
+        <p class="switch-text">
+          Already have an account? <a href="#" onclick="flipCard()">Sign in</a>
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="../js/validation.js"></script>
+  <script src="../js/login.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>

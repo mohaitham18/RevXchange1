@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Car Communities — RevXChange</title>
+
+  <link rel="stylesheet" href="../css/base/reset.css">
+  <link rel="stylesheet" href="../css/base/variables.css">
+  <link rel="stylesheet" href="../css/base/typography.css">
+  <link rel="stylesheet" href="../css/base/style.css">
+  <link rel="stylesheet" href="../css/components/navbar.css">
+  <link rel="stylesheet" href="../css/components/cara.css">
+  <link rel="stylesheet" href="../css/pages/communities.css">
+</head>
+<body>
+
+  <!-- ── Universal Navbar ──────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="container">
+
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/images/Logo.png" alt="RevXChange Logo">
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="used-cars.html">Used Cars</a></li>
+        <li><a href="buy-cars.html">New Cars</a></li>
+        <li><a href="#">Auctioned Cars</a></li>
+        <li>
+          <a href="#" class="cara-nav-link" id="caraNavBtn">
+            <svg class="cara-icon" viewBox="0 0 24 24" fill="none" width="15" height="15">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8.5 13C8.5 10.5 10.1 8.8 12 8.8C13.9 8.8 15.5 10.5 15.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="9.5" cy="15" r="1.1" fill="currentColor"/>
+              <circle cx="14.5" cy="15" r="1.1" fill="currentColor"/>
+            </svg>
+            <span class="cara-text">Cara AI</span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+          </a>
+        </li>
+        <li><a href="communities.html">Car Communities</a></li>
+        <span class="nav-indicator" id="navIndicator"></span>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="lang-btn">🌐 عربي</button>
+        <a href="sell-car.html" class="sell-btn">+ Sell My Car</a>
+        <a href="login.html" class="login-btn" id="loginBtn">Login</a>
+
+        <div class="profile-menu hidden" id="profileMenu">
+          <button class="profile-trigger" id="profileTrigger">
+            <div class="profile-avatar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+            </div>
+            <span class="profile-name" id="profileName">User</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </button>
+
+          <ul class="dropdown" id="dropdownMenu">
+            <li class="dropdown-header">
+              <div class="dropdown-avatar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                </svg>
+              </div>
+              <span id="dropdownName">User</span>
+            </li>
+            <li><a href="dashboard.html?tab=ads">My Ads</a></li>
+            <li><a href="dashboard.html?tab=saved">Saved Ads</a></li>
+            <li><a href="dashboard.html?tab=posts">My Posts</a></li>
+            <li><a href="dashboard.html?tab=settings">Settings</a></li>
+            <li class="dropdown-logout">
+              <a href="#" id="logoutBtn">
+                Logout
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Page Hero ──────────────────────────────────────────── -->
+  <section class="comm-hero">
+    <div class="container">
+      <h1>Car Communities</h1>
+      <p>One community per model. Find owners, mechanics, and real advice.</p>
+    </div>
+  </section>
+
+  <!-- ── Brand Selector ────────────────────────────────────── -->
+  <section class="comm-brands-section">
+    <div class="container">
+      <div class="comm-brands-box">
+        <div class="comm-brands-header">
+          <h2 class="section-title">Choose Your Community</h2>
+          <div class="comm-search">
+            <input type="text" id="commSearch" placeholder="Search by model...">
+          </div>
+        </div>
+        <div class="comm-brands-grid" id="commBrandsGrid"></div>
+        <div class="pagination-pill">
+          <button class="page-arrow" id="pageLeft">‹</button>
+          <span id="pageIndicator">Page 1 of 3</span>
+          <button class="page-arrow" id="pageRight">›</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Community Feed ─────────────────────────────────────── -->
+  <section class="comm-feed-section" id="commFeed">
+    <div class="container">
+      <div class="comm-feed-box">
+        <div class="comm-feed-header" id="commFeedHeader"></div>
+        <div class="comm-sort-bar">
+          <button class="sort-btn active" data-sort="top">🔥 Top</button>
+          <button class="sort-btn" data-sort="new">🕐 New</button>
+          <button class="sort-btn" data-sort="trending">📈 Trending</button>
+          <button class="sort-btn" data-sort="controversial">⚡ Controversial</button>
+        </div>
+        <div class="posts-list" id="postsList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Cara AI FAB ────────────────────────────────────────── -->
+  <button class="cara-fab" id="caraFab">
+    <span class="cara-fab-spark"></span>
+    <span class="cara-fab-spark"></span>
+    <span class="cara-fab-spark"></span>
+    <span class="cara-fab-spark"></span>
+    <span class="cara-fab-spark"></span>
+    <span class="cara-fab-spark"></span>
+    <svg class="cara-fab-icon" viewBox="0 0 24 24" fill="none" width="20" height="20">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M8.5 13C8.5 10.5 10.1 8.8 12 8.8C13.9 8.8 15.5 10.5 15.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="9.5" cy="15" r="1.1" fill="currentColor"/>
+      <circle cx="14.5" cy="15" r="1.1" fill="currentColor"/>
+    </svg>
+    <span class="cara-fab-label">Ask Cara</span>
+  </button>
+
+  <div class="cara-panel cara-hidden" id="caraPanel">
+    <div class="cara-header">
+      <div class="cara-header-avatar">
+        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8.5 13C8.5 10.5 10.1 8.8 12 8.8C13.9 8.8 15.5 10.5 15.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="9.5" cy="15" r="1.1" fill="currentColor"/>
+          <circle cx="14.5" cy="15" r="1.1" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="cara-header-info">
+        <div class="cara-header-name">Cara AI</div>
+        <div class="cara-header-status">
+          <span class="cara-status-dot"></span>
+          Online · Car Assistant
+        </div>
+      </div>
+      <button class="cara-header-close" id="caraClose">✕</button>
+    </div>
+    <div class="cara-messages" id="caraMessages"></div>
+    <div class="cara-input-bar">
+      <input type="text" class="cara-text-input" id="caraInput" placeholder="Ask me anything about cars…">
+      <button class="cara-send-btn" id="caraSend">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+          <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="../js/communities.js"></script>
+  <script src="../js/navbar.js"></script>
+  <script src="../js/cara.js"></script>
+</body>
+</html>
