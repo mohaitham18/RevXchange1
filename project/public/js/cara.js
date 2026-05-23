@@ -1,14 +1,11 @@
 (function () {
-    // ── Skip login page ────────────────────────────────────────
     if (window.location.pathname.toLowerCase().includes('login')) return;
 
-    // ── Remove any hardcoded FAB/panel from HTML ───────────────
     const existingFab   = document.getElementById('caraFab');
     const existingPanel = document.getElementById('caraPanel');
     if (existingFab)   existingFab.remove();
     if (existingPanel) existingPanel.remove();
 
-    // ── Icon SVG ───────────────────────────────────────────────
     function iconSVG(size, color) {
         const c = color || 'currentColor';
         return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${c}" style="flex-shrink:0;">
@@ -18,7 +15,6 @@
         </svg>`;
     }
 
-    // ── Inject DOM ─────────────────────────────────────────────
     document.body.insertAdjacentHTML('beforeend', `
         <button class="cara-fab" id="caraFab" aria-label="Open Cara AI">
             <span class="cara-fab-spark"></span>
@@ -56,7 +52,6 @@
         </div>
     `);
 
-    // ── Wire up navbar Cara link if present ────────────────────
     const navBtn = document.getElementById('caraNavBtn');
     if (navBtn) {
         navBtn.addEventListener('click', (e) => {
@@ -65,7 +60,6 @@
         });
     }
 
-    // ── DOM refs ───────────────────────────────────────────────
     const fab      = document.getElementById('caraFab');
     const panel    = document.getElementById('caraPanel');
     const closeBtn = document.getElementById('caraClose');
@@ -73,12 +67,10 @@
     const input    = document.getElementById('caraInput');
     const sendBtn  = document.getElementById('caraSend');
 
-    // ── State ──────────────────────────────────────────────────
     let isOpen  = false;
     let started = false;
     const ctx   = { brand: null, model: null };
 
-    // ── Session persistence ────────────────────────────────────
     const SESSION_KEY  = 'caraMessages';
     const SESSION_OPEN = 'caraOpen';
     let messageLog = JSON.parse(sessionStorage.getItem(SESSION_KEY) || '[]');
@@ -87,7 +79,6 @@
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(messageLog));
     }
 
-    // ── Data ───────────────────────────────────────────────────
     const brands = {
         'Toyota':     ['Corolla', 'Camry', 'Yaris', 'RAV4', 'Hilux', 'Fortuner'],
         'Kia':        ['Sportage', 'Cerato', 'Picanto', 'Sorento', 'K5', 'Stinger'],
@@ -109,12 +100,7 @@
         { label: '🔩 Find a mechanic',     flow: 'mechanic'  },
     ];
 
-    const isSubpage = window.location.pathname.includes('/pages/');
-    const root = isSubpage ? '../' : '';
-
-    // ── Toggle ─────────────────────────────────────────────────
     function restoreSession() {
-        // Find the last interactive element in the log
         let lastInteractiveIndex = -1;
         messageLog.forEach((msg, i) => {
             if (msg.type === 'chips' || msg.type === 'quickactions') {
@@ -124,7 +110,6 @@
 
         messageLog.forEach((msg, i) => {
             if (msg.type === 'bubble') {
-                // Render bubble without saving again
                 const isAr = /[\u0600-\u06FF]/.test(msg.html);
                 const dir  = isAr ? 'rtl' : 'ltr';
                 const wrap = document.createElement('div');
@@ -138,7 +123,6 @@
                 }
                 messages.appendChild(wrap);
             } else if (i === lastInteractiveIndex) {
-                // Only re-render the LAST set of chips/actions so user can still interact
                 if (msg.type === 'quickactions') {
                     addQuickActions();
                 } else if (msg.type === 'chips' && msg.items) {
@@ -172,7 +156,6 @@
         panel.classList.add('cara-hidden');
         isOpen = false;
         sessionStorage.removeItem(SESSION_OPEN);
-        // Do NOT clear messageLog here — keep history for the session
     }
 
     function togglePanel() { isOpen ? closePanel() : openPanel(); }
@@ -191,7 +174,6 @@
         }
     });
 
-    // ── Message builders ───────────────────────────────────────
     function addBubble(html, from) {
         const isAr = /[\u0600-\u06FF]/.test(html);
         const dir  = isAr ? 'rtl' : 'ltr';
@@ -293,7 +275,6 @@
         setTimeout(() => { messages.scrollTop = messages.scrollHeight; }, 30);
     }
 
-    // ── Cara speaks with typing delay ──────────────────────────
     function speak(html, delay) {
         delay = delay || 750;
         return new Promise(resolve => {
@@ -306,13 +287,11 @@
         });
     }
 
-    // ── Greeting ───────────────────────────────────────────────
     async function startConversation() {
         await speak('Hello! I\'m <strong>Cara</strong> ✨ — RevXChange\'s AI assistant.<br>How can I help you today?', 950);
         addQuickActions();
     }
 
-    // ── Flow router ────────────────────────────────────────────
     function runFlow(flow) {
         switch (flow) {
             case 'breakdown': flowBreakdown(); break;
@@ -322,7 +301,6 @@
         }
     }
 
-    // ── Brand → Model picker ───────────────────────────────────
     function pickBrandModel(onDone) {
         addChips(Object.keys(brands), async (brand) => {
             ctx.brand = (brand === 'Other') ? 'your car' : brand;
@@ -335,7 +313,6 @@
         });
     }
 
-    // ── Restart prompt ─────────────────────────────────────────
     async function askAnythingElse() {
         await speak('Is there anything else I can help with?', 500);
         addChips(['Yes, ask something else', 'No thanks'], async (choice) => {
@@ -348,7 +325,6 @@
         });
     }
 
-    // ── Flow: Breakdown ────────────────────────────────────────
     async function flowBreakdown() {
         await speak('I\'m here to help. <strong>What brand is your car?</strong>', 800);
         pickBrandModel(async (brand, model) => {
@@ -361,13 +337,13 @@
                         `Understood. Here\'s what I recommend for a <em>${issue.toLowerCase()}</em> on your <strong>${brand} ${model}</strong>:<br><br>
                         <strong>1.</strong> Don\'t drive it if the engine is involved.<br>
                         <strong>2.</strong> Visit a trusted specialist, not a random garage.<br>
-                        <strong>3.</strong> Post in the <a href="${root}pages/communities.html"><strong>${brand} community</strong></a> — real owners have likely seen this.`,
+                        <strong>3.</strong> Post in the <a href="/communities.html"><strong>${brand} community</strong></a> — real owners have likely seen this.`,
                         1300
                     );
                     addChips(['Find a mechanic', 'Go to community', 'That helps, thanks'], async (choice) => {
                         if (choice === 'Find a mechanic')      flowMechanic();
                         else if (choice === 'Go to community') {
-                            await speak(`Head to our <a href="${root}pages/communities.html"><strong>Car Communities</strong></a> page, select the ${brand} community, and post your issue. 🙌`, 800);
+                            await speak(`Head to our <a href="/communities.html"><strong>Car Communities</strong></a> page, select the ${brand} community, and post your issue. 🙌`, 800);
                             askAnythingElse();
                         } else { askAnythingElse(); }
                     });
@@ -376,7 +352,6 @@
         });
     }
 
-    // ── Flow: Buy ──────────────────────────────────────────────
     async function flowBuy() {
         await speak('Let\'s find you the perfect car! <strong>What\'s your budget?</strong>', 800);
         addChips(
@@ -386,8 +361,8 @@
                 addChips(['Sedan', 'SUV', 'Pickup', 'Hatchback', 'No preference'], async (type) => {
                     await speak(
                         `For a <strong>${type}</strong> in the <strong>${budget}</strong> range, browse our listings:<br><br>
-                        📋 <a href="${root}pages/used-cars.html"><strong>Browse Used Cars</strong></a><br>
-                        🆕 <a href="${root}pages/buy-cars.html"><strong>Browse New Cars</strong></a><br><br>
+                        📋 <a href="/used-cars.html"><strong>Browse Used Cars</strong></a><br>
+                        🆕 <a href="/buy-cars.html"><strong>Browse New Cars</strong></a><br><br>
                         Use the filters to narrow by brand, model, city, and mileage.`,
                         1100
                     );
@@ -397,7 +372,6 @@
         );
     }
 
-    // ── Flow: Sell ─────────────────────────────────────────────
     async function flowSell() {
         await speak('I\'ll help you list your car! <strong>What brand is it?</strong>', 800);
         pickBrandModel(async (brand, model) => {
@@ -413,12 +387,11 @@
         });
     }
 
-    // ── Flow: Mechanic ─────────────────────────────────────────
     async function flowMechanic() {
         await speak('I\'ll help you find a trusted mechanic. <strong>Which city are you in?</strong>', 800);
         addChips(['Cairo', 'Alexandria', 'Giza', 'Mansoura', 'Hurghada', 'Other city'], async (city) => {
             await speak(
-                `For a trusted mechanic in <strong>${city}</strong>, the best source is our <a href="${root}pages/communities.html"><strong>Car Communities</strong></a> — local owners share verified workshops regularly.<br><br>
+                `For a trusted mechanic in <strong>${city}</strong>, the best source is our <a href="/communities.html"><strong>Car Communities</strong></a> — local owners share verified workshops regularly.<br><br>
                 Search by your car model's community and look for pinned mechanic recommendations. 🔧`,
                 1050
             );
@@ -426,7 +399,6 @@
         });
     }
 
-    // ── Text input handler ─────────────────────────────────────
     async function handleInput() {
         const text = input.value.trim();
         if (!text) return;
@@ -460,9 +432,8 @@
     sendBtn.addEventListener('click', handleInput);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleInput(); });
 
-    // ── Restore open state on page load ────────────────────────
     if (sessionStorage.getItem(SESSION_OPEN) === 'true') {
         openPanel();
     }
 
-})();
+}());

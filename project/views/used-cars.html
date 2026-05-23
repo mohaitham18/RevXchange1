@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Used Cars - RevXChange</title>
 
-  <link rel="stylesheet" href="../css/base/reset.css" />
-  <link rel="stylesheet" href="../css/base/variables.css" />
-  <link rel="stylesheet" href="../css/base/typography.css" />
-  <link rel="stylesheet" href="../css/base/style.css" />
-  <link rel="stylesheet" href="../css/components/navbar.css" />
-  <link rel="stylesheet" href="../css/components/cards.css" />
-  <link rel="stylesheet" href="../css/components/cara.css" />
-  <link rel="stylesheet" href="../css/pages/used-cars.css" />
+  <link rel="stylesheet" href="/css/base/reset.css" />
+  <link rel="stylesheet" href="/css/base/variables.css" />
+  <link rel="stylesheet" href="/css/base/typography.css" />
+  <link rel="stylesheet" href="/css/base/style.css" />
+  <link rel="stylesheet" href="/css/components/navbar.css" />
+  <link rel="stylesheet" href="/css/components/cards.css" />
+  <link rel="stylesheet" href="/css/components/cara.css" />
+  <link rel="stylesheet" href="/css/pages/used-cars.css" />
 </head>
 <body>
 
@@ -20,8 +20,8 @@
   <nav class="navbar">
     <div class="container">
 
-      <a href="../index.html" class="nav-logo">
-        <img src="../assets/images/Logo.png" alt="RevXChange Logo">
+      <a href="/" class="nav-logo">
+        <img src="/images/Logo.png" alt="RevXChange Logo">
       </a>
 
       <ul class="nav-links">
@@ -177,56 +177,9 @@
     </div>
   </section>
 
-  <!-- ── Cara AI FAB ────────────────────────────────────────── -->
-  <button class="cara-fab" id="caraFab">
-    <span class="cara-fab-spark"></span>
-    <span class="cara-fab-spark"></span>
-    <span class="cara-fab-spark"></span>
-    <span class="cara-fab-spark"></span>
-    <span class="cara-fab-spark"></span>
-    <span class="cara-fab-spark"></span>
-    <svg class="cara-fab-icon" viewBox="0 0 24 24" fill="none" width="20" height="20">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
-      <path d="M8.5 13C8.5 10.5 10.1 8.8 12 8.8C13.9 8.8 15.5 10.5 15.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      <circle cx="9.5" cy="15" r="1.1" fill="currentColor"/>
-      <circle cx="14.5" cy="15" r="1.1" fill="currentColor"/>
-    </svg>
-    <span class="cara-fab-label">Ask Cara</span>
-  </button>
-
-  <div class="cara-panel cara-hidden" id="caraPanel">
-    <div class="cara-header">
-      <div class="cara-header-avatar">
-        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M8.5 13C8.5 10.5 10.1 8.8 12 8.8C13.9 8.8 15.5 10.5 15.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <circle cx="9.5" cy="15" r="1.1" fill="currentColor"/>
-          <circle cx="14.5" cy="15" r="1.1" fill="currentColor"/>
-        </svg>
-      </div>
-      <div class="cara-header-info">
-        <div class="cara-header-name">Cara AI</div>
-        <div class="cara-header-status">
-          <span class="cara-status-dot"></span>
-          Online · Car Assistant
-        </div>
-      </div>
-      <button class="cara-header-close" id="caraClose">✕</button>
-    </div>
-    <div class="cara-messages" id="caraMessages"></div>
-    <div class="cara-input-bar">
-      <input type="text" class="cara-text-input" id="caraInput" placeholder="Ask me anything about cars…">
-      <button class="cara-send-btn" id="caraSend">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-          <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <script src="../js/cars.js"></script>
-  <script src="../js/used-cars.js"></script>
-  <script src="../js/navbar.js"></script>
-  <script src="../js/cara.js"></script>
+  <script src="/js/cars.js"></script>
+  <script src="/js/used-cars.js"></script>
+  <script src="/js/navbar.js"></script>
+  <script src="/js/cara.js"></script>
 </body>
 </html>

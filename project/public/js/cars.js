@@ -1,28 +1,23 @@
 // ─── Brand Image Map ──────────────────────────────────────────
 const brandImages = {
-  Mercedes:   'assets/images/mercedes.png',
-  BMW:        'assets/images/BMW.png',
-  Kia:        'assets/images/kia.png',
-  Toyota:     'assets/images/toyota.png',
-  Hyundai:    'assets/images/hyundai.png',
-  Nissan:     'assets/images/nissan.png',
-  Chevrolet:  'assets/images/chevrolet.png',
-  Fiat:       'assets/images/fiat.png',
-  Chery:      'assets/images/chery.png',
-  Skoda:      'assets/images/skoda.png',
-  Volkswagen: 'assets/images/volkswagen.png',
-  MG:         'assets/images/mg.png',
-  Renault:    'assets/images/renault.png',
-  Opel:       'assets/images/opel.png',
-  Honda:      'assets/images/honda.png',
-  Peugeot:    'assets/images/peugeot.png',
+  Mercedes:   '/images/mercedes.png',
+  BMW:        '/images/BMW.png',
+  Kia:        '/images/kia.png',
+  Toyota:     '/images/toyota.png',
+  Hyundai:    '/images/hyundai.png',
+  Nissan:     '/images/nissan.png',
+  Chevrolet:  '/images/chevrolet.png',
+  Fiat:       '/images/fiat.png',
+  Chery:      '/images/chery.png',
+  Skoda:      '/images/skoda.png',
+  Volkswagen: '/images/volkswagen.png',
+  MG:         '/images/mg.png',
+  Renault:    '/images/renault.png',
+  Opel:       '/images/opel.png',
+  Honda:      '/images/honda.png',
+  Peugeot:    '/images/peugeot.png',
 };
 
-
-// ─── Car Listings Data ────────────────────────────────────────
-// fabrika: true  → shows "Fabrika" tag on the card
-// fabrika: false → tag is hidden
-// phone: seller's phone number (used for WhatsApp & Call buttons)
 const mostViewedCars = [
   {
     id: 1,
@@ -37,9 +32,9 @@ const mostViewedCars = [
     fabrika:      true,
     phone:        '201000000001',
     images: [
-      'assets/images/mercedes.png',
-      'assets/images/BMW.png',
-      'assets/images/kia.png',
+      '/images/mercedes.png',
+      '/images/BMW.png',
+      '/images/kia.png',
     ],
   },
   {
@@ -55,7 +50,7 @@ const mostViewedCars = [
     fabrika:      false,
     phone:        '201000000002',
     images: [
-      'assets/images/BMW.png',
+      '/images/BMW.png',
     ],
   },
   {
@@ -71,8 +66,8 @@ const mostViewedCars = [
     fabrika:      true,
     phone:        '201000000003',
     images: [
-      'assets/images/kia.png',
-      'assets/images/hyundai.png',
+      '/images/kia.png',
+      '/images/hyundai.png',
     ],
   },
   {
@@ -88,7 +83,7 @@ const mostViewedCars = [
     fabrika:      false,
     phone:        '201000000004',
     images: [
-      'assets/images/toyota.png',
+      '/images/toyota.png',
     ],
   },
   {
@@ -104,8 +99,8 @@ const mostViewedCars = [
     fabrika:      false,
     phone:        '201000000005',
     images: [
-      'assets/images/hyundai.png',
-      'assets/images/nissan.png',
+      '/images/hyundai.png',
+      '/images/nissan.png',
     ],
   },
   {
@@ -121,7 +116,7 @@ const mostViewedCars = [
     fabrika:      true,
     phone:        '201000000006',
     images: [
-      'assets/images/nissan.png',
+      '/images/nissan.png',
     ],
   },
   {
@@ -137,9 +132,9 @@ const mostViewedCars = [
     fabrika:      false,
     phone:        '201000000007',
     images: [
-      'assets/images/chevrolet.png',
-      'assets/images/opel.png',
-      'assets/images/renault.png',
+      '/images/chevrolet.png',
+      '/images/opel.png',
+      '/images/renault.png',
     ],
   },
   {
@@ -155,7 +150,7 @@ const mostViewedCars = [
     fabrika:      false,
     phone:        '201000000008',
     images: [
-      'assets/images/renault.png',
+      '/images/renault.png',
     ],
   },
   {
@@ -171,8 +166,8 @@ const mostViewedCars = [
     fabrika:      true,
     phone:        '201000000009',
     images: [
-      'assets/images/mg.png',
-      'assets/images/skoda.png',
+      '/images/mg.png',
+      '/images/skoda.png',
     ],
   },
   {
@@ -188,7 +183,7 @@ const mostViewedCars = [
     fabrika:      false,
     phone:        '201000000010',
     images: [
-      'assets/images/honda.png',
+      '/images/honda.png',
     ],
   },
   {
@@ -204,8 +199,8 @@ const mostViewedCars = [
     fabrika:      false,
     phone:        '201000000011',
     images: [
-      'assets/images/skoda.png',
-      'assets/images/volkswagen.png',
+      '/images/skoda.png',
+      '/images/volkswagen.png',
     ],
   },
   {
@@ -221,7 +216,7 @@ const mostViewedCars = [
     fabrika:      true,
     phone:        '201000000012',
     images: [
-      'assets/images/fiat.png',
+      '/images/fiat.png',
     ],
   },
 ];

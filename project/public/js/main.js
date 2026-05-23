@@ -15,22 +15,22 @@ const popularSearches = [
 // ─── Tab Data ────────────────────────────────────────────────
 const tabData = {
     'Top Brands': [
-        { name: 'Mercedes', count: '1,304', img: 'assets/images/mercedes.png' },
-        { name: 'Kia', count: '882', img: 'assets/images/kia.png' },
-        { name: 'Hyundai', count: '882', img: 'assets/images/hyundai.png' },
-        { name: 'Chevrolet', count: '581', img: 'assets/images/chevrolet.png' },
-        { name: 'BMW', count: '576', img: 'assets/images/bmw.png' },
-        { name: 'Nissan', count: '544', img: 'assets/images/nissan.png' },
-        { name: 'Peugeot', count: '408', img: 'assets/images/peugeot.png' },
-        { name: 'Fiat', count: '433', img: 'assets/images/fiat.png' },
-        { name: 'Chery', count: '391', img: 'assets/images/chery.png' },
-        { name: 'Skoda', count: '367', img: 'assets/images/skoda.png' },
-        { name: 'Toyota', count: '333', img: 'assets/images/toyota.png' },
-        { name: 'Volkswagen', count: '333', img: 'assets/images/volkswagen.png' },
-        { name: 'MG', count: '323', img: 'assets/images/mg.png' },
-        { name: 'Renault', count: '588', img: 'assets/images/renault.png' },
-        { name: 'Opel', count: '433', img: 'assets/images/opel.png' },
-        { name: 'Honda', count: '298', img: 'assets/images/honda.png' },
+        { name: 'Mercedes', count: '1,304', img: '/images/mercedes.png' },
+        { name: 'Kia', count: '882', img: '/images/kia.png' },
+        { name: 'Hyundai', count: '882', img: '/images/hyundai.png' },
+        { name: 'Chevrolet', count: '581', img: '/images/chevrolet.png' },
+        { name: 'BMW', count: '576', img: '/images/bmw.png' },
+        { name: 'Nissan', count: '544', img: '/images/nissan.png' },
+        { name: 'Peugeot', count: '408', img: '/images/peugeot.png' },
+        { name: 'Fiat', count: '433', img: '/images/fiat.png' },
+        { name: 'Chery', count: '391', img: '/images/chery.png' },
+        { name: 'Skoda', count: '367', img: '/images/skoda.png' },
+        { name: 'Toyota', count: '333', img: '/images/toyota.png' },
+        { name: 'Volkswagen', count: '333', img: '/images/volkswagen.png' },
+        { name: 'MG', count: '323', img: '/images/mg.png' },
+        { name: 'Renault', count: '588', img: '/images/renault.png' },
+        { name: 'Opel', count: '433', img: '/images/opel.png' },
+        { name: 'Honda', count: '298', img: '/images/honda.png' },
     ],
 
     'Top Models': [
@@ -348,7 +348,7 @@ function renderDiscover() {
 const communityPreviewPosts = [
     {
         community: 'Toyota Corolla',
-        img: 'assets/images/toyota.png',
+        img: '/images/toyota.png',
         author: 'Ahmed Hassan',
         time: '2h ago',
         text: 'Anyone know a reliable mechanic in Cairo for a Corolla 2019? AC compressor is making a grinding noise and I need someone I can actually trust.',
@@ -356,7 +356,7 @@ const communityPreviewPosts = [
     },
     {
         community: 'BMW 320i',
-        img: 'assets/images/bmw.png',
+        img: '/images/bmw.png',
         author: 'Karim Mostafa',
         time: '5h ago',
         text: 'Just hit 100,000 km on my 2018 320i. Planning a full service — timing chain, spark plugs, or cooling system first? Looking for a specialist in Maadi.',
@@ -364,7 +364,7 @@ const communityPreviewPosts = [
     },
     {
         community: 'Kia Sportage',
-        img: 'assets/images/kia.png',
+        img: '/images/kia.png',
         author: 'Sara Nabil',
         time: '1d ago',
         text: 'Comparing the 2023 Sportage vs MG RX5 for a family car. Which holds better resale value in the Egyptian market long term? Both are similar price right now.',
@@ -378,7 +378,7 @@ function renderCommunityPreview() {
     if (!el) return;
 
     el.innerHTML = communityPreviewPosts.map(post => `
-        <a href="pages/communities.html" class="community-preview-card">
+        <a href="/communities.html" class="community-preview-card">
             <div class="comm-card-label">
                 <img src="${post.img}" alt="${post.community}" onerror="this.style.display='none'">
                 ${post.community}

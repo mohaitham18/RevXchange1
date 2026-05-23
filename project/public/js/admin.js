@@ -20,13 +20,11 @@ const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
   logoutBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    window.location.href = 'login.html';
+    window.location.href = '/login.html';
   });
 }
 
-
 const signInBtn = document.getElementById('signInBtn');
-
 if (signInBtn) {
   signInBtn.addEventListener('click', signIn);
 }
