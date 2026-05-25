@@ -18,6 +18,11 @@ const brandImages = {
   Peugeot:    '/images/peugeot.png',
 };
 
+
+// ─── Car Listings Data ────────────────────────────────────────
+// fabrika: true  → shows "Fabrika" tag on the card
+// fabrika: false → tag is hidden
+// phone: seller's phone number (used for WhatsApp & Call buttons)
 const mostViewedCars = [
   {
     id: 1,

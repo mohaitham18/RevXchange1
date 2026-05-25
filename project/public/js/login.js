@@ -100,7 +100,7 @@ wire('regEmail',      validateRegEmail,      dirtyReg);
 wire('regPassword',   validateRegPassword,   dirtyReg);
 
 // ── Sign In submit ────────────────────────────────────────
-function signIn() {
+async function signIn() {
   const emailOk = validateLoginEmail();
   const passOk  = validateLoginPassword();
   if (!emailOk || !passOk) return;
@@ -108,36 +108,80 @@ function signIn() {
   const email    = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value.trim();
 
-  if (email === 'user@revxchange.com' && password === '123456') {
-    localStorage.setItem('role',   'user');
-    localStorage.setItem('rxUser', 'Ali');
-    window.location.href = '../index.html';
-    return;
-  }
-  if (email === 'admin@revxchange.com' && password === '123456') {
-    localStorage.setItem('role',   'admin');
-    localStorage.setItem('rxUser', 'Admin');
-    window.location.href = 'admin.html';
-    return;
-  }
+  try {
+    const res  = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
 
-  // Credentials wrong — show error on both fields
-  RXValidation.showError(document.getElementById('loginEmail'),    'No account found with these credentials');
-  RXValidation.showError(document.getElementById('loginPassword'), 'Invalid password');
+    const data = await res.json();
+
+    if (!res.ok) {
+      RXValidation.showError(document.getElementById('loginEmail'),    'No account found with these credentials');
+      RXValidation.showError(document.getElementById('loginPassword'), data.message || 'Invalid password');
+      return;
+    }
+
+    // Save to localStorage
+    localStorage.setItem('rxToken', data.token);
+    localStorage.setItem('rxUser',  data.user.name);
+    localStorage.setItem('rxEmail', data.user.email);
+    localStorage.setItem('role',    data.user.role);
+
+    // Redirect based on role
+    if (data.user.role === 'admin') {
+      window.location.href = '/admin.html';
+    } else {
+      window.location.href = '/';
+    }
+
+  } catch (err) {
+    console.error('Login error:', err);
+    RXValidation.showError(document.getElementById('loginEmail'), 'Server error. Please try again.');
+  }
 }
 
 // ── Register submit ───────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('.card-back .btn-primary')
-    ?.addEventListener('click', () => {
+    ?.addEventListener('click', async () => {
       const nameOk  = validateRegName();
       const emailOk = validateRegEmail();
       const passOk  = validateRegPassword();
       if (!nameOk || !emailOk || !passOk) return;
 
-      // Mark all reg fields as dirty so live validation stays on
       ['regName','regEmail','regPassword'].forEach(id => dirtyReg.add(id));
 
-      alert('Account created! 🎉 (Backend in Phase 2)');
+      const name     = document.getElementById('regName').value.trim();
+      const email    = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value.trim();
+
+      try {
+        const res  = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          RXValidation.showError(document.getElementById('regEmail'), data.message || 'Registration failed');
+          return;
+        }
+
+        // Save to localStorage
+        localStorage.setItem('rxToken', data.token);
+        localStorage.setItem('rxUser',  data.user.name);
+        localStorage.setItem('rxEmail', data.user.email);
+        localStorage.setItem('role',    data.user.role);
+
+        window.location.href = '/';
+
+      } catch (err) {
+        console.error('Register error:', err);
+        RXValidation.showError(document.getElementById('regEmail'), 'Server error. Please try again.');
+      }
     });
 });
