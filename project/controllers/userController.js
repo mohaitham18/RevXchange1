@@ -1,4 +1,3 @@
-const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id, role) => {
@@ -7,6 +6,7 @@ const generateToken = (id, role) => {
 
 const register = async (req, res) => {
   try {
+    const User = require('../models/User');
     const { name, email, password } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -27,6 +27,7 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
+    const User = require('../models/User');
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
