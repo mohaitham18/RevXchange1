@@ -1,19 +1,50 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── Auth guard ─────────────────────────────────────────────
-    const user = localStorage.getItem('rxUser');
-    if (!user) {
-        window.location.href = 'login.html';
+// ── Auth guard ─────────────────────────────────────────────
+    const token = localStorage.getItem('rxToken');
+    if (!token) {
+        window.location.href = '/login.html';
         return;
     }
 
-    // ── Set username ───────────────────────────────────────────
-    const nameEl = document.getElementById('dashUserName');
-    if (nameEl) nameEl.textContent = `Welcome back, ${user}`;
+    // ── Fetch real user from API ───────────────────────────────
+    async function loadUserProfile() {
+        try {
+            const res = await fetch('/api/auth/profile', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-    const settingName = document.getElementById('settingName');
-    if (settingName) settingName.value = user;
+            if (!res.ok) {
+                localStorage.clear();
+                window.location.href = '/login.html';
+                return;
+            }
 
+            const data = await res.json();
+            const user = data.user;
+
+            // Update localStorage with fresh data
+            localStorage.setItem('rxUser', user.name);
+            localStorage.setItem('rxEmail', user.email);
+            localStorage.setItem('role', user.role);
+
+            // Update UI
+            const nameEl = document.getElementById('dashUserName');
+            if (nameEl) nameEl.textContent = `Welcome back, ${user.name}`;
+
+            const settingName = document.getElementById('settingName');
+            if (settingName) settingName.value = user.name;
+
+            const settingEmail = document.getElementById('settingEmail');
+            if (settingEmail) settingEmail.value = user.email;
+
+        } catch (err) {
+            console.error('Profile fetch error:', err);
+        }
+    }
+
+    loadUserProfile();
+  
     // ── Tab switching ──────────────────────────────────────────
     const tabs   = document.querySelectorAll('.dash-tab');
     const panels = document.querySelectorAll('.dash-panel');
@@ -32,35 +63,81 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabParam = params.get('tab');
     if (tabParam) switchTab(tabParam);
 
-    // ── Mock data ──────────────────────────────────────────────
-    const myAds = [
-        {
-            id: 1, brand: 'Toyota', model: 'Corolla', year: 2021,
-            price: 620000, city: 'Cairo', mileage: '34,000 km',
-            status: 'active', img: '../assets/images/toyota.png'
-        },
-        {
-            id: 2, brand: 'Kia', model: 'Sportage', year: 2020,
-            price: 780000, city: 'Giza', mileage: '48,000 km',
-            status: 'pending', img: '../assets/images/kia.png'
-        },
-        {
-            id: 3, brand: 'Nissan', model: 'Sunny', year: 2019,
-            price: 310000, city: 'Alexandria', mileage: '61,000 km',
-            status: 'sold', img: '../assets/images/nissan.png'
-        },
-    ];
+// ── Load real My Ads from API ──────────────────────────────
+    async function loadMyAds() {
+        const grid = document.getElementById('myAdsGrid');
+        if (!grid) return;
+
+        try {
+            const res = await fetch('/api/cars/my-cars', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const myAds = data.cars || [];
+
+            if (myAds.length === 0) {
+                grid.innerHTML = `<div class="dash-empty">
+                    <span>🚗</span>
+                    <p>You haven't listed any cars yet.</p>
+                    <a href="/sell-car.html">+ List Your Car</a>
+                </div>`;
+                return;
+            }
+
+            grid.innerHTML = myAds.map(car => `
+                <div class="dash-ad-card">
+                    <div class="dash-ad-img">
+                        <img src="${car.images?.[0] || '/images/car-placeholder.png'}" alt="${car.brand}">
+                    </div>
+                    <div class="dash-ad-body">
+                        <div class="dash-ad-top">
+                            <div class="dash-ad-title">${car.brand} ${car.model} ${car.year}</div>
+                            <span class="dash-status ${car.status}">${car.status.charAt(0).toUpperCase() + car.status.slice(1)}</span>
+                        </div>
+                        <div class="dash-ad-price">${car.price.toLocaleString('en-EG')} EGP</div>
+                        <div class="dash-ad-meta">
+                            <span>📍 ${car.city}</span>
+                            <span>🛣️ ${car.mileage.toLocaleString()} km</span>
+                        </div>
+                        <div class="dash-ad-actions">
+                            <button class="dash-ad-btn edit">Edit</button>
+                            <button class="dash-ad-btn remove" data-id="${car._id}">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Remove car
+            grid.querySelectorAll('.dash-ad-btn.remove').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.dataset.id;
+                    if (!confirm('Remove this listing?')) return;
+                    const r = await fetch(`/api/cars/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (r.ok) {
+                        showToast('Listing removed ✓');
+                        loadMyAds();
+                    }
+                });
+            });
+
+        } catch (err) {
+            console.error('My ads error:', err);
+        }
+    }
 
     const savedAds = [
         {
             id: 4, brand: 'Mercedes', model: 'C200', year: 2021,
             price: 1850000, city: 'Cairo', mileage: '42,000 km',
-            status: 'active', img: '../assets/images/mercedes.png'
+            status: 'active', img: '/images/mercedes.png'
         },
         {
             id: 5, brand: 'BMW', model: '320i', year: 2020,
             price: 1650000, city: 'Giza', mileage: '38,000 km',
-            status: 'active', img: '../assets/images/BMW.png'
+            status: 'active', img: '/images/BMW.png'
         },
     ];
 
@@ -218,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Init ───────────────────────────────────────────────────
-    renderMyAds();
+    loadMyAds();
     renderSavedAds();
     renderMyPosts();
 
