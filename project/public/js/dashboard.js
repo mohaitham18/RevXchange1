@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-// ── Auth guard ─────────────────────────────────────────────
+    // ── Auth guard ─────────────────────────────────────────────
     const token = localStorage.getItem('rxToken');
     if (!token) {
         window.location.href = '/login.html';
@@ -23,12 +23,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             const user = data.user;
 
-            // Update localStorage with fresh data
             localStorage.setItem('rxUser', user.name);
             localStorage.setItem('rxEmail', user.email);
             localStorage.setItem('role', user.role);
 
-            // Update UI
             const nameEl = document.getElementById('dashUserName');
             if (nameEl) nameEl.textContent = `Welcome back, ${user.name}`;
 
@@ -44,9 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loadUserProfile();
-  
+
     // ── Tab switching ──────────────────────────────────────────
-    const tabs   = document.querySelectorAll('.dash-tab');
+    const tabs = document.querySelectorAll('.dash-tab');
     const panels = document.querySelectorAll('.dash-panel');
 
     function switchTab(tabName) {
@@ -58,12 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    // ── Read tab from URL param (?tab=settings) ────────────────
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
     if (tabParam) switchTab(tabParam);
 
-// ── Load real My Ads from API ──────────────────────────────
+    // ── Load My Ads from API ───────────────────────────────────
     async function loadMyAds() {
         const grid = document.getElementById('myAdsGrid');
         if (!grid) return;
@@ -87,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             grid.innerHTML = myAds.map(car => `
                 <div class="dash-ad-card">
                     <div class="dash-ad-img">
-                        <img src="${car.images?.[0] || '/images/car-placeholder.png'}" alt="${car.brand}">
+                        <img src="${car.images && car.images[0] ? car.images[0] : '/images/car-placeholder.png'}" alt="${car.brand}">
                     </div>
                     <div class="dash-ad-body">
                         <div class="dash-ad-top">
@@ -107,12 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `).join('');
 
-            // Remove car
             grid.querySelectorAll('.dash-ad-btn.remove').forEach(btn => {
-                btn.addEventListener('click', async () => {
+                btn.addEventListener('click', async() => {
                     const id = btn.dataset.id;
                     if (!confirm('Remove this listing?')) return;
-                    const r = await fetch(`/api/cars/${id}`, {
+                    const r = await fetch('/api/cars/' + id, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -128,74 +124,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const savedAds = [
-        {
-            id: 4, brand: 'Mercedes', model: 'C200', year: 2021,
-            price: 1850000, city: 'Cairo', mileage: '42,000 km',
-            status: 'active', img: '/images/mercedes.png'
+    // ── Mock: Saved Ads ────────────────────────────────────────
+    const savedAds = [{
+            id: 4,
+            brand: 'Mercedes',
+            model: 'C200',
+            year: 2021,
+            price: 1850000,
+            city: 'Cairo',
+            mileage: '42,000 km',
+            status: 'active',
+            img: '/images/mercedes.png'
         },
         {
-            id: 5, brand: 'BMW', model: '320i', year: 2020,
-            price: 1650000, city: 'Giza', mileage: '38,000 km',
-            status: 'active', img: '/images/BMW.png'
+            id: 5,
+            brand: 'BMW',
+            model: '320i',
+            year: 2020,
+            price: 1650000,
+            city: 'Giza',
+            mileage: '38,000 km',
+            status: 'active',
+            img: '/images/BMW.png'
         },
     ];
 
-    const myPosts = [
-        {
-            id: 1, community: 'Toyota Corolla',
+    // ── Mock: My Posts ─────────────────────────────────────────
+    const myPosts = [{
+            id: 1,
+            community: 'Toyota Corolla',
             text: 'Anyone know a reliable mechanic in Cairo for a Corolla 2019? AC compressor is making a grinding noise.',
-            time: '2h ago', likes: 24, comments: 8
+            time: '2h ago',
+            likes: 24,
+            comments: 8
         },
         {
-            id: 2, community: 'Kia Sportage',
+            id: 2,
+            community: 'Kia Sportage',
             text: 'Comparing the 2023 Sportage vs MG RX5 for a family car. Which holds better resale value in Egypt long term?',
-            time: '1d ago', likes: 41, comments: 15
+            time: '1d ago',
+            likes: 41,
+            comments: 15
         },
     ];
-
-    // ── Format price ───────────────────────────────────────────
-    function formatPrice(p) {
-        return p.toLocaleString('en-EG') + ' EGP';
-    }
-
-    // ── Render: My Ads ─────────────────────────────────────────
-    function renderMyAds() {
-        const grid = document.getElementById('myAdsGrid');
-        if (!grid) return;
-
-        if (myAds.length === 0) {
-            grid.innerHTML = `<div class="dash-empty">
-                <span>🚗</span>
-                <p>You haven't listed any cars yet.</p>
-                <a href="sell-car.html">+ List Your Car</a>
-            </div>`;
-            return;
-        }
-
-        grid.innerHTML = myAds.map(car => `
-            <div class="dash-ad-card">
-                <div class="dash-ad-img">
-                    <img src="${car.img}" alt="${car.brand}">
-                </div>
-                <div class="dash-ad-body">
-                    <div class="dash-ad-top">
-                        <div class="dash-ad-title">${car.brand} ${car.model} ${car.year}</div>
-                        <span class="dash-status ${car.status}">${car.status.charAt(0).toUpperCase() + car.status.slice(1)}</span>
-                    </div>
-                    <div class="dash-ad-price">${formatPrice(car.price)}</div>
-                    <div class="dash-ad-meta">
-                        <span>📍 ${car.city}</span>
-                        <span>🛣️ ${car.mileage}</span>
-                    </div>
-                    <div class="dash-ad-actions">
-                        <button class="dash-ad-btn edit">Edit</button>
-                        <button class="dash-ad-btn remove">Remove</button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
 
     // ── Render: Saved Ads ──────────────────────────────────────
     function renderSavedAds() {
@@ -206,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
             grid.innerHTML = `<div class="dash-empty">
                 <span>🔖</span>
                 <p>You haven't saved any cars yet.</p>
-                <a href="used-cars.html">Browse Cars</a>
+                <a href="/used-cars.html">Browse Cars</a>
             </div>`;
             return;
         }
@@ -221,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="dash-ad-title">${car.brand} ${car.model} ${car.year}</div>
                         <span class="dash-status ${car.status}">${car.status.charAt(0).toUpperCase() + car.status.slice(1)}</span>
                     </div>
-                    <div class="dash-ad-price">${formatPrice(car.price)}</div>
+                    <div class="dash-ad-price">${car.price.toLocaleString('en-EG')} EGP</div>
                     <div class="dash-ad-meta">
                         <span>📍 ${car.city}</span>
                         <span>🛣️ ${car.mileage}</span>
@@ -244,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             list.innerHTML = `<div class="dash-empty">
                 <span>💬</span>
                 <p>You haven't posted in any community yet.</p>
-                <a href="communities.html">Explore Communities</a>
+                <a href="/communities.html">Explore Communities</a>
             </div>`;
             return;
         }
@@ -265,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     }
 
-    // ── Save profile toast ─────────────────────────────────────
+    // ── Toast ──────────────────────────────────────────────────
     function showToast(msg) {
         let toast = document.querySelector('.dash-toast');
         if (!toast) {
@@ -278,13 +249,105 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.classList.remove('show'), 2800);
     }
 
-    document.getElementById('saveProfileBtn')?.addEventListener('click', () => {
-        const name = document.getElementById('settingName')?.value.trim();
-        if (name) {
-            localStorage.setItem('rxUser', name);
-            showToast('Profile saved successfully ✓');
-        }
-    });
+    // ── Save Profile ───────────────────────────────────────────
+    const saveBtn = document.getElementById('saveProfileBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async() => {
+            const name = document.getElementById('settingName').value.trim();
+            const email = document.getElementById('settingEmail').value.trim();
+
+            if (!name) return;
+
+            try {
+                const res = await fetch('/api/auth/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name, email })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showToast(data.message || 'Update failed');
+                    return;
+                }
+
+                localStorage.setItem('rxUser', data.user.name);
+                localStorage.setItem('rxEmail', data.user.email);
+
+                const nameEl = document.getElementById('dashUserName');
+                if (nameEl) nameEl.textContent = `Welcome back, ${data.user.name}`;
+
+                const navName = document.getElementById('profileName');
+                if (navName) navName.textContent = data.user.name;
+
+                const dropName = document.getElementById('dropdownName');
+                if (dropName) dropName.textContent = data.user.name;
+
+                showToast('Profile saved successfully ✓');
+
+            } catch (err) {
+                console.error('Update profile error:', err);
+                showToast('Server error. Please try again.');
+            }
+        });
+    }
+
+    // ── Change Password ────────────────────────────────────────
+    const updatePasswordBtn = document.getElementById('updatePasswordBtn');
+    if (updatePasswordBtn) {
+        updatePasswordBtn.addEventListener('click', async() => {
+            const currentPassword = document.getElementById('currentPassword').value.trim();
+            const newPassword = document.getElementById('newPassword').value.trim();
+            const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showToast('Please fill in all password fields');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('New password must be at least 6 characters');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/change-password', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showToast(data.message || 'Update failed');
+                    return;
+                }
+
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+
+                showToast('Password updated successfully ✓');
+
+            } catch (err) {
+                console.error('Change password error:', err);
+                showToast('Server error. Please try again.');
+            }
+        });
+    }
 
     // ── Language toggle ────────────────────────────────────────
     document.querySelectorAll('.dash-lang-btn').forEach(btn => {
