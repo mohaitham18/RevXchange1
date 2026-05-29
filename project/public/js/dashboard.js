@@ -281,10 +281,69 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nameEl = document.getElementById('dashUserName');
                 if (nameEl) nameEl.textContent = `Welcome back, ${data.user.name}`;
 
+                const navName = document.getElementById('profileName');
+                if (navName) navName.textContent = data.user.name;
+
+                const dropName = document.getElementById('dropdownName');
+                if (dropName) dropName.textContent = data.user.name;
+
                 showToast('Profile saved successfully ✓');
 
             } catch (err) {
                 console.error('Update profile error:', err);
+                showToast('Server error. Please try again.');
+            }
+        });
+    }
+
+    // ── Change Password ────────────────────────────────────────
+    const updatePasswordBtn = document.getElementById('updatePasswordBtn');
+    if (updatePasswordBtn) {
+        updatePasswordBtn.addEventListener('click', async() => {
+            const currentPassword = document.getElementById('currentPassword').value.trim();
+            const newPassword = document.getElementById('newPassword').value.trim();
+            const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showToast('Please fill in all password fields');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('New password must be at least 6 characters');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/change-password', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showToast(data.message || 'Update failed');
+                    return;
+                }
+
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+
+                showToast('Password updated successfully ✓');
+
+            } catch (err) {
+                console.error('Change password error:', err);
                 showToast('Server error. Please try again.');
             }
         });
