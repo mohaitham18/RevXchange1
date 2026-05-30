@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!file.type.startsWith('image/')) return;
             if (images.length >= 20) return;
             const url = URL.createObjectURL(file);
-            images.push(url);
+            images.push({ url, file });
         });
         renderThumbs();
         renderCarousel();
@@ -170,9 +170,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderThumbs() {
-        imgThumbs.innerHTML = images.map((url, i) => `
+        imgThumbs.innerHTML = images.map((img, i) => `
             <div class="sell-thumb ${i === 0 ? 'cover' : ''}">
-                <img src="${url}" alt="Car image ${i+1}">
+                <img src="${img.url}" alt="Car image ${i+1}">
                 ${i === 0 ? '<span class="sell-thumb-cover-badge">Cover</span>' : ''}
                 <button class="sell-thumb-remove" data-index="${i}">✕</button>
             </div>
@@ -199,9 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
         previewPlaceholder.style.display = 'none';
         sellCarousel.style.display = 'block';
 
-        carouselTrack.innerHTML = images.map((url, i) => `
+        carouselTrack.innerHTML = images.map((img, i) => `
             <div class="sell-carousel-slide ${i === carouselIndex ? 'active' : ''}">
-                <img src="${url}" alt="Slide ${i+1}">
+                <img src="${img.url}" alt="Slide ${i+1}">
             </div>
         `).join('');
 
@@ -351,14 +351,78 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Submit ─────────────────────────────────────────────────
-    document.getElementById('sellSubmitBtn')?.addEventListener('click', () => {
+    document.getElementById('sellSubmitBtn')?.addEventListener('click', async () => {
         if (!validateAll()) {
             document
                 .querySelector('.rx-invalid, .rx-zone-invalid')
                 ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
-        alert('Your ad has been posted! 🎉');
+
+        const token = localStorage.getItem('rxToken');
+        if (!token) {
+            window.location.href = '/login.html';
+            return;
+        }
+
+        // Disable button to prevent double submission
+        const submitBtn = document.getElementById('sellSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Posting...';
+
+        // Parse brand, model, year from carInfo field
+        const carInfoVal = carInfo?.value.trim().split(/\s+/);
+        const brand = (carInfoVal?.[0] || '').replace(/,/g, '');
+        const model = (carInfoVal?.[1] || '').replace(/,/g, '');
+        const year  = parseInt(carInfoVal?.[carInfoVal.length - 1]) || new Date().getFullYear();
+
+        // Get selected color
+        const selectedColor = document.querySelector('.sell-color-item.active')?.dataset.color || '';
+
+        // Build FormData to support image uploads
+        const formData = new FormData();
+        formData.append('brand',        brand);
+        formData.append('model',        model);
+        formData.append('year',         year);
+        formData.append('price',        parseInt(carPrice?.value));
+        formData.append('mileage',      parseInt(kmsDriven?.value));
+        formData.append('city',         citySelect?.value);
+        formData.append('condition',    activeCondition.toLowerCase());
+        formData.append('transmission', activeTransmission.toLowerCase());
+        formData.append('fuel',         activeFuel.toLowerCase());
+        formData.append('color',        selectedColor);
+        formData.append('description',  carDesc?.value.trim());
+
+        // Append image files
+        images.forEach(img => {
+            if (img.file) formData.append('images', img.file);
+        });
+
+        try {
+            const res = await fetch('/api/cars', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert(data.message || 'Something went wrong');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Post My Ad';
+                return;
+            }
+
+            alert('Your ad has been posted! 🎉');
+            window.location.href = '/dashboard.html?tab=ads';
+
+        } catch (err) {
+            console.error('Submit error:', err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Post My Ad';
+            alert('Server error. Please try again.');
+        }
     });
 
     // ── Init preview ───────────────────────────────────────────
