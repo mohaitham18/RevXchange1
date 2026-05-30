@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/css/components/navbar.css">
   <link rel="stylesheet" href="/css/components/cara.css">
   <link rel="stylesheet" href="/css/pages/communities.css">
+  <link rel="stylesheet" href="/css/base/ambient.css">
 </head>
 <body>
 
@@ -98,6 +99,44 @@
       <h1>Car Communities</h1>
       <p>One community per model. Find owners, mechanics, and real advice.</p>
     </div>
+
+    <!-- Hero → BG melt -->
+    <div class="rx-melt-wrap">
+      <svg viewBox="0 0 1440 74" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="meltMainCM" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#5a0f1c" stop-opacity="1"/>
+            <stop offset="55%"  stop-color="#6b1222" stop-opacity="0.80"/>
+            <stop offset="100%" stop-color="#3e0a13" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="meltBloomCM" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#8b1a2a" stop-opacity="0.45"/>
+            <stop offset="70%"  stop-color="#5a0f1c" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#5a0f1c" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#meltBloomCM)">
+          <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+            keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+            values="
+              M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z;
+              M0,0 L1440,0 L1440,44 C1260,68 1020,14 840,50 C640,72 440,10 270,48 C120,68 40,24 0,44 Z;
+              M0,0 L1440,0 L1440,68 C1320,40 1060,72 840,38 C620,8  380,68 180,36 C80,18 30,52 0,30 Z;
+              M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z
+            "/>
+        </path>
+        <path fill="url(#meltMainCM)">
+          <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+            keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+            values="
+              M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z;
+              M0,0 L1440,0 L1440,28 C1260,50 1020,2  840,34 C640,58 440,0  270,32 C120,52 40,10 0,28 Z;
+              M0,0 L1440,0 L1440,52 C1320,24 1060,56 840,22 C620,0  380,52 180,20 C80,4  30,38 0,14 Z;
+              M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z
+            "/>
+        </path>
+      </svg>
+    </div>
   </section>
 
   <!-- ── Brand Selector ────────────────────────────────────── -->
@@ -136,6 +175,7 @@
     </div>
   </section>
 
+  <script src="/js/ambient.js"></script>
   <script src="/js/communities.js"></script>
   <script src="/js/navbar.js"></script>
   <script src="/js/cara.js"></script>

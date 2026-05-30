@@ -1,0 +1,26 @@
+/* ═══════════════════════════════════════════════════════════
+   RevXChange — BG → Footer melt
+   Mirror of the hero melt: silver bg dripping down into dark footer
+   ═══════════════════════════════════════════════════════════ */
+
+.main-footer {
+  position: relative;
+}
+
+.rx-footer-melt-wrap {
+  position: absolute;
+  top: -71px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 72px;
+  z-index: 5;
+  pointer-events: none;
+  line-height: 0;
+}
+
+.rx-footer-melt-wrap svg {
+  display: block;
+  width: 100%;
+  height: 72px;
+}
