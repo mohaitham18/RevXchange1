@@ -5,6 +5,7 @@ const protect = require('../middleware/auth');
 
 router.get('/', carController.getAllCars);
 router.get('/my-cars', protect, carController.getMyCars);
+router.get('/:id', carController.getCarById);
 router.post('/', protect, carController.addCar);
 router.delete('/:id', protect, carController.deleteCar);
 

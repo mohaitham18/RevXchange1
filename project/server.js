@@ -16,11 +16,10 @@ mongoose.connect(process.env.MONGO_URI)
 
     // ── API Routes (before static!) ───────────────────────
     const userRoutes = require('./routes/userRoutes');
-    const carRoutes = require('./routes/carRoutes');
+    const carRoutes  = require('./routes/carRoutes');
     app.use('/api/auth', userRoutes);
     app.use('/api/cars', carRoutes);
     console.log('Routes registered ✅');
-    console.log('carRoutes type:', typeof carRoutes);
 
     // ── API Health Check ──────────────────────────────────
     app.get('/api', (req, res) => {
@@ -57,6 +56,11 @@ mongoose.connect(process.env.MONGO_URI)
     });
     app.get('/Auctioned-cars.html', (req, res) => {
       res.sendFile(path.join(__dirname, 'views', 'Auctioned-cars.html'));
+    });
+
+    // ── Deep-link to a specific car — serves used-cars; JS opens the card
+    app.get('/car/:id', (req, res) => {
+      res.sendFile(path.join(__dirname, 'views', 'used-cars.html'));
     });
 
     app.listen(process.env.PORT || 3000, () => {
