@@ -351,14 +351,68 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Submit ─────────────────────────────────────────────────
-    document.getElementById('sellSubmitBtn')?.addEventListener('click', () => {
+ // ── Submit ─────────────────────────────────────────────────
+    document.getElementById('sellSubmitBtn')?.addEventListener('click', async () => {
         if (!validateAll()) {
             document
                 .querySelector('.rx-invalid, .rx-zone-invalid')
                 ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
-        alert('Your ad has been posted! 🎉');
+
+        const token = localStorage.getItem('rxToken');
+        if (!token) {
+            window.location.href = '/login.html';
+            return;
+        }
+
+        // Parse brand, model, year from carInfo field
+        const carInfoVal = carInfo?.value.trim().split(' ');
+        const brand = carInfoVal?.[0] || '';
+        const model = carInfoVal?.[1] || '';
+        const year  = parseInt(carInfoVal?.[carInfoVal.length - 1]) || new Date().getFullYear();
+
+        // Get selected color
+        const selectedColor = document.querySelector('.sell-color-item.active')?.dataset.color || '';
+
+        const payload = {
+            brand,
+            model,
+            year,
+            price: parseInt(carPrice?.value),
+            mileage: parseInt(kmsDriven?.value),
+            city: citySelect?.value,
+            condition: activeCondition.toLowerCase(),
+            transmission: activeTransmission.toLowerCase(),
+            fuel: activeFuel.toLowerCase(),
+            color: selectedColor,
+            description: carDesc?.value.trim()
+        };
+
+        try {
+            const res = await fetch('/api/cars', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert(data.message || 'Something went wrong');
+                return;
+            }
+
+            alert('Your ad has been posted! 🎉');
+            window.location.href = '/dashboard.html?tab=ads';
+
+        } catch (err) {
+            console.error('Submit error:', err);
+            alert('Server error. Please try again.');
+        }
     });
 
     // ── Init preview ───────────────────────────────────────────
