@@ -63,7 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabParam = params.get('tab');
     if (tabParam) switchTab(tabParam);
 
-// ── Load real My Ads from API ──────────────────────────────
+    // ── Helpers ────────────────────────────────────────────────
+    function capitalize(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // ── Load real My Ads from API ──────────────────────────────
     async function loadMyAds() {
         const grid = document.getElementById('myAdsGrid');
         if (!grid) return;
@@ -86,12 +92,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             grid.innerHTML = myAds.map(car => `
                 <div class="dash-ad-card">
-                    <div class="dash-ad-img">
-                        <img src="${car.images?.[0] || '/images/car-placeholder.png'}" alt="${car.brand}">
+                    <div class="dash-ad-img carousel-wrapper">
+                        ${car.images && car.images.length > 0 ? `
+                            ${car.images.map((src, i) => `
+                                <div class="carousel-slide${i === 0 ? ' active' : ''}" data-index="${i}">
+                                    <img src="${src}" alt="${car.brand}">
+                                </div>
+                            `).join('')}
+                            ${car.images.length > 1 ? `
+                                <button class="carousel-arrow carousel-prev" data-id="${car._id}">&#8249;</button>
+                                <button class="carousel-arrow carousel-next" data-id="${car._id}">&#8250;</button>
+                                <div class="carousel-counter" data-id="${car._id}">1 / ${car.images.length}</div>
+                            ` : ''}
+                        ` : `<div class="dash-ad-img-placeholder">🚗</div>`}
                     </div>
                     <div class="dash-ad-body">
                         <div class="dash-ad-top">
-                            <div class="dash-ad-title">${car.brand} ${car.model} ${car.year}</div>
+                            <div class="dash-ad-title">${car.brand.replace(/,/g,'')}, ${car.model.replace(/,/g,'')}, ${car.year}</div>
                             <span class="dash-status ${car.status}">${car.status.charAt(0).toUpperCase() + car.status.slice(1)}</span>
                         </div>
                         <div class="dash-ad-price">${car.price.toLocaleString('en-EG')} EGP</div>
@@ -99,8 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span>📍 ${car.city}</span>
                             <span>🛣️ ${car.mileage.toLocaleString()} km</span>
                         </div>
+                        <div class="dash-ad-tags">
+                            <span class="car-tag">${capitalize(car.transmission)}</span>
+                            <span class="car-tag">${capitalize(car.fuel)}</span>
+                            ${car.color ? `<span class="car-tag">🎨 ${capitalize(car.color)}</span>` : ''}
+                            ${car.fabrika ? `<span class="car-tag car-tag-fabrika">Fabrika</span>` : ''}
+                        </div>
                         <div class="dash-ad-actions">
-                            <button class="dash-ad-btn edit">Edit</button>
+                            <button class="dash-ad-btn edit" data-id="${car._id}" data-car='${JSON.stringify(car)}'>Edit</button>
                             <button class="dash-ad-btn remove" data-id="${car._id}">Remove</button>
                         </div>
                     </div>
@@ -120,6 +143,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast('Listing removed ✓');
                         loadMyAds();
                     }
+                });
+            });
+
+            // Edit car — open full overlay pre-filled
+            grid.querySelectorAll('.dash-ad-btn.edit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    openEditOverlay(JSON.parse(btn.dataset.car));
                 });
             });
 
@@ -180,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="dash-ad-body">
                     <div class="dash-ad-top">
-                        <div class="dash-ad-title">${car.brand} ${car.model} ${car.year}</div>
+                        <div class="dash-ad-title">${car.brand.replace(/,/g,'')}, ${car.model.replace(/,/g,'')}, ${car.year}</div>
                         <span class="dash-status ${car.status}">${car.status.charAt(0).toUpperCase() + car.status.slice(1)}</span>
                     </div>
                     <div class="dash-ad-price">${formatPrice(car.price)}</div>
@@ -292,6 +322,299 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.dash-lang-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         });
+    });
+
+    // ── Dashboard carousel (event delegation) ─────────────────
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.carousel-arrow');
+        if (!btn) return;
+        e.stopPropagation();
+
+        const carId   = btn.dataset.id;
+        const card    = document.querySelector(`.dash-ad-card [data-id="${carId}"].carousel-counter`)?.closest('.dash-ad-img')
+                     || document.querySelector(`.dash-ad-img .carousel-arrow[data-id="${carId}"]`)?.closest('.dash-ad-img');
+        if (!card) return;
+
+        const slides  = card.querySelectorAll('.carousel-slide');
+        const counter = card.querySelector('.carousel-counter');
+        const total   = slides.length;
+
+        let current = 0;
+        slides.forEach((s, i) => { if (s.classList.contains('active')) current = i; });
+
+        const next = btn.classList.contains('carousel-next')
+            ? (current + 1) % total
+            : (current - 1 + total) % total;
+
+        slides[current].classList.remove('active');
+        slides[next].classList.add('active');
+        if (counter) counter.textContent = `${next + 1} / ${total}`;
+    });
+
+    // ── Edit overlay state ─────────────────────────────────────
+    let editTransmission = 'automatic';
+    let editFuel         = 'petrol';
+    let editCondition    = 'used';
+    let editColor        = 'white';
+    let editFabrika      = false;
+    let editImages       = []; // { url, isNew, file? }
+
+    // ── Image rendering ────────────────────────────────────────
+    function renderEditThumbs() {
+        const thumbs = document.getElementById('editImgThumbs');
+        if (!thumbs) return;
+        thumbs.innerHTML = editImages.map((img, i) => `
+            <div class="sell-thumb ${i === 0 ? 'cover' : ''}">
+                <img src="${img.url}" alt="Image ${i + 1}">
+                ${i === 0 ? '<span class="sell-thumb-cover-badge">Cover</span>' : ''}
+                <button class="sell-thumb-remove" data-index="${i}">✕</button>
+            </div>
+        `).join('');
+
+        thumbs.querySelectorAll('.sell-thumb-remove').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                editImages.splice(parseInt(btn.dataset.index), 1);
+                renderEditThumbs();
+                updateEditPreview();
+            });
+        });
+    }
+
+    // Upload zone
+    const editUploadZone = document.getElementById('editUploadZone');
+    const editImgInput   = document.getElementById('editImgInput');
+
+    editUploadZone?.addEventListener('click', () => editImgInput?.click());
+
+    editUploadZone?.addEventListener('dragover', e => {
+        e.preventDefault();
+        editUploadZone.style.borderColor = 'var(--primary)';
+    });
+    editUploadZone?.addEventListener('dragleave', () => {
+        editUploadZone.style.borderColor = '';
+    });
+    editUploadZone?.addEventListener('drop', e => {
+        e.preventDefault();
+        editUploadZone.style.borderColor = '';
+        handleEditFiles(Array.from(e.dataTransfer.files));
+    });
+
+    editImgInput?.addEventListener('change', () => {
+        handleEditFiles(Array.from(editImgInput.files));
+        editImgInput.value = '';
+    });
+
+    function handleEditFiles(files) {
+        files.forEach(file => {
+            if (!file.type.startsWith('image/')) return;
+            if (editImages.length >= 20) return;
+            editImages.push({ url: URL.createObjectURL(file), isNew: true, file });
+        });
+        renderEditThumbs();
+        updateEditPreview();
+    }
+
+    function openEditOverlay(car) {
+        document.getElementById('editCarId').value      = car._id;
+        document.getElementById('editCarInfo').value    = `${car.brand} ${car.model} ${car.year}`;
+        document.getElementById('editKmsDriven').value  = car.mileage    || '';
+        document.getElementById('editCarPrice').value   = car.price      || '';
+        document.getElementById('editCarDesc').value    = car.description || '';
+
+        // Existing images
+        editImages = (car.images || []).map(url => ({ url, isNew: false }));
+        renderEditThumbs();
+
+        // City
+        const citySelect = document.getElementById('editCitySelect');
+        if (citySelect) citySelect.value = car.city || '';
+
+        // Condition toggle
+        editCondition = car.condition || 'used';
+        document.querySelectorAll('#editConditionToggle button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.val === editCondition);
+        });
+
+        // Transmission chips
+        editTransmission = car.transmission || 'automatic';
+        document.querySelectorAll('#editTransmissionChips .sell-chip').forEach(chip => {
+            chip.classList.toggle('active', chip.dataset.val === editTransmission);
+        });
+
+        // Fuel chips
+        editFuel = car.fuel || 'petrol';
+        document.querySelectorAll('#editFuelChips .sell-chip').forEach(chip => {
+            chip.classList.toggle('active', chip.dataset.val === editFuel);
+        });
+
+        // Color picker
+        editColor = (car.color || 'white').toLowerCase();
+        document.querySelectorAll('#editColorPicker .sell-color-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.color === editColor);
+        });
+
+        // Fabrika chips
+        editFabrika = car.fabrika || false;
+        document.querySelectorAll('#editFabrikaChips .sell-chip').forEach(chip => {
+            chip.classList.toggle('active', chip.dataset.val === String(editFabrika));
+        });
+
+        // Update preview
+        updateEditPreview();
+
+        document.getElementById('editOverlay').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditOverlay() {
+        document.getElementById('editOverlay').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    // ── Edit preview ───────────────────────────────────────────
+    function updateEditPreview() {
+        const info  = document.getElementById('editCarInfo')?.value.trim()  || 'Car Title';
+        const price = document.getElementById('editCarPrice')?.value.trim();
+        const km    = document.getElementById('editKmsDriven')?.value.trim();
+        const city  = document.getElementById('editCitySelect')?.value || '—';
+
+        document.getElementById('editPreviewTitle').textContent        = info;
+        document.getElementById('editPreviewPrice').textContent        = price ? parseInt(price).toLocaleString('en-EG') + ' EGP' : 'Price not set';
+        document.getElementById('editPreviewCity').textContent         = '📍 ' + city;
+        document.getElementById('editPreviewKm').textContent           = km ? '🛣️ ' + parseInt(km).toLocaleString() + ' km' : '🛣️ — km';
+        document.getElementById('editPreviewTransmission').textContent = editTransmission;
+        document.getElementById('editPreviewFuel').textContent         = editFuel;
+
+        const fabrikaTag = document.getElementById('editPreviewFabrika');
+        if (fabrikaTag) fabrikaTag.style.display = editFabrika ? 'inline-block' : 'none';
+
+        // Show first image in preview if available
+        const previewImg  = document.querySelector('.sell-preview-img');
+        const placeholder = document.querySelector('.sell-preview-placeholder');
+        if (previewImg && placeholder) {
+            if (editImages.length > 0) {
+                placeholder.style.display = 'none';
+                let existing = previewImg.querySelector('.edit-preview-cover');
+                if (!existing) {
+                    existing = document.createElement('img');
+                    existing.className = 'edit-preview-cover';
+                    existing.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;inset:0;';
+                    previewImg.appendChild(existing);
+                }
+                existing.src = editImages[0].url;
+            } else {
+                placeholder.style.display = 'flex';
+                previewImg.querySelector('.edit-preview-cover')?.remove();
+            }
+        }
+    }
+
+    ['editCarInfo','editKmsDriven','editCarPrice'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', updateEditPreview);
+    });
+    document.getElementById('editCitySelect')?.addEventListener('change', updateEditPreview);
+
+    // Chips
+    document.querySelectorAll('#editTransmissionChips .sell-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('#editTransmissionChips .sell-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            editTransmission = chip.dataset.val;
+            updateEditPreview();
+        });
+    });
+
+    document.querySelectorAll('#editFuelChips .sell-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('#editFuelChips .sell-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            editFuel = chip.dataset.val;
+            updateEditPreview();
+        });
+    });
+
+    // Condition toggle
+    document.querySelectorAll('#editConditionToggle button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#editConditionToggle button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            editCondition = btn.dataset.val;
+        });
+    });
+
+    // Color picker
+    document.querySelectorAll('#editColorPicker .sell-color-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('#editColorPicker .sell-color-item').forEach(c => c.classList.remove('active'));
+            item.classList.add('active');
+            editColor = item.dataset.color;
+        });
+    });
+
+    // Fabrika chips
+    document.querySelectorAll('#editFabrikaChips .sell-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('#editFabrikaChips .sell-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            editFabrika = chip.dataset.val === 'true';
+            updateEditPreview();
+        });
+    });
+
+    // Close
+    document.getElementById('editOverlayClose')?.addEventListener('click', closeEditOverlay);
+    document.getElementById('editOverlayCancel')?.addEventListener('click', closeEditOverlay);
+
+    // ── Save ───────────────────────────────────────────────────
+    document.getElementById('editSaveBtn')?.addEventListener('click', async () => {
+        const id       = document.getElementById('editCarId').value;
+        const infoVal  = document.getElementById('editCarInfo').value.trim().split(/\s+/);
+        const brand    = (infoVal[0] || '').replace(/,/g, '');
+        const model    = (infoVal[1] || '').replace(/,/g, '');
+        const year     = parseInt(infoVal[infoVal.length - 1]) || new Date().getFullYear();
+
+        const body = new FormData();
+        body.append('brand',        brand);
+        body.append('model',        model);
+        body.append('year',         year);
+        body.append('price',        Number(document.getElementById('editCarPrice').value));
+        body.append('mileage',      Number(document.getElementById('editKmsDriven').value));
+        body.append('city',         document.getElementById('editCitySelect').value);
+        body.append('condition',    editCondition);
+        body.append('transmission', editTransmission);
+        body.append('fuel',         editFuel);
+        body.append('color',        editColor);
+        body.append('fabrika',      editFabrika);
+        body.append('description',  document.getElementById('editCarDesc').value.trim());
+
+        // Pass existing image URLs to keep
+        const keptImages = editImages.filter(img => !img.isNew).map(img => img.url);
+        body.append('keptImages', JSON.stringify(keptImages));
+
+        // Append new image files
+        editImages.filter(img => img.isNew && img.file).forEach(img => {
+            body.append('images', img.file);
+        });
+
+        try {
+            const res = await fetch(`/api/cars/${id}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body
+            });
+
+            if (res.ok) {
+                closeEditOverlay();
+                showToast('Listing updated ✓');
+                loadMyAds();
+            } else {
+                const err = await res.json();
+                showToast(err.message || 'Update failed');
+            }
+        } catch (err) {
+            showToast('Something went wrong');
+        }
     });
 
     // ── Init ───────────────────────────────────────────────────
