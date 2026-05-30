@@ -20,6 +20,9 @@
       <button id="rxCarClose" aria-label="Close">✕</button>
       <div id="rxCarContent"></div>
     </div>
+    <div id="rxLightboxOverlay"></div>
+    <div id="rxLightboxImg"><img src="" alt=""></div>
+    <button id="rxLightboxClose" aria-label="Close image">✕</button>
   `);
 
   const overlay  = document.getElementById('rxCarOverlay');
@@ -28,8 +31,18 @@
   const closeBtn = document.getElementById('rxCarClose');
   const content  = document.getElementById('rxCarContent');
 
+  const lbOverlay  = document.getElementById('rxLightboxOverlay');
+  const lbImg      = document.getElementById('rxLightboxImg');
+  const lbImgInner = lbImg.querySelector('img');
+  const lbClose    = document.getElementById('rxLightboxClose');
+
+  let lightboxOpen = false;
+  let lbOriginRect = null;
+  let lbTargetCache = null;
+
   let isOpen = false;
   let state = 'closed'; // 'closed' | 'opening' | 'expanded' | 'going-fullscreen' | 'fullscreen' | 'closing'
+  let originCardEl = null;
   let originRect = null;
   let galleryIndex = 0;
   let loadTimer = null;
@@ -42,10 +55,15 @@
   const formatPrice = p => p.toLocaleString() + ' EGP';
   const formatKm    = m => m.toLocaleString() + ' km';
 
+  // Single point of car lookup — swap to fetch('/api/cars/' + id) when backend lands
   function getCar(id) {
     if (typeof mostViewedCars === 'undefined') return null;
     return mostViewedCars.find(c => String(c.id) === String(id)) || null;
   }
+
+  // Pre-open URL (the URL we should restore to on close)
+  let prePath = window.location.pathname + window.location.search;
+  let suppressPopstate = false;
 
   // Target is ALWAYS fullscreen — expanded state is achieved via transform
   function getTargetRect() {
@@ -178,7 +196,7 @@
       </div>`;
   }
 
-  function contentHTML(car) {
+function contentHTML(car) {
     const imgs = car.images && car.images.length ? car.images : [''];
     const slides = imgs.map((src, i) => `
       <div class="rx-gallery-slide ${i === 0 ? 'active' : ''}" data-index="${i}">
@@ -200,13 +218,11 @@
     return `
       <div class="rx-card-body">
 
-        <!-- TOP-LEFT: Gallery -->
         <div class="rx-gallery" id="rxGallery">
           ${slides}
           ${arrows}
         </div>
 
-        <!-- TOP-RIGHT: Info -->
         <div class="rx-info">
           <div class="rx-info-title">${car.brand} ${car.model} ${car.year}</div>
           <div class="rx-info-price">${formatPrice(car.price)}</div>
@@ -218,6 +234,18 @@
             <span class="rx-pill">📍 ${car.city}</span>
             ${fabrikaPill}
           </div>
+
+          <div class="rx-spec-grid">
+            <div class="rx-spec-row"><span class="rx-spec-key">Body</span><span class="rx-spec-val">Sedan</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Drivetrain</span><span class="rx-spec-val">FWD</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Doors</span><span class="rx-spec-val">4</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Seats</span><span class="rx-spec-val">5</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Engine</span><span class="rx-spec-val">2.0L Turbo</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Owners</span><span class="rx-spec-val">First</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Service</span><span class="rx-spec-val">Full History</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Color</span><span class="rx-spec-val">Midnight Gray</span></div>
+          </div>
+
           <div class="rx-info-actions">
             <a href="https://wa.me/${car.phone}" target="_blank" class="rx-action-btn rx-action-whatsapp">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.549 4.107 1.51 5.84L0 24l6.335-1.48A11.934 11.934 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.371l-.36-.214-3.722.869.936-3.62-.235-.372A9.797 9.797 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182S21.818 6.58 21.818 12 17.42 21.818 12 21.818z"/></svg>
@@ -230,13 +258,30 @@
           </div>
         </div>
 
-        <!-- BOTTOM-LEFT: Description -->
         <div class="rx-desc-box">
           <div class="rx-desc-label">About this car</div>
           <div class="rx-desc-text">${desc}</div>
+
+          <div class="rx-desc-section">
+            <div class="rx-desc-label">Key Highlights</div>
+            <div class="rx-desc-list">
+              <div class="rx-desc-list-item">Single owner, never in an accident</div>
+              <div class="rx-desc-list-item">Full dealer service history available</div>
+              <div class="rx-desc-list-item">Original paint, no bodywork done</div>
+              <div class="rx-desc-list-item">Recent service: brakes, oil, filters</div>
+            </div>
+          </div>
+
+          <div class="rx-desc-section">
+            <div class="rx-desc-label">What's Included</div>
+            <div class="rx-desc-list">
+              <div class="rx-desc-list-item">2 original keys</div>
+              <div class="rx-desc-list-item">Owner's manual + service booklet</div>
+              <div class="rx-desc-list-item">Spare tire, jack, and tool kit</div>
+            </div>
+          </div>
         </div>
 
-        <!-- BOTTOM-RIGHT: Cara's Take -->
         <div class="rx-cara-box">
           <div class="rx-cara-head">
             <div class="rx-cara-avatar">${caraSparkSVG}</div>
@@ -271,7 +316,7 @@
   }
 
   // ── Gallery wiring ─────────────────────────────────────────
-  function wireGallery(total) {
+function wireGallery(total) {
     const prev = document.getElementById('rxGalPrev');
     const next = document.getElementById('rxGalNext');
     const counter = document.getElementById('rxGalCounter');
@@ -288,6 +333,15 @@
 
     prev?.addEventListener('click', (e) => { e.stopPropagation(); show(galleryIndex - 1); });
     next?.addEventListener('click', (e) => { e.stopPropagation(); show(galleryIndex + 1); });
+
+    // Click image opens lightbox
+    gallery.addEventListener('click', (e) => {
+      if (e.target.closest('.rx-gallery-arrow')) return;
+      const img = e.target.closest('.rx-gallery-slide img');
+      if (!img) return;
+      e.stopPropagation();
+      openLightbox(img);
+    });
   }
 
   // ── Cara analysis sequence ─────────────────────────────────
@@ -358,13 +412,21 @@
   }
 
   // ── Open ───────────────────────────────────────────────────
-  function openCard(cardEl, id) {
+  function openCard(cardEl, id, opts) {
+    opts = opts || {};
     if (isOpen) return;
     const car = getCar(id);
     if (!car) return;
     isOpen = true;
     galleryIndex = 0;
 
+    // URL routing — push /car/:id unless we're opening because of popstate/initial-load
+    if (!opts.skipHistory) {
+      prePath = window.location.pathname + window.location.search;
+      history.pushState({ rxCarOpen: true, id: String(id) }, '', '/car/' + id);
+    }
+
+    originCardEl = cardEl;
     const origin = cardEl.getBoundingClientRect();
     originRect = origin;
     const target = getTargetRect();
@@ -421,13 +483,35 @@
   }
 
   // ── Close ──────────────────────────────────────────────────
-  function closeCard() {
+  function closeCard(opts) {
+    opts = opts || {};
     if (!isOpen || !originRect) return;
     if (loadTimer) clearTimeout(loadTimer);
     clearCaraTimers();
 
+    // Restore URL unless we're closing because of popstate (browser already did it)
+    if (!opts.skipHistory) {
+      suppressPopstate = true;
+      history.back();
+      // Safety net: if back() didn't change us off /car/... within 200ms, force-replace
+      setTimeout(() => {
+        suppressPopstate = false;
+        if (window.location.pathname.startsWith('/car/')) {
+          history.replaceState({}, '', prePath || '/');
+        }
+      }, 200);
+    }
+
     state = 'closing';
     const target = getTargetRect();
+
+    // Re-measure the original card's CURRENT position — it may have shifted
+    // since open (resize, scroll restore, dynamic content). Land exactly on it.
+    if (originCardEl && document.body.contains(originCardEl)) {
+      originRect = originCardEl.getBoundingClientRect();
+    }
+
+    card.classList.add('rx-closing');
     card.classList.remove('rx-open', 'rx-fullscreen');
     shadow.classList.remove('rx-visible');
 
@@ -447,11 +531,12 @@
     setTimeout(() => {
       card.style.display = 'none';
       shadow.style.display = 'none';
-      card.classList.remove('rx-animating', 'rx-visible-fade', 'rx-content-ready');
+      card.classList.remove('rx-animating', 'rx-visible-fade', 'rx-content-ready', 'rx-closing');
       content.innerHTML = '';
       document.body.classList.remove('rx-card-lock');
       isOpen = false;
       originRect = null;
+      originCardEl = null;
       state = 'closed';
       wheelAccum = 0;
     }, 600);
@@ -470,7 +555,12 @@
 
   closeBtn.addEventListener('click', closeCard);
   overlay.addEventListener('click', closeCard);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isOpen) closeCard(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (lightboxOpen) closeLightbox();
+      else if (isOpen) closeCard();
+    }
+  });
 
   // Wheel handler — only triggers in expanded state, accumulates 100px to fullscreen
   card.addEventListener('wheel', (e) => {
@@ -498,5 +588,146 @@
       card.style.transform = getExpandedTransform();
     }
   });
+
+  // ── Image Lightbox ─────────────────────────────────────────
+  function getLightboxTarget(aspect) {
+    const pad = 100;
+    const maxW = window.innerWidth - pad;
+    const maxH = window.innerHeight - pad;
+    let w = maxW, h = maxW / aspect;
+    if (h > maxH) { h = maxH; w = maxH * aspect; }
+    return { w, h, left: (window.innerWidth - w) / 2, top: (window.innerHeight - h) / 2 };
+  }
+
+  function openLightbox(srcImg) {
+    if (lightboxOpen) return;
+    lightboxOpen = true;
+
+    const origin = srcImg.getBoundingClientRect();
+    lbOriginRect = origin;
+    lbImgInner.src = srcImg.src;
+    lbImgInner.alt = srcImg.alt || '';
+
+    const begin = () => {
+      const nw = lbImgInner.naturalWidth  || origin.width;
+      const nh = lbImgInner.naturalHeight || origin.height;
+      const aspect = nw / nh;
+      const target = getLightboxTarget(aspect);
+      lbTargetCache = target;
+
+      lbImg.style.display = 'block';
+      lbImg.style.left = target.left + 'px';
+      lbImg.style.top  = target.top + 'px';
+      lbImg.style.width  = target.w + 'px';
+      lbImg.style.height = target.h + 'px';
+
+      const sx = origin.width  / target.w;
+      const sy = origin.height / target.h;
+      const tx = origin.left - target.left;
+      const ty = origin.top  - target.top;
+      lbImg.classList.remove('rx-animating');
+      lbImg.style.transform = `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`;
+
+      lbOverlay.classList.add('rx-visible');
+      void lbImg.offsetWidth;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          lbImg.classList.add('rx-animating');
+          lbImg.style.transform = 'translate(0, 0) scale(1, 1)';
+          setTimeout(() => lbClose.classList.add('rx-visible'), 250);
+        });
+      });
+    };
+
+    if (lbImgInner.complete && lbImgInner.naturalWidth) begin();
+    else lbImgInner.onload = begin;
+  }
+
+  function closeLightbox() {
+    if (!lightboxOpen || !lbOriginRect || !lbTargetCache) return;
+    lightboxOpen = false;
+
+    const origin = lbOriginRect;
+    const target = lbTargetCache;
+    const sx = origin.width  / target.w;
+    const sy = origin.height / target.h;
+    const tx = origin.left - target.left;
+    const ty = origin.top  - target.top;
+
+    lbClose.classList.remove('rx-visible');
+    requestAnimationFrame(() => {
+      lbImg.style.transform = `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`;
+    });
+    lbOverlay.classList.remove('rx-visible');
+
+    setTimeout(() => {
+      lbImg.style.display = 'none';
+      lbImg.classList.remove('rx-animating');
+      lbOriginRect = null;
+      lbTargetCache = null;
+    }, 500);
+  }
+
+  lbOverlay.addEventListener('click', closeLightbox);
+  lbClose.addEventListener('click', closeLightbox);
+  lbImg.addEventListener('click', closeLightbox);
+
+// ── Browser back/forward handling ──────────────────────────
+  window.addEventListener('popstate', (e) => {
+    if (suppressPopstate) { suppressPopstate = false; return; }
+
+    const pathMatch = window.location.pathname.match(/^\/car\/(\w+)/);
+
+    if (pathMatch) {
+      // Forward to a car URL → open it (or switch if a different one is open)
+      const id = pathMatch[1];
+      if (isOpen) {
+        // Already open — if same car, ignore; else close-then-reopen
+        const open = card.querySelector('.rx-info-title');
+        // simpler: just close and reopen via deep-link flow
+        closeCard({ skipHistory: true });
+        setTimeout(() => deepLinkOpen(id), 50);
+      } else {
+        deepLinkOpen(id);
+      }
+    } else {
+      // Back away from a car URL → close if open
+      if (isOpen) closeCard({ skipHistory: true });
+    }
+  });
+
+  // ── Deep-link: find the card on the page and open it ───────
+  function deepLinkOpen(id) {
+    const tryOpen = (attempt) => {
+      const cardEl = document.querySelector(`.car-card-placeholder[data-id="${id}"]`);
+      if (cardEl) {
+        openCard(cardEl, id, { skipHistory: true });
+        return;
+      }
+      if (attempt < 20) setTimeout(() => tryOpen(attempt + 1), 100);
+    };
+    tryOpen(0);
+  }
+
+  // ── On initial page load, check if URL points to a car ─────
+  (function checkInitialURL() {
+    const m = window.location.pathname.match(/^\/car\/(\w+)/);
+    if (!m) return;
+    const id = m[1];
+
+    // Wait for DOM ready + the cars grid to render before opening
+    const start = () => {
+      // prePath should NOT be /car/... — set it to the canonical fallback
+      prePath = '/used-cars.html';
+      deepLinkOpen(id);
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      start();
+    }
+  }());
 
 }());

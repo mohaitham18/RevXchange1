@@ -47,6 +47,11 @@ app.get('/Auctioned-cars.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'Auctioned-cars.html'));
 });
 
+// ── Deep-link to a specific car — serves used-cars; JS opens the card
+app.get('/car/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'used-cars.html'));
+});
+
 // ── API Health Check ─────────────────────────────────────
 app.get('/api', (req, res) => {
   res.json({ message: 'RevXChange API is running' });
