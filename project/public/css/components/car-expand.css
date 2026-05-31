@@ -766,3 +766,21 @@ body.rx-card-lock { overflow: hidden; }
   min-height: 0;          /* critical — lets flex child shrink below content size */
   max-height: 100vh;
 }
+
+/* Expanded card save button */
+.rx-save-btn {
+  background: rgba(255, 255, 255, 0.92);
+  color: #5a0f1c;
+  border: 1px solid rgba(90, 15, 28, 0.22);
+}
+
+.rx-save-btn.saved {
+  background: #5a0f1c;
+  color: #fff;
+  border-color: #5a0f1c;
+}
+
+.rx-save-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
