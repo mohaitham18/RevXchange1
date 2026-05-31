@@ -142,7 +142,7 @@ const carSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ['active', 'pending', 'sold'],
+    enum: ['active', 'pending', 'rejected'],
     default: 'pending'
   },
 

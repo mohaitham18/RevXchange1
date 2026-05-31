@@ -93,10 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            localStorage.removeItem('rxUser');
-            localStorage.removeItem('role');
-            localStorage.removeItem('rxToken');
-            localStorage.removeItem('rxEmail');
+        localStorage.removeItem('rxUser');
+        localStorage.removeItem('rxEmail');
+        localStorage.removeItem('role');
+        localStorage.removeItem('rxToken');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
             updateAuthUI();
             window.location.href = '/';
         });

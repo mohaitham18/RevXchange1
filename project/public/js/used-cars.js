@@ -111,6 +111,14 @@ function renderCarCard(car) {
         <div class="car-card-actions">
           <a href="${whatsappHref}" target="_blank" class="car-action-btn car-action-whatsapp">WhatsApp</a>
           <a href="${callHref}" class="car-action-btn car-action-call">Call</a>
+          <button type="button" class="car-action-btn car-action-buy"
+            onclick="event.stopPropagation(); openRequestModal('${carId}', 'buy', '${car.brand} ${car.model} ${car.year}', '${car.price}')">
+            Buy
+          </button>
+          <button type="button" class="car-action-btn car-action-rent"
+            onclick="event.stopPropagation(); openRequestModal('${carId}', 'rent', '${car.brand} ${car.model} ${car.year}', '${car.price}')">
+            Rent
+          </button>
         </div>
       </div>
     </div>

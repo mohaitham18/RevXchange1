@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="/css/pages/used-cars.css" />
   <link rel="stylesheet" href="/css/components/car-expand.css" />
   <link rel="stylesheet" href="/css/base/ambient.css">
+  <link rel="stylesheet" href="/css/components/request-modal.css" />
 </head>
 <body>
 
@@ -214,6 +215,67 @@
       </div>
     </div>
   </section>
+<!-- ── Buy / Rent Request Modal ──────────────────────────── -->
+<div class="req-overlay" id="reqOverlay" style="display:none">
+  <div class="req-modal">
+    <button class="req-close" id="reqClose">✕</button>
+
+    <h2 id="reqTitle">Request to Buy</h2>
+    <p id="reqSubtitle" class="req-sub"></p>
+
+    <input type="hidden" id="reqCarId">
+    <input type="hidden" id="reqType">
+
+    <div class="req-form-group">
+      <label>Your Name</label>
+      <input type="text" id="reqName" placeholder="Full name">
+    </div>
+
+    <div class="req-form-group">
+      <label>Phone Number</label>
+      <input type="tel" id="reqPhone" placeholder="01012345678" maxlength="11">
+    </div>
+
+    <div class="req-form-group">
+      <label>Preferred Contact</label>
+      <div class="req-chips" id="reqContactChips">
+        <button type="button" class="req-chip active" data-val="call">📞 Call</button>
+        <button type="button" class="req-chip" data-val="whatsapp">💬 WhatsApp</button>
+      </div>
+    </div>
+
+    <!-- Buy only -->
+    <div class="req-form-group" id="reqOfferGroup">
+      <label>Your Offer Price (EGP) <span style="opacity:.5;font-size:.8rem">optional</span></label>
+      <input type="number" id="reqOfferPrice" placeholder="e.g. 850000">
+      <label>Pickup Date to check the car</label>
+          <input type="date" id="reqRentFrom">
+    </div>
+
+    <!-- Rent only -->
+    <div id="reqDatesGroup" style="display:none">
+      <div class="req-form-row">
+        <div class="req-form-group">
+          <label>Pickup Date</label>
+          <input type="date" id="reqRentFrom">
+        </div>
+        <div class="req-form-group">
+          <label>Return Date</label>
+          <input type="date" id="reqRentTo">
+        </div>
+      </div>
+    </div>
+
+    <div class="req-form-group">
+      <label>Message <span style="opacity:.5;font-size:.8rem">optional</span></label>
+      <textarea id="reqMessage" rows="3" placeholder="Any extra details..."></textarea>
+    </div>
+
+    <div id="reqError" class="req-error" style="display:none"></div>
+
+    <button class="req-submit-btn" id="reqSubmitBtn">Send Request</button>
+  </div>
+</div>
 
   <script src="/js/ambient.js"></script>
   <script src="/js/cars.js"></script>
@@ -221,5 +283,6 @@
   <script src="/js/car-expand.js"></script>
   <script src="/js/navbar.js"></script>
   <script src="/js/cara.js"></script>
+  <script src="/js/request.js"></script>
 </body>
 </html>

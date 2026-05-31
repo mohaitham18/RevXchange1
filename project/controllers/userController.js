@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 
+// ── Token & Data Formatters ────────────────────────────────────
 const generateToken = (id, role) => {
+  // Uses ID cleanly to avoid any payload mismatches across your application
   return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
@@ -26,6 +28,7 @@ const publicUser = (user) => ({
   role: user.role
 });
 
+// ── Auth Operations ────────────────────────────────────────────
 const register = async (req, res) => {
   try {
     const User = require('../models/User');
@@ -33,10 +36,6 @@ const register = async (req, res) => {
     const name = String(req.body.name || '').trim();
     const email = cleanEmail(req.body.email);
     const password = String(req.body.password || '');
-
-    console.log('REGISTER FUNCTION HIT');
-    console.log('REGISTER EMAIL:', email);
-    console.log('ADMIN EMAILS:', getAdminEmails());
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required' });
@@ -47,14 +46,11 @@ const register = async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email });
-
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
     const role = getRoleForEmail(email);
-
-    console.log('ASSIGNED ROLE:', role);
 
     const user = await User.create({
       name,
@@ -82,22 +78,21 @@ const login = async (req, res) => {
     const password = String(req.body.password || '');
 
     const user = await User.findOne({ email });
-
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
+    // Compares password using bcrypt method
     const isMatch = await user.matchPassword(password);
-
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
+    // Sync role changes against environment variable setup instantly
     const correctRole = getRoleForEmail(user.email);
-
     if (user.role !== correctRole) {
       user.role = correctRole;
-      await user.save();
+      await user.save(); // Safe to execute now that next() is implemented in schema hooks
     }
 
     res.json({
@@ -111,16 +106,12 @@ const login = async (req, res) => {
   }
 };
 
+// ── Profile Management ─────────────────────────────────────────
 const getProfile = async (req, res) => {
   try {
     const User = require('../models/User');
-
     const user = await User.findById(req.user.id).select('-password');
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
+    if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ user });
   } catch (err) {
     console.error('GET PROFILE ERROR:', err);
@@ -131,29 +122,21 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const User = require('../models/User');
-
     const name = String(req.body.name || '').trim();
     const email = cleanEmail(req.body.email);
 
     const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (email && email !== user.email) {
       const existing = await User.findOne({ email });
-
-      if (existing) {
-        return res.status(400).json({ message: 'Email already in use' });
-      }
+      if (existing) return res.status(400).json({ message: 'Email already in use' });
 
       user.email = email;
       user.role = getRoleForEmail(email);
     }
 
     if (name) user.name = name;
-
     await user.save();
 
     res.json({
@@ -169,28 +152,20 @@ const updateProfile = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const User = require('../models/User');
-
     const currentPassword = String(req.body.currentPassword || '');
     const newPassword = String(req.body.newPassword || '');
 
     const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     const isMatch = await user.matchPassword(currentPassword);
-
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Current password is incorrect' });
-    }
+    if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
 
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({ message: 'New password must be at least 6 characters' });
     }
 
     user.password = newPassword;
-
     await user.save();
 
     res.json({ message: 'Password updated successfully' });
@@ -200,36 +175,26 @@ const changePassword = async (req, res) => {
   }
 };
 
+// ── Saved Listings Collections ─────────────────────────────────
 const toggleSaveCar = async (req, res) => {
   try {
     const User = require('../models/User');
     const Car = require('../models/Car');
-
     const carId = req.params.carId;
 
     const car = await Car.findById(carId);
-
-    if (!car) {
-      return res.status(404).json({ message: 'Car not found' });
-    }
+    if (!car) return res.status(404).json({ message: 'Car not found' });
 
     const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (!Array.isArray(user.savedCars)) {
-      user.savedCars = [];
-    }
+    if (!Array.isArray(user.savedCars)) user.savedCars = [];
 
     const alreadySaved = user.savedCars.some(savedId => savedId.toString() === carId);
 
     if (alreadySaved) {
       user.savedCars = user.savedCars.filter(savedId => savedId.toString() !== carId);
-
       await user.save();
-
       return res.json({
         message: 'Car removed from saved ads',
         saved: false,
@@ -238,7 +203,6 @@ const toggleSaveCar = async (req, res) => {
     }
 
     user.savedCars.push(carId);
-
     await user.save();
 
     res.json({
@@ -255,20 +219,14 @@ const toggleSaveCar = async (req, res) => {
 const getSavedCars = async (req, res) => {
   try {
     const User = require('../models/User');
-
     const user = await User.findById(req.user.id).populate({
       path: 'savedCars',
       match: { status: 'active' },
       options: { sort: { createdAt: -1 } }
     });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json({
-      cars: (user.savedCars || []).filter(Boolean)
-    });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ cars: (user.savedCars || []).filter(Boolean) });
   } catch (err) {
     console.error('GET SAVED CARS ERROR:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -278,16 +236,9 @@ const getSavedCars = async (req, res) => {
 const getSavedCarIds = async (req, res) => {
   try {
     const User = require('../models/User');
-
     const user = await User.findById(req.user.id).select('savedCars');
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json({
-      savedCarIds: (user.savedCars || []).map(id => id.toString())
-    });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ savedCarIds: (user.savedCars || []).map(id => id.toString()) });
   } catch (err) {
     console.error('GET SAVED IDS ERROR:', err);
     res.status(500).json({ message: 'Server error', error: err.message });

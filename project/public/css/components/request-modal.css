@@ -1,0 +1,112 @@
+/* ── Request Modal Overlay ─────────────────────────────────── */
+.req-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.72);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.req-modal {
+  background: var(--bg-card, #1a1a1a);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.req-close {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: rgba(255,255,255,.07);
+  border: none;
+  color: #fff;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: .9rem;
+  transition: background .2s;
+}
+.req-close:hover { background: rgba(255,255,255,.14); }
+
+.req-modal h2 { font-size: 1.3rem; margin-bottom: .25rem; }
+.req-sub       { font-size: .85rem; opacity: .5; margin-bottom: 1.5rem; }
+
+.req-form-group        { margin-bottom: 1rem; }
+.req-form-group label  { display: block; font-size: .82rem; opacity: .7; margin-bottom: .4rem; }
+.req-form-group input,
+.req-form-group textarea {
+  width: 100%;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  padding: .65rem .85rem;
+  color: #fff;
+  font-size: .9rem;
+  transition: border-color .2s;
+}
+.req-form-group input:focus,
+.req-form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent, #8b1a2a);
+}
+
+.req-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+}
+
+/* Chips */
+.req-chips       { display: flex; gap: .5rem; flex-wrap: wrap; }
+.req-chip        {
+  padding: .45rem 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: transparent;
+  color: #ccc;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+.req-chip.active {
+  background: rgba(139,26,42,.25);
+  border-color: var(--accent, #8b1a2a);
+  color: #fff;
+}
+
+/* Error */
+.req-error {
+  background: rgba(192,57,43,.12);
+  border: 1px solid rgba(192,57,43,.3);
+  color: #e87b6d;
+  border-radius: 8px;
+  padding: .6rem .9rem;
+  font-size: .85rem;
+  margin-bottom: 1rem;
+}
+
+/* Submit */
+.req-submit-btn {
+  width: 100%;
+  padding: .85rem;
+  background: var(--accent, #8b1a2a);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .2s, transform .15s;
+  margin-top: .5rem;
+}
+.req-submit-btn:hover    { opacity: .88; transform: translateY(-1px); }
+.req-submit-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
