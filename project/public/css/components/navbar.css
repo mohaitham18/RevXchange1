@@ -83,8 +83,9 @@
     align-items: center;
     gap: 2px;
     flex: 1;
+    min-width: 0;
     position: relative;
-    flex-wrap: nowrap; /* never wrap */
+    flex-wrap: nowrap;
 }
 
 .nav-links a {
@@ -290,6 +291,10 @@
 .profile-name {
     font-size: 0.84rem;
     font-weight: 600;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .chevron {
