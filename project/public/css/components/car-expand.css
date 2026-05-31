@@ -1,0 +1,786 @@
+/* ═══════════════════════════════════════════════════════════
+   RevXChange — Car Expand
+   Stage 3: 2x2 layout + Cara's Take with live AI feel
+   ═══════════════════════════════════════════════════════════ */
+
+#rxCarOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: none;
+  opacity: 0;
+  background: rgba(20, 12, 16, 0.4);
+  backdrop-filter: blur(6px) saturate(1.1);
+  -webkit-backdrop-filter: blur(6px) saturate(1.1);
+  transition: opacity 0.45s ease;
+}
+
+#rxCarOverlay.rx-visible { display: block; opacity: 1; }
+
+#rxCarCard {
+  position: fixed;
+  z-index: 4001;
+  background: var(--white);
+  border-radius: 22px;
+  overflow: hidden;
+  transform-origin: top left;
+  will-change: transform, opacity;
+  display: none;
+  opacity: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-perspective: 1000px;
+  perspective: 1000px;
+}
+
+#rxCarCard.rx-visible-fade { opacity: 1; }
+
+#rxCarShadow {
+  position: fixed;
+  z-index: 4000;
+  border-radius: 22px;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  opacity: 0;
+  display: none;
+  transition: opacity 0.45s ease;
+}
+
+#rxCarShadow.rx-visible { display: block; opacity: 1; }
+
+#rxCarCard.rx-animating {
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.3, 1),
+              border-radius 0.55s cubic-bezier(0.25, 1, 0.3, 1),
+              opacity 0.25s ease;
+}
+
+/* ── Close button ─────────────────────────────────────────── */
+#rxCarClose {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 20;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.3s ease 0.35s,
+              transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s,
+              background 0.2s ease;
+  backdrop-filter: blur(6px);
+}
+
+#rxCarCard.rx-open #rxCarClose { opacity: 1; transform: scale(1); }
+#rxCarClose:hover { background: rgba(0, 0, 0, 0.7); }
+
+/* ── 2x2 Layout ───────────────────────────────────────────── */
+.rx-card-body {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  grid-template-rows: 1.4fr 1fr;
+  gap: 16px;
+  padding: 18px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  box-sizing: border-box;
+}
+
+#rxCarCard.rx-content-ready .rx-card-body { opacity: 1; }
+
+/* ── TOP-LEFT: Gallery ────────────────────────────────────── */
+.rx-gallery {
+  position: relative;
+  background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.rx-gallery-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+
+.rx-gallery-slide.active {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.rx-gallery-slide img {
+  max-width: 85%;
+  max-height: 80%;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 50px rgba(0,0,0,0.5));
+}
+
+.rx-gallery-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.rx-gallery-arrow:hover { background: rgba(255,255,255,0.28); }
+.rx-gallery-arrow.prev { left: 14px; }
+.rx-gallery-arrow.next { right: 14px; }
+.rx-gallery-arrow:hover.prev { transform: translateY(-50%) scale(1.08); }
+.rx-gallery-arrow:hover.next { transform: translateY(-50%) scale(1.08); }
+
+.rx-gallery-counter {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 5px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* ── TOP-RIGHT: Info panel ────────────────────────────────── */
+.rx-info {
+  padding: 34px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.04);
+  overflow-y: auto;
+}
+
+.rx-info::-webkit-scrollbar { width: 6px; }
+.rx-info::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 999px;
+}
+
+.rx-info-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  line-height: 1.2;
+}
+
+.rx-info-price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.rx-info-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rx-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f5f6f8;
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 11px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.rx-pill.fabrika {
+  background: rgba(242, 194, 48, 0.15);
+  color: #a07800;
+  border-color: rgba(242, 194, 48, 0.4);
+}
+
+.rx-info-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.rx-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px;
+  border-radius: 13px;
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.rx-action-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.rx-action-whatsapp {
+  background: #25d366;
+  color: #fff;
+}
+.rx-action-whatsapp:hover { background: #1eb858; transform: translateY(-2px); }
+
+.rx-action-call {
+  background: var(--primary);
+  color: #fff;
+}
+.rx-action-call:hover { background: var(--primary-dark); transform: translateY(-2px); }
+
+/* ── BOTTOM-LEFT: Description box ─────────────────────────── */
+.rx-desc-box {
+  background: #f9fafb;
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 16px;
+  padding: 26px 30px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.rx-desc-box::-webkit-scrollbar { width: 6px; }
+.rx-desc-box::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 999px;
+}
+
+.rx-desc-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-light);
+  margin-bottom: 12px;
+}
+
+.rx-desc-text {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ── BOTTOM-RIGHT: Cara's Take ────────────────────────────── */
+.rx-cara-box {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #0c4a6e 100%);
+  border: 1px solid rgba(196,181,252,0.2);
+  border-radius: 16px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* subtle shimmer in the background */
+.rx-cara-box::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(216,180,254,0.12), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(147,197,253,0.10), transparent 40%);
+  pointer-events: none;
+  animation: rxCaraGlow 8s ease-in-out infinite alternate;
+}
+
+@keyframes rxCaraGlow {
+  0%   { transform: rotate(0deg); opacity: 0.6; }
+  100% { transform: rotate(8deg); opacity: 1; }
+}
+
+.rx-cara-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.rx-cara-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(196,181,252,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ddd6fe;
+  flex-shrink: 0;
+  animation: rxCaraPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes rxCaraPulse {
+  0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 4px rgba(196,181,252,0.6)); }
+  50%       { transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(196,181,252,1)); }
+}
+
+.rx-cara-title-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rx-cara-label {
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(90deg, #e9d5ff, #bfdbfe, #f5d0fe, #e9d5ff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: rxCaraShimmer 4s ease infinite;
+  letter-spacing: 0.02em;
+}
+
+@keyframes rxCaraShimmer {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+.rx-cara-sub {
+  font-size: 0.72rem;
+  color: rgba(196,181,252,0.7);
+  font-family: 'Segoe UI', sans-serif;
+  margin-top: 1px;
+}
+
+/* ── Thinking indicator ───────────────────────────────────── */
+.rx-cara-thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: rgba(216,180,254,0.85);
+  font-family: 'Segoe UI', sans-serif;
+  font-style: italic;
+  position: relative;
+  z-index: 1;
+  min-height: 22px;
+  transition: opacity 0.3s ease;
+}
+
+.rx-cara-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.rx-cara-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(196,181,252,0.7);
+}
+
+@keyframes rxCaraDot {
+  0%, 80%, 100% { transform: scale(0.5); opacity: 0.3; }
+  40%            { transform: scale(1);   opacity: 1; }
+}
+
+.rx-cara-dots span:nth-child(1) { animation: rxCaraDot 1.2s ease-in-out 0s    infinite; }
+.rx-cara-dots span:nth-child(2) { animation: rxCaraDot 1.2s ease-in-out 0.2s  infinite; }
+.rx-cara-dots span:nth-child(3) { animation: rxCaraDot 1.2s ease-in-out 0.4s  infinite; }
+
+.rx-cara-think-text {
+  transition: opacity 0.25s ease;
+}
+
+/* ── Verdict text ─────────────────────────────────────────── */
+.rx-cara-verdict {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+}
+
+.rx-cara-verdict.rx-show { opacity: 1; }
+
+.rx-cara-verdict-text {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: #f5f3ff;
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 2.5em;
+}
+
+/* blinking cursor for typing */
+.rx-cara-verdict-text::after {
+  content: '▍';
+  color: #e9d5ff;
+  margin-left: 1px;
+  animation: rxBlink 0.9s steps(2) infinite;
+}
+
+.rx-cara-verdict-text.rx-done::after { display: none; }
+
+@keyframes rxBlink {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* ── Deal bar ─────────────────────────────────────────────── */
+.rx-cara-rating {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.rx-cara-rating.rx-show { opacity: 1; }
+
+.rx-cara-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.rx-cara-bar-labels > span:first-child,
+.rx-cara-bar-labels > span:last-child {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: rgba(216,180,254,0.55);
+}
+
+.rx-cara-bar-verdict {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.3s ease;
+}
+
+.rx-cara-bar-track {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 38%, #84cc16 68%, #22c55e 100%);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.rx-cara-bar-needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.45);
+  transform: translate(-50%, -50%);
+  transition: left 1.4s cubic-bezier(0.34, 1.4, 0.64, 1),
+              border-color 0.4s ease;
+}
+
+/* ── Skeleton (matches new 2x2 layout) ────────────────────── */
+.rx-skeleton-shell {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  grid-template-rows: 1.4fr 1fr;
+  gap: 16px;
+  padding: 18px;
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  background: var(--white);
+  transition: opacity 0.35s ease;
+  box-sizing: border-box;
+}
+
+.rx-skeleton-shell.rx-hide { opacity: 0; pointer-events: none; }
+
+.rx-skel {
+  background: linear-gradient(90deg, #e8eaed 25%, #f2f3f5 50%, #e8eaed 75%);
+  background-size: 200% 100%;
+  animation: rxShimmer 1.3s infinite;
+  border-radius: 16px;
+}
+
+@keyframes rxShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.rx-skel-quad {
+  border-radius: 16px;
+  background: linear-gradient(90deg, #e8eaed 25%, #f2f3f5 50%, #e8eaed 75%);
+  background-size: 200% 100%;
+  animation: rxShimmer 1.3s infinite;
+}
+
+body.rx-card-lock { overflow: hidden; }
+
+/* ── Stage 4: Fullscreen state ────────────────────────────── */
+#rxCarCard.rx-fullscreen {
+  border-radius: 0;
+}
+
+#rxCarCard.rx-fullscreen #rxCarClose {
+  top: 22px;
+  right: 22px;
+}
+
+/* Navbar floats above the card when fullscreen mode is active */
+.navbar.rx-above-card {
+  z-index: 5000 !important;
+}
+
+/* Fade content during close so the shrinking card doesn't show distorted layout */
+#rxCarCard.rx-closing .rx-card-body {
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+/* Detailed spec rows in info panel */
+.rx-spec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 18px;
+  padding-top: 6px;
+}
+.rx-spec-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.rx-spec-key {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-light);
+  font-weight: 700;
+}
+.rx-spec-val {
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+/* Highlights & extras sections in description box */
+.rx-desc-section {
+  margin-top: 18px;
+}
+.rx-desc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+}
+.rx-desc-list-item {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-dark);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.rx-desc-list-item::before {
+  content: '✓';
+  color: var(--primary);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* ── Image Lightbox ──────────────────────────────────────── */
+#rxLightboxOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5500;
+  background: rgba(0, 0, 0, 0.92);
+  display: none;
+  opacity: 0;
+  cursor: zoom-out;
+  transition: opacity 0.35s ease;
+}
+#rxLightboxOverlay.rx-visible { display: block; opacity: 1; }
+
+#rxLightboxImg {
+  position: fixed;
+  z-index: 5501;
+  transform-origin: top left;
+  display: none;
+  will-change: transform;
+  cursor: zoom-out;
+  background: transparent;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+#rxLightboxImg img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.6));
+}
+#rxLightboxImg.rx-animating {
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.3, 1);
+}
+
+#rxLightboxClose {
+  position: fixed;
+  top: 26px;
+  right: 26px;
+  z-index: 5502;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.3s ease 0.3s,
+              transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s,
+              background 0.2s ease;
+}
+#rxLightboxClose.rx-visible {
+  display: flex;
+  opacity: 1;
+  transform: scale(1);
+}
+#rxLightboxClose:hover { background: rgba(255, 255, 255, 0.25); }
+
+.rx-gallery-slide img { cursor: zoom-in; }
+
+/* ── Stage 4 polish: fullscreen scroll + close radius ───── */
+
+/* Keep the 2x2 grid. Body becomes the single scroll container.
+   Rows are auto-sized so content can overflow the viewport. */
+#rxCarCard.rx-fullscreen .rx-card-body {
+  grid-template-rows: 70vh auto;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-top: 80px;
+}
+
+/* Bottom row needs real height to require scrolling */
+#rxCarCard.rx-fullscreen .rx-desc-box,
+#rxCarCard.rx-fullscreen .rx-cara-box {
+  min-height: 60vh;
+}
+
+/* Kill inner scroll containers in fullscreen so the body alone scrolls */
+#rxCarCard.rx-fullscreen .rx-info,
+#rxCarCard.rx-fullscreen .rx-desc-box {
+  overflow: visible;
+}
+
+/* Scrollbar */
+#rxCarCard.rx-fullscreen .rx-card-body::-webkit-scrollbar {
+  width: 10px;
+}
+#rxCarCard.rx-fullscreen .rx-card-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 999px;
+}
+#rxCarCard.rx-fullscreen .rx-card-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* On close, radius animates to the real card radius so it lands clean */
+#rxCarCard.rx-closing {
+  border-radius: 12px;
+}
+
+/* Force card body to be confined to the card height so overflow:auto works */
+#rxCarCard.rx-fullscreen {
+  display: flex;
+  flex-direction: column;
+}
+
+#rxCarCard.rx-fullscreen .rx-card-body {
+  flex: 1;
+  min-height: 0;          /* critical — lets flex child shrink below content size */
+  max-height: 100vh;
+}
+
+/* Expanded card save button */
+.rx-save-btn {
+  background: rgba(255, 255, 255, 0.92);
+  color: #5a0f1c;
+  border: 1px solid rgba(90, 15, 28, 0.22);
+}
+
+.rx-save-btn.saved {
+  background: #5a0f1c;
+  color: #fff;
+  border-color: #5a0f1c;
+}
+
+.rx-save-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
