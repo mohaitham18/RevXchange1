@@ -8,7 +8,7 @@ const upload = require('../middleware/upload');
 router.get('/', carController.getAllCars);
 
 router.get('/my-cars', protect, carController.getMyCars);
-
+router.get('/filters', carController.getCarFilters);
 router.get('/:id', carController.getCarById);
 
 router.post(

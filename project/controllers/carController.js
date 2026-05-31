@@ -104,14 +104,77 @@ const getMyCars = async (req, res) => {
 
 const getAllCars = async (req, res) => {
   try {
-    const cars = await Car.find({ status: 'active' }).sort({ createdAt: -1 });
-    res.json({ cars });
+    const {
+      search, brand, city, transmission, fuel,
+      minPrice, maxPrice, fabrika,
+      sort = 'newest', page = 1, limit = 12
+    } = req.query;
+
+    const query = { status: 'active' };
+
+    // Text search across brand, model, city
+    if (search) {
+      const regex = new RegExp(search, 'i');
+      query.$or = [{ brand: regex }, { model: regex }, { city: regex }];
+    }
+
+    if (brand)        query.brand        = new RegExp(`^${brand}$`, 'i');
+    if (city)         query.city         = new RegExp(`^${city}$`, 'i');
+    if (transmission) query.transmission = new RegExp(`^${transmission}$`, 'i');
+    if (fuel)         query.fuel         = new RegExp(`^${fuel}$`, 'i');
+    if (fabrika === 'true') query.fabrika = true;
+
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    // Sort
+    const sortMap = {
+      newest:       { createdAt: -1 },
+      'price-low':  { price:     1  },
+      'price-high': { price:    -1  },
+      'year-new':   { year:     -1  },
+      'mileage-low':{ mileage:   1  },
+    };
+    const sortObj = sortMap[sort] || { createdAt: -1 };
+
+    // Pagination
+    const pageNum  = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip     = (pageNum - 1) * limitNum;
+
+    const [cars, total] = await Promise.all([
+      Car.find(query).sort(sortObj).skip(skip).limit(limitNum),
+      Car.countDocuments(query)
+    ]);
+
+    res.json({
+      cars,
+      total,
+      page:  pageNum,
+      pages: Math.ceil(total / limitNum),
+      limit: limitNum
+    });
   } catch (err) {
     console.error('GET ALL CARS ERROR:', err);
-    res.status(500).json({
-      message: 'Server error',
-      error: err.message
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+const getCarFilters = async (req, res) => {
+  try {
+    const [brands, cities] = await Promise.all([
+      Car.distinct('brand', { status: 'active' }),
+      Car.distinct('city',  { status: 'active' })
+    ]);
+    res.json({
+      brands: brands.filter(Boolean).sort(),
+      cities: cities.filter(Boolean).sort()
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
@@ -256,6 +319,7 @@ module.exports = {
   addCar,
   getMyCars,
   getAllCars,
+  getCarFilters,
   getCarById,
   updateCar,
   deleteCar
