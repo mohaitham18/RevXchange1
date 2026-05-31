@@ -16,6 +16,8 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
+    const adminEmails = (process.env.ADMIN_EMAILS || '').toLowerCase().split(',').map(e => e.trim());
+    const role = adminEmails.includes(email.toLowerCase()) ? 'admin' : 'user';
     const user = await User.create({ name, email, password });
 
     res.status(201).json({
