@@ -35,16 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ─── Nav Indicator ────────────────────────────────────────
-    const navIndicator   = document.getElementById('navIndicator');
-    const navLinksList   = document.querySelector('.nav-links');
+    const navIndicator = document.getElementById('navIndicator');
+    const navLinksList = document.querySelector('.nav-links');
     const navLinkAnchors = document.querySelectorAll('.nav-links a');
 
     if (navIndicator && navLinksList) {
         function moveIndicator(anchor) {
             const listRect = navLinksList.getBoundingClientRect();
             const linkRect = anchor.getBoundingClientRect();
-            navIndicator.style.left    = (linkRect.left - listRect.left) + 'px';
-            navIndicator.style.width   = linkRect.width + 'px';
+            navIndicator.style.left = (linkRect.left - listRect.left) + 'px';
+            navIndicator.style.width = linkRect.width + 'px';
             navIndicator.style.opacity = '1';
         }
 
@@ -58,12 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ─── Auth UI ──────────────────────────────────────────────
-    const loginBtn       = document.getElementById('loginBtn');
-    const profileMenu    = document.getElementById('profileMenu');
+    const loginBtn = document.getElementById('loginBtn');
+    const profileMenu = document.getElementById('profileMenu');
     const profileTrigger = document.getElementById('profileTrigger');
-    const profileName    = document.getElementById('profileName');
-    const dropdownName   = document.getElementById('dropdownName');
-    const logoutBtn      = document.getElementById('logoutBtn');
+    const profileName = document.getElementById('profileName');
+    const dropdownName = document.getElementById('dropdownName');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     function updateAuthUI() {
         const user = localStorage.getItem('rxUser');
@@ -79,21 +79,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    profileTrigger?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        profileMenu?.classList.toggle('open');
+    if (profileTrigger) {
+        profileTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (profileMenu) profileMenu.classList.toggle('open');
+        });
+    }
+
+    document.addEventListener('click', function() {
+        if (profileMenu) profileMenu.classList.remove('open');
     });
 
-    document.addEventListener('click', () => {
-        profileMenu?.classList.remove('open');
-    });
-
-    logoutBtn?.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem('rxUser');
-        localStorage.removeItem('role');
-        updateAuthUI();
-    });
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('rxUser');
+            localStorage.removeItem('role');
+            localStorage.removeItem('rxToken');
+            localStorage.removeItem('rxEmail');
+            updateAuthUI();
+            window.location.href = '/';
+        });
+    }
 
     updateAuthUI();
 

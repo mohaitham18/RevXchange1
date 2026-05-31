@@ -656,3 +656,12 @@ body {
 .sell-contact-guest a:hover {
     text-decoration: underline;
 }
+
+.sell-form-group.full {
+  grid-column: 1 / -1;
+}
+
+.sell-form-group select,
+.sell-form-group input {
+  width: 100%;
+}
