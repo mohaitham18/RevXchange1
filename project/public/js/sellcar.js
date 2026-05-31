@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const carPrice = document.getElementById('carPrice');
   const citySelect = document.getElementById('citySelect');
   const carDesc = document.getElementById('carDesc');
+
   const bodySelect = document.getElementById('bodySelect');
   const drivetrainSelect = document.getElementById('drivetrainSelect');
   const doorsSelect = document.getElementById('doorsSelect');
@@ -62,33 +63,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const carouselPrev = document.getElementById('carouselPrev');
   const carouselNext = document.getElementById('carouselNext');
 
+  const phoneInput = document.getElementById('phoneNumber');
+
   let activeTransmission = 'Automatic';
   let activeFuel = 'Gas';
   let activeFabrika = 'no';
   let activeCondition = 'Used';
 
   function updatePreview() {
-    const title = carInfo?.value.trim() || 'Your Car Title';
-    previewTitle.textContent = title;
+    if (previewTitle) {
+      previewTitle.textContent = carInfo?.value.trim() || 'Your Car Title';
+    }
 
     const price = carPrice?.value.trim();
 
-    previewPrice.textContent = price
-      ? parseInt(price).toLocaleString('en-EG') + ' EGP'
-      : 'Price not set';
+    if (previewPrice) {
+      previewPrice.textContent = price
+        ? parseInt(price).toLocaleString('en-EG') + ' EGP'
+        : 'Price not set';
+    }
 
-    const city = citySelect?.value || '—';
-    previewCity.textContent = '📍 ' + city;
+    if (previewCity) {
+      previewCity.textContent = '📍 ' + (citySelect?.value || '—');
+    }
 
     const km = kmsDriven?.value.trim();
 
-    previewKm.textContent = km
-      ? '🛣️ ' + parseInt(km).toLocaleString() + ' km'
-      : '🛣️ — km';
+    if (previewKm) {
+      previewKm.textContent = km
+        ? '🛣️ ' + parseInt(km).toLocaleString() + ' km'
+        : '🛣️ — km';
+    }
 
-    previewTransmission.textContent = activeTransmission;
-    previewFuel.textContent = activeFuel;
-    previewFabrika.style.display = activeFabrika === 'yes' ? 'inline-flex' : 'none';
+    if (previewTransmission) previewTransmission.textContent = activeTransmission;
+    if (previewFuel) previewFuel.textContent = activeFuel;
+    if (previewFabrika) previewFabrika.style.display = activeFabrika === 'yes' ? 'inline-flex' : 'none';
   }
 
   [carInfo, kmsDriven, carPrice, citySelect].forEach(el => {
@@ -98,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function initChips(containerId, onSelect) {
     const container = document.getElementById(containerId);
+
     if (!container) return;
 
     container.querySelectorAll('.sell-chip').forEach(chip => {
@@ -110,9 +120,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  initChips('fuelChips', val => activeFuel = val);
-  initChips('transmissionChips', val => activeTransmission = val);
-  initChips('fabrikaChips', val => activeFabrika = val);
+  initChips('fuelChips', val => {
+    activeFuel = val;
+  });
+
+  initChips('transmissionChips', val => {
+    activeTransmission = val;
+  });
+
+  initChips('fabrikaChips', val => {
+    activeFabrika = val;
+  });
 
   const conditionToggle = document.getElementById('conditionToggle');
 
@@ -131,7 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  uploadZone?.addEventListener('click', () => imgInput?.click());
+  uploadZone?.addEventListener('click', () => {
+    imgInput?.click();
+  });
 
   uploadZone?.addEventListener('dragover', e => {
     e.preventDefault();
@@ -158,32 +178,34 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!file.type.startsWith('image/')) return;
       if (images.length >= 20) return;
 
-      const url = URL.createObjectURL(file);
-      images.push(url);
+      images.push({
+        url: URL.createObjectURL(file),
+        file
+      });
     });
 
     renderThumbs();
     renderCarousel();
 
-    const zone = document.getElementById('uploadZone');
-
-    if (zone && images.length > 0) {
-      zone.classList.remove('rx-zone-invalid');
-      zone.classList.add('rx-zone-valid');
+    if (uploadZone && images.length > 0) {
+      uploadZone.classList.remove('rx-zone-invalid');
+      uploadZone.classList.add('rx-zone-valid');
     }
   }
 
   function renderThumbs() {
-    imgThumbs.innerHTML = images.map((url, i) => `
+    if (!imgThumbs) return;
+
+    imgThumbs.innerHTML = images.map((img, i) => `
       <div class="sell-thumb ${i === 0 ? 'cover' : ''}">
-        <img src="${url}" alt="Car image ${i + 1}">
+        <img src="${img.url}" alt="Car image ${i + 1}">
         ${i === 0 ? '<span class="sell-thumb-cover-badge">Cover</span>' : ''}
         <button class="sell-thumb-remove" data-index="${i}">✕</button>
       </div>
     `).join('');
 
     imgThumbs.querySelectorAll('.sell-thumb-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', e => {
         e.stopPropagation();
 
         images.splice(parseInt(btn.dataset.index), 1);
@@ -194,11 +216,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderThumbs();
         renderCarousel();
+
+        if (uploadZone && images.length === 0) {
+          uploadZone.classList.remove('rx-zone-valid');
+        }
       });
     });
   }
 
   function renderCarousel() {
+    if (!previewPlaceholder || !sellCarousel || !carouselTrack) return;
+
     if (images.length === 0) {
       previewPlaceholder.style.display = 'flex';
       sellCarousel.style.display = 'none';
@@ -208,28 +236,36 @@ document.addEventListener('DOMContentLoaded', () => {
     previewPlaceholder.style.display = 'none';
     sellCarousel.style.display = 'block';
 
-    carouselTrack.innerHTML = images.map((url, i) => `
+    carouselTrack.innerHTML = images.map((img, i) => `
       <div class="sell-carousel-slide ${i === carouselIndex ? 'active' : ''}">
-        <img src="${url}" alt="Slide ${i + 1}">
+        <img src="${img.url}" alt="Slide ${i + 1}">
       </div>
     `).join('');
 
-    carouselCounter.textContent = `${carouselIndex + 1} / ${images.length}`;
-    carouselPrev.style.display = images.length > 1 ? 'flex' : 'none';
-    carouselNext.style.display = images.length > 1 ? 'flex' : 'none';
+    if (carouselCounter) {
+      carouselCounter.textContent = `${carouselIndex + 1} / ${images.length}`;
+    }
+
+    if (carouselPrev) {
+      carouselPrev.style.display = images.length > 1 ? 'flex' : 'none';
+    }
+
+    if (carouselNext) {
+      carouselNext.style.display = images.length > 1 ? 'flex' : 'none';
+    }
   }
 
   carouselPrev?.addEventListener('click', () => {
+    if (!images.length) return;
     carouselIndex = (carouselIndex - 1 + images.length) % images.length;
     renderCarousel();
   });
 
   carouselNext?.addEventListener('click', () => {
+    if (!images.length) return;
     carouselIndex = (carouselIndex + 1) % images.length;
     renderCarousel();
   });
-
-  const phoneInput = document.getElementById('phoneNumber');
 
   const dirtyFields = new Set();
 
@@ -338,14 +374,14 @@ document.addEventListener('DOMContentLoaded', () => {
   citySelect?.addEventListener('change', validateCity);
 
   phoneInput?.addEventListener('input', () => {
-    let digits = phoneInput.value.replace(/\D/g, '').slice(0, 10);
+    let digits = phoneInput.value.replace(/\D/g, '').slice(0, 11);
 
     phoneInput.value = digits;
     dirtyFields.add('phoneNumber');
 
     if (digits.length === 0) {
       RXValidation.clearState(phoneInput);
-    } else if (digits.length === 10) {
+    } else if (digits.length >= 10) {
       validatePhone();
     }
   });
@@ -362,7 +398,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!validateAll()) {
       document
         .querySelector('.rx-invalid, .rx-zone-invalid')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
 
       return;
     }
@@ -374,71 +413,94 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const carInfoVal = carInfo?.value.trim().split(' ');
-    const brand = carInfoVal?.[0] || '';
-    const model = carInfoVal?.[1] || '';
+    const submitBtn = document.getElementById('sellSubmitBtn');
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Posting...';
+    }
+
+    const carInfoVal = carInfo?.value.trim().split(/\s+/);
+    const brand = (carInfoVal?.[0] || '').replace(/,/g, '');
+    const model = (carInfoVal?.[1] || '').replace(/,/g, '');
     const year = parseInt(carInfoVal?.[carInfoVal.length - 1]) || new Date().getFullYear();
 
     const selectedColor = document.querySelector('.sell-color-item.active')?.dataset.color || '';
 
-const payload = {
-  brand,
-  model,
-  year,
-  price: parseInt(carPrice?.value),
-  mileage: parseInt(kmsDriven?.value),
-  city: citySelect?.value,
-  condition: activeCondition.toLowerCase(),
-  transmission: activeTransmission.toLowerCase(),
-  fuel: activeFuel.toLowerCase(),
-  color: selectedColor,
-  description: carDesc?.value.trim(),
-  phone: phoneInput?.value.trim(),
-  fabrika: activeFabrika === 'yes',
+    const formData = new FormData();
 
-  body: document.getElementById('bodySelect')?.value || 'Sedan',
-  drivetrain: document.getElementById('drivetrainSelect')?.value || 'FWD',
-  doors: parseInt(document.getElementById('doorsSelect')?.value) || 4,
-  seats: parseInt(document.getElementById('seatsSelect')?.value) || 5,
-  engine: document.getElementById('engineInput')?.value.trim() || 'Not specified',
-  owners: document.getElementById('ownerSelect')?.value || 'First Owner',
-  service: document.getElementById('serviceSelect')?.value || 'Full History',
+    formData.append('brand', brand);
+    formData.append('model', model);
+    formData.append('year', year);
+    formData.append('price', parseInt(carPrice?.value));
+    formData.append('mileage', parseInt(kmsDriven?.value));
+    formData.append('city', citySelect?.value);
+    formData.append('condition', activeCondition.toLowerCase());
+    formData.append('transmission', activeTransmission.toLowerCase());
+    formData.append('fuel', activeFuel.toLowerCase());
+    formData.append('color', selectedColor);
+    formData.append('description', carDesc?.value.trim());
+    formData.append('phone', phoneInput?.value.trim() || '');
+    formData.append('fabrika', activeFabrika === 'yes');
 
-  highlights: [
-    'Seller description available',
-    'Contact seller for inspection details',
-    'Check service history before purchase'
-  ],
+    formData.append('body', bodySelect?.value || 'Sedan');
+    formData.append('drivetrain', drivetrainSelect?.value || 'FWD');
+    formData.append('doors', parseInt(doorsSelect?.value) || 4);
+    formData.append('seats', parseInt(seatsSelect?.value) || 5);
+    formData.append('engine', engineInput?.value.trim() || 'Not specified');
+    formData.append('owners', ownerSelect?.value || 'First Owner');
+    formData.append('service', serviceSelect?.value || 'Full History');
 
-  included: [
-    'Documents available from seller',
-    'Contact seller for included accessories'
-  ]
-};
+    formData.append('highlights', JSON.stringify([
+      'Seller description available',
+      'Contact seller for inspection details',
+      'Check service history before purchase'
+    ]));
 
-console.log('SELL CAR PAYLOAD:', payload);
+    formData.append('included', JSON.stringify([
+      'Documents available from seller',
+      'Contact seller for included accessories'
+    ]));
+
+    images.forEach(img => {
+      if (img.file) {
+        formData.append('images', img.file);
+      }
+    });
 
     try {
       const res = await fetch('/api/cars', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: formData
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         alert(data.message || 'Something went wrong');
+
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Post My Ad';
+        }
+
         return;
       }
 
       alert('Your ad has been posted! 🎉');
       window.location.href = '/dashboard.html?tab=ads';
+
     } catch (err) {
       console.error('Submit error:', err);
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Post My Ad';
+      }
+
       alert('Server error. Please try again.');
     }
   });
