@@ -124,10 +124,13 @@ async function signIn() {
     }
 
     // Save to localStorage
-    localStorage.setItem('rxToken', data.token);
-    localStorage.setItem('rxUser',  data.user.name);
-    localStorage.setItem('rxEmail', data.user.email);
-    localStorage.setItem('role',    data.user.role);
+  // Save under BOTH naming conventions so all JS files work
+localStorage.setItem('rxToken', data.token);
+localStorage.setItem('token',   data.token);
+localStorage.setItem('rxUser',  data.user.name);
+localStorage.setItem('rxEmail', data.user.email);
+localStorage.setItem('role',    data.user.role);
+localStorage.setItem('user',    JSON.stringify(data.user));
 
     // Redirect based on role
     if (data.user.role === 'admin') {
@@ -174,9 +177,11 @@ async function handleRegister() {
     }
 
     localStorage.setItem('rxToken', data.token);
+    localStorage.setItem('token',   data.token);
     localStorage.setItem('rxUser',  data.user.name);
     localStorage.setItem('rxEmail', data.user.email);
     localStorage.setItem('role',    data.user.role);
+    localStorage.setItem('user',    JSON.stringify(data.user));
 
     if (data.user.role === 'admin') {
       window.location.href = '/admin.html';

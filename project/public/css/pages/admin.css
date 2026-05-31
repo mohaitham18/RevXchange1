@@ -52,6 +52,73 @@ body {
   gap: 8px;
 }
 
+/* ── Section show/hide ───────────────────────────────────── */newww
+.admin-section {
+  display: none;
+}
+.admin-section.active {
+  display: block;
+}
+
+/* ── Delete button ───────────────────────────────────────── */
+.delete-btn {
+  border: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  background: rgba(0,0,0,0.06);
+  color: #666;
+}
+.delete-btn:hover { background: rgba(220,50,50,0.10); color: #a32020; }
+
+.approve-btn:disabled,
+.reject-btn:disabled,
+.delete-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ── Users table (5 cols) ────────────────────────────────── */
+.table-row.users-row,
+.table-head.users-head {
+  grid-template-columns: 1.4fr 2fr 0.8fr 1fr 1.6fr;
+}
+
+/* ── Requests table (6 cols) ─────────────────────────────── */
+.table-row.req-row,
+.table-head.req-head {
+  grid-template-columns: 1.5fr 1.5fr 1.2fr 1.2fr 0.9fr 1.4fr;
+}
+
+/* ── Panel count badge ───────────────────────────────────── */
+.panel-count {
+  font-size: .8rem;
+  color: #888;
+  background: #f1f2f4;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* ── Toast ───────────────────────────────────────────────── */
+.admin-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  padding: 13px 22px;
+  border-radius: 12px;
+  font-size: .9rem;
+  font-weight: 600;
+  background: #1a1a2e;
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .25s, transform .25s;
+  pointer-events: none;
+  z-index: 9999;
+}
+.admin-toast.show    { opacity: 1; transform: translateY(0); }
+.admin-toast.success { background: #0f2d1a; border: 1px solid #27ae60; color: #4ddb8a; }
+.admin-toast.error   { background: #2d0f0f; border: 1px solid #c0392b; color: #e87b6d; }
+
 .admin-menu a {
   text-decoration: none;
   color: rgba(255,255,255,0.86);
