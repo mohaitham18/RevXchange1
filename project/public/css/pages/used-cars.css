@@ -112,10 +112,22 @@
 }
 
 .check-filter label {
-  display: flex;
+  display: flex !important;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 0;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.check-filter input[type="checkbox"] {
+  width: auto;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
 }
 
 .filter-actions {
@@ -316,4 +328,51 @@
 .save-car-btn:disabled {
   opacity: 0.6;
   cursor: wait;
+}
+
+/* ── Pagination ──────────────────────────────────────────────── */
+.rx-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+}
+
+.rx-page-btn {
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e4e8;
+    background: white;
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: 'Segoe UI', sans-serif;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.rx-page-btn:hover:not([disabled]) {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.rx-page-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.rx-page-btn[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.rx-page-ellipsis {
+    color: var(--text-light);
+    font-size: 0.88rem;
+    padding: 0 4px;
 }
