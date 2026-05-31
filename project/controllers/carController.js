@@ -21,57 +21,49 @@ const addCar = async (req, res) => {
   try {
     console.log('ADD CAR BODY:', req.body);
 
-    const {
-      brand,
-      model,
-      year,
-      price,
-      mileage,
-      city,
-      condition,
-      transmission,
-      fuel,
-      color,
-      description,
-      phone,
-      fabrika,
-      body,
-      drivetrain,
-      doors,
-      seats,
-      engine,
-      owners,
-      service,
-      highlights,
-      included
-    } = req.body;
+const {
+  brand,
+  model,
+  year,
+  price,
+  mileage,
+  city,
+  condition,
+  transmission,
+  fuel,
+  color,
+  description,
+  body,
+  drivetrain,
+  doors,
+  seats,
+  engine,
+  owners,
+  service
+} = req.body;
 
-    const car = await Car.create({
-      user: req.user.id,
-      brand,
-      model,
-      year,
-      price,
-      mileage,
-      city,
-      condition,
-      transmission,
-      fuel,
-      color,
-      description,
-      phone: normalizePhone(phone),
-      fabrika: fabrika === true || fabrika === 'true' || fabrika === 'yes',
-      body,
-      drivetrain,
-      doors,
-      seats,
-      engine,
-      owners,
-      service,
-      highlights,
-      included
-    });
-
+  const car = await Car.create({
+  user: req.user.id,
+  brand,
+  model,
+  year,
+  price,
+  mileage,
+  city,
+  condition,
+  transmission,
+  fuel,
+  color,
+  description,
+  body,
+  drivetrain,
+  doors,
+  seats,
+  engine,
+  owners,
+  service
+  });
+  
     res.status(201).json({ message: 'Car listed successfully', car });
   } catch (err) {
     console.error('ADD CAR ERROR:', err);

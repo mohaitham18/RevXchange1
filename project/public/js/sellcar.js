@@ -36,6 +36,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const carPrice = document.getElementById('carPrice');
   const citySelect = document.getElementById('citySelect');
   const carDesc = document.getElementById('carDesc');
+  const bodySelect = document.getElementById('bodySelect');
+  const drivetrainSelect = document.getElementById('drivetrainSelect');
+  const doorsSelect = document.getElementById('doorsSelect');
+  const seatsSelect = document.getElementById('seatsSelect');
+  const engineInput = document.getElementById('engineInput');
+  const ownerSelect = document.getElementById('ownerSelect');
+  const serviceSelect = document.getElementById('serviceSelect');
+
   const imgInput = document.getElementById('imgInput');
   const imgThumbs = document.getElementById('imgThumbs');
   const uploadZone = document.getElementById('uploadZone');
@@ -373,40 +381,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectedColor = document.querySelector('.sell-color-item.active')?.dataset.color || '';
 
-    const payload = {
-      brand,
-      model,
-      year,
-      price: parseInt(carPrice?.value),
-      mileage: parseInt(kmsDriven?.value),
-      city: citySelect?.value,
-      condition: activeCondition.toLowerCase(),
-      transmission: activeTransmission.toLowerCase(),
-      fuel: activeFuel.toLowerCase(),
-      color: selectedColor,
-      description: carDesc?.value.trim(),
-      phone: phoneInput?.value.trim(),
-      fabrika: activeFabrika === 'yes',
+const payload = {
+  brand,
+  model,
+  year,
+  price: parseInt(carPrice?.value),
+  mileage: parseInt(kmsDriven?.value),
+  city: citySelect?.value,
+  condition: activeCondition.toLowerCase(),
+  transmission: activeTransmission.toLowerCase(),
+  fuel: activeFuel.toLowerCase(),
+  color: selectedColor,
+  description: carDesc?.value.trim(),
+  phone: phoneInput?.value.trim(),
+  fabrika: activeFabrika === 'yes',
 
-      body: 'Sedan',
-      drivetrain: 'FWD',
-      doors: 4,
-      seats: 5,
-      engine: 'Not specified',
-      owners: 'Not specified',
-      service: 'Not specified',
+  body: document.getElementById('bodySelect')?.value || 'Sedan',
+  drivetrain: document.getElementById('drivetrainSelect')?.value || 'FWD',
+  doors: parseInt(document.getElementById('doorsSelect')?.value) || 4,
+  seats: parseInt(document.getElementById('seatsSelect')?.value) || 5,
+  engine: document.getElementById('engineInput')?.value.trim() || 'Not specified',
+  owners: document.getElementById('ownerSelect')?.value || 'First Owner',
+  service: document.getElementById('serviceSelect')?.value || 'Full History',
 
-      highlights: [
-        'Seller description available',
-        'Contact seller for inspection details',
-        'Check service history before purchase'
-      ],
+  highlights: [
+    'Seller description available',
+    'Contact seller for inspection details',
+    'Check service history before purchase'
+  ],
 
-      included: [
-        'Documents available from seller',
-        'Contact seller for included accessories'
-      ]
-    };
+  included: [
+    'Documents available from seller',
+    'Contact seller for included accessories'
+  ]
+};
+
+console.log('SELL CAR PAYLOAD:', payload);
 
     try {
       const res = await fetch('/api/cars', {
