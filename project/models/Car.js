@@ -54,7 +54,7 @@ const carSchema = new mongoose.Schema({
 
   fuel: {
     type: String,
-    enum: ['petrol', 'diesel', 'electric', 'hybrid', 'gas'],
+    enum: ['petrol', 'diesel', 'electric', 'hybrid', 'gas', 'natural gas'],
     default: 'petrol'
   },
 
@@ -68,46 +68,6 @@ const carSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-
-  body: {
-  type: String,
-  trim: true,
-  default: 'Sedan'
-},
-
-drivetrain: {
-  type: String,
-  trim: true,
-  default: 'FWD'
-},
-
-doors: {
-  type: Number,
-  default: 4
-},
-
-seats: {
-  type: Number,
-  default: 5
-},
-
-engine: {
-  type: String,
-  trim: true,
-  default: 'Not specified'
-},
-
-owners: {
-  type: String,
-  trim: true,
-  default: 'Not specified'
-},
-
-service: {
-  type: String,
-  trim: true,
-  default: 'Not specified'
-},
 
   phone: {
     type: String,
@@ -174,7 +134,6 @@ service: {
     }
   ],
 
-  // Photos are left for later.
   images: [
     {
       type: String
