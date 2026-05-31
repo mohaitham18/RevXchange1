@@ -4,11 +4,47 @@ const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
+const cleanEmail = (email) => String(email || '').trim().toLowerCase();
+
+const getAdminEmails = () => {
+  return (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(email => cleanEmail(email))
+    .filter(Boolean);
+};
+
+const getRoleForEmail = (email) => {
+  const normalizedEmail = cleanEmail(email);
+  const adminEmails = getAdminEmails();
+  return adminEmails.includes(normalizedEmail) ? 'admin' : 'user';
+};
+
+const publicUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role
+});
+
 const register = async (req, res) => {
   try {
     const User = require('../models/User');
 
-    const { name, email, password } = req.body;
+    const name = String(req.body.name || '').trim();
+    const email = cleanEmail(req.body.email);
+    const password = String(req.body.password || '');
+
+    console.log('REGISTER FUNCTION HIT');
+    console.log('REGISTER EMAIL:', email);
+    console.log('ADMIN EMAILS:', getAdminEmails());
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email and password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
 
     const existingUser = await User.findOne({ email });
 
@@ -16,19 +52,21 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const adminEmails = (process.env.ADMIN_EMAILS || '').toLowerCase().split(',').map(e => e.trim());
-    const role = adminEmails.includes(email.toLowerCase()) ? 'admin' : 'user';
-    const user = await User.create({ name, email, password });
+    const role = getRoleForEmail(email);
+
+    console.log('ASSIGNED ROLE:', role);
+
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role
+    });
 
     res.status(201).json({
       message: 'Registration successful',
       token: generateToken(user._id, user.role),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: publicUser(user)
     });
   } catch (err) {
     console.error('REGISTER ERROR:', err);
@@ -40,7 +78,8 @@ const login = async (req, res) => {
   try {
     const User = require('../models/User');
 
-    const { email, password } = req.body;
+    const email = cleanEmail(req.body.email);
+    const password = String(req.body.password || '');
 
     const user = await User.findOne({ email });
 
@@ -54,15 +93,17 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
+    const correctRole = getRoleForEmail(user.email);
+
+    if (user.role !== correctRole) {
+      user.role = correctRole;
+      await user.save();
+    }
+
     res.json({
       message: 'Login successful',
       token: generateToken(user._id, user.role),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: publicUser(user)
     });
   } catch (err) {
     console.error('LOGIN ERROR:', err);
@@ -91,7 +132,8 @@ const updateProfile = async (req, res) => {
   try {
     const User = require('../models/User');
 
-    const { name, email } = req.body;
+    const name = String(req.body.name || '').trim();
+    const email = cleanEmail(req.body.email);
 
     const user = await User.findById(req.user.id);
 
@@ -105,21 +147,18 @@ const updateProfile = async (req, res) => {
       if (existing) {
         return res.status(400).json({ message: 'Email already in use' });
       }
+
+      user.email = email;
+      user.role = getRoleForEmail(email);
     }
 
     if (name) user.name = name;
-    if (email) user.email = email;
 
     await user.save();
 
     res.json({
       message: 'Profile updated successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: publicUser(user)
     });
   } catch (err) {
     console.error('UPDATE PROFILE ERROR:', err);
@@ -131,7 +170,8 @@ const changePassword = async (req, res) => {
   try {
     const User = require('../models/User');
 
-    const { currentPassword, newPassword } = req.body;
+    const currentPassword = String(req.body.currentPassword || '');
+    const newPassword = String(req.body.newPassword || '');
 
     const user = await User.findById(req.user.id);
 
@@ -183,14 +223,10 @@ const toggleSaveCar = async (req, res) => {
       user.savedCars = [];
     }
 
-    const alreadySaved = user.savedCars.some(
-      savedId => savedId.toString() === carId
-    );
+    const alreadySaved = user.savedCars.some(savedId => savedId.toString() === carId);
 
     if (alreadySaved) {
-      user.savedCars = user.savedCars.filter(
-        savedId => savedId.toString() !== carId
-      );
+      user.savedCars = user.savedCars.filter(savedId => savedId.toString() !== carId);
 
       await user.save();
 
