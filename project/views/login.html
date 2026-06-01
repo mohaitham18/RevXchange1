@@ -18,9 +18,9 @@
   <div class="bg-grid"></div>
 
 
-  <a href="/" class="back-home">
+  <a href="#" id="backBtn" class="back-home">
     <div class="back-arrow">←</div>
-    Back to home
+    ← Back
   </a>
 
   
@@ -110,6 +110,20 @@
 
   <script src="/js/validation.js"></script>
   <script src="/js/login.js"></script>
+  <script>
+    document.getElementById('backBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      const params   = new URLSearchParams(window.location.search);
+      const returnTo = params.get('returnTo');
+      if (returnTo) {
+        window.location.href = decodeURIComponent(returnTo);
+      } else if (document.referrer && !document.referrer.includes('login')) {
+        window.location.href = document.referrer;
+      } else {
+        window.location.href = '/';
+      }
+    });
+  </script>
 
 </body>
 </html>
