@@ -95,16 +95,45 @@ const newCarsData = [
 function egp(n) { return n.toLocaleString() + ' EGP'; }
 function range(o) { return o.min === o.max ? egp(o.min) : `${o.min.toLocaleString()} - ${o.max.toLocaleString()} EGP`; }
 
+// ─── Active brand state ────────────────────────────────────────
+let activeBrand = null;
+
 // ─── Brands grid ──────────────────────────────────────────────
 function renderBrands(data) {
   const unique = [...new Map(data.map(c => [c.brand, c])).values()];
   document.getElementById('bcBrandsGrid').innerHTML = unique.map(car => `
-    <div class="bc-brand-card" onclick="filterByBrand('${car.brand}')">
+    <div class="bc-brand-card ${activeBrand === car.brand ? 'active' : ''}" data-brand="${car.brand}" onclick="filterByBrand('${car.brand}')">
       <img src="${car.image}" alt="${car.brand}">
       <h4>${car.brand}</h4>
       <span>(${data.filter(c => c.brand === car.brand).length} model${data.filter(c => c.brand === car.brand).length > 1 ? 's' : ''})</span>
     </div>
   `).join('');
+  updateClearBtn();
+}
+
+// ─── Clear filter button ───────────────────────────────────────
+function updateClearBtn() {
+  const titleRow = document.querySelector('.bc-brands-header');
+  if (!titleRow) return;
+
+  let clearBtn = document.getElementById('bcClearBrandBtn');
+
+  if (activeBrand) {
+    if (!clearBtn) {
+      clearBtn = document.createElement('button');
+      clearBtn.id = 'bcClearBrandBtn';
+      clearBtn.className = 'bc-clear-brand-btn';
+      clearBtn.textContent = '✕ Clear Filter';
+      clearBtn.addEventListener('click', () => {
+        activeBrand = null;
+        renderBrands(newCarsData);
+        renderCards(newCarsData);
+      });
+      titleRow.appendChild(clearBtn);
+    }
+  } else {
+    clearBtn?.remove();
+  }
 }
 
 // ─── Car cards ────────────────────────────────────────────────
@@ -126,17 +155,63 @@ function renderCards(data) {
 }
 
 function filterByBrand(brand) {
-  renderCards(newCarsData.filter(c => c.brand === brand));
-  document.getElementById('bcGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Clear search when using brand filter
+  document.getElementById('bcSearchInput').value = '';
+  updateSearchClearBtn(false);
+
+  if (activeBrand === brand) {
+    activeBrand = null;
+    renderBrands(newCarsData);
+    renderCards(newCarsData);
+  } else {
+    activeBrand = brand;
+    renderBrands(newCarsData);
+    renderCards(newCarsData.filter(c => c.brand === brand));
+    document.getElementById('bcGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 // ─── Search ───────────────────────────────────────────────────
 document.getElementById('bcSearchBtn').addEventListener('click', search);
 document.getElementById('bcSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
+document.getElementById('bcSearchInput').addEventListener('input', () => {
+  if (!document.getElementById('bcSearchInput').value.trim()) {
+    clearSearch();
+  }
+});
+
+function updateSearchClearBtn(show) {
+  let clearBtn = document.getElementById('bcClearSearchBtn');
+  if (show) {
+    if (!clearBtn) {
+      clearBtn = document.createElement('button');
+      clearBtn.id = 'bcClearSearchBtn';
+      clearBtn.className = 'bc-clear-search-btn';
+      clearBtn.textContent = '✕ Clear';
+      clearBtn.addEventListener('click', clearSearch);
+      document.getElementById('bcSearchBtn').insertAdjacentElement('afterend', clearBtn);
+    }
+  } else {
+    clearBtn?.remove();
+  }
+}
+
+function clearSearch() {
+  document.getElementById('bcSearchInput').value = '';
+  updateSearchClearBtn(false);
+  renderCards(activeBrand ? newCarsData.filter(c => c.brand === activeBrand) : newCarsData);
+}
 
 function search() {
   const q = document.getElementById('bcSearchInput').value.trim().toLowerCase();
-  renderCards(!q ? newCarsData : newCarsData.filter(c =>
+  if (!q) { clearSearch(); return; }
+
+  // Clear brand filter when searching
+  activeBrand = null;
+  renderBrands(newCarsData);
+
+  updateSearchClearBtn(true);
+  renderCards(newCarsData.filter(c =>
     c.brand.toLowerCase().includes(q) || c.model.toLowerCase().includes(q) || String(c.year).includes(q)
   ));
 }
