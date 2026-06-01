@@ -18,6 +18,8 @@ mongoose.connect(process.env.MONGO_URI)
     const adminRoutes     = require('./routes/adminRoutes');
     const requestRoutes   = require('./routes/requestRoutes');
     const communityRoutes = require('./routes/communityRoutes');
+    const feedRoutes      = require('./routes/feedRoutes');
+
 
     app.use('/api/auth',        userRoutes);
     app.use('/api/users',       userRoutes);
@@ -25,7 +27,9 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/admin',       adminRoutes);
     app.use('/api/requests',    requestRoutes);
     app.use('/api/communities', communityRoutes);
+    app.use('/api/feed',        feedRoutes);
 
+    
     console.log('Routes registered ✅');
 
     app.get('/api', (req, res) => {
