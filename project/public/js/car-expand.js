@@ -29,6 +29,7 @@
   let currentOriginEl = null;
   let galleryIndex = 0;
   let savedIds = new Set();
+  let isFullscreen = false;
 
   const formatPrice = value => Number(value || 0).toLocaleString() + ' EGP';
   const formatKm = value => Number(value || 0).toLocaleString() + ' km';
@@ -394,6 +395,55 @@
     });
   }
 
+  function setFullscreen(on) {
+    if (!isOpen) return;
+
+    isFullscreen = on;
+    card.classList.toggle('rx-fullscreen', on);
+
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+      navbar.classList.toggle('rx-above-card', on);
+      if (on) {
+        navbar.classList.add('scrolled');
+      } else {
+        if (window.scrollY <= 80) {
+          navbar.classList.remove('scrolled');
+        }
+      }
+    }
+
+    applyTarget(targetRect());
+
+    if (on) {
+      card.style.transform = 'translate(0px, 0px) scale(1, 1)';
+    } else {
+      const body = card.querySelector('.rx-card-body');
+      if (body) body.scrollTop = 0;
+      card.style.transform = expandedTransform();
+    }
+  }
+
+  function handleCardWheel(e) {
+    if (!isOpen) return;
+
+    if (!isFullscreen && e.deltaY > 8) {
+      e.preventDefault();
+      setFullscreen(true);
+      return;
+    }
+
+    if (isFullscreen && e.deltaY < -20) {
+      const body = card.querySelector('.rx-card-body');
+      const atTop = !body || body.scrollTop <= 0;
+
+      if (atTop) {
+        e.preventDefault();
+        setFullscreen(false);
+      }
+    }
+  }
+
   async function openCard(cardEl, id) {
     if (isOpen) return;
 
@@ -419,6 +469,8 @@
 
     card.style.display = 'block';
     shadow.style.display = 'block';
+    isFullscreen = false;
+    document.querySelector('.navbar')?.classList.remove('rx-above-card');
     card.classList.remove('rx-closing', 'rx-fullscreen');
     card.style.transform = originTransform(currentOrigin, target);
 
@@ -443,6 +495,8 @@
       currentOrigin = currentOriginEl.getBoundingClientRect();
     }
 
+    isFullscreen = false;
+    document.querySelector('.navbar')?.classList.remove('rx-above-card');
     card.classList.add('rx-closing');
     card.classList.remove('rx-open', 'rx-fullscreen');
     shadow.classList.remove('rx-visible');
@@ -493,6 +547,7 @@
 
   closeBtn.addEventListener('click', closeCard);
   overlay.addEventListener('click', closeCard);
+  card.addEventListener('wheel', handleCardWheel, { passive: false });
 
   lbOverlay.addEventListener('click', () => {
     lbOverlay.classList.remove('rx-visible');
@@ -504,6 +559,15 @@
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeCard();
+  });
+
+  window.addEventListener('resize', () => {
+    if (!isOpen) return;
+
+    applyTarget(targetRect());
+    card.style.transform = isFullscreen
+      ? 'translate(0px, 0px) scale(1, 1)'
+      : expandedTransform();
   });
 
   function tryOpenDeepLink() {

@@ -124,10 +124,13 @@ async function signIn() {
     }
 
     // Save to localStorage
-    localStorage.setItem('rxToken', data.token);
-    localStorage.setItem('rxUser',  data.user.name);
-    localStorage.setItem('rxEmail', data.user.email);
-    localStorage.setItem('role',    data.user.role);
+  // Save under BOTH naming conventions so all JS files work
+localStorage.setItem('rxToken', data.token);
+localStorage.setItem('token',   data.token);
+localStorage.setItem('rxUser',  data.user.name);
+localStorage.setItem('rxEmail', data.user.email);
+localStorage.setItem('role',    data.user.role);
+localStorage.setItem('user',    JSON.stringify(data.user));
 
     // Redirect based on role
     if (data.user.role === 'admin') {
@@ -143,45 +146,52 @@ async function signIn() {
 }
 
 // ── Register submit ───────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelector('.card-back .btn-primary')
-    ?.addEventListener('click', async () => {
-      const nameOk  = validateRegName();
-      const emailOk = validateRegEmail();
-      const passOk  = validateRegPassword();
-      if (!nameOk || !emailOk || !passOk) return;
+async function handleRegister() {
+  const nameOk  = validateRegName();
+  const emailOk = validateRegEmail();
+  const passOk  = validateRegPassword();
+  if (!nameOk || !emailOk || !passOk) return;
 
-      ['regName','regEmail','regPassword'].forEach(id => dirtyReg.add(id));
+  ['regName','regEmail','regPassword'].forEach(function(id) { dirtyReg.add(id); });
 
-      const name     = document.getElementById('regName').value.trim();
-      const email    = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value.trim();
+  const name     = document.getElementById('regName').value.trim();
+  const email    = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value.trim();
 
-      try {
-        const res  = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password })
-        });
+  const btn = document.getElementById('registerBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating account...'; }
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          RXValidation.showError(document.getElementById('regEmail'), data.message || 'Registration failed');
-          return;
-        }
-
-        // Save to localStorage
-        localStorage.setItem('rxToken', data.token);
-        localStorage.setItem('rxUser',  data.user.name);
-        localStorage.setItem('rxEmail', data.user.email);
-        localStorage.setItem('role',    data.user.role);
-
-        window.location.href = '/';
-
-      } catch (err) {
-        console.error('Register error:', err);
-        RXValidation.showError(document.getElementById('regEmail'), 'Server error. Please try again.');
-      }
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
     });
-});
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      RXValidation.showError(document.getElementById('regEmail'), data.message || 'Registration failed');
+      if (btn) { btn.disabled = false; btn.textContent = 'Create Account'; }
+      return;
+    }
+
+    localStorage.setItem('rxToken', data.token);
+    localStorage.setItem('token',   data.token);
+    localStorage.setItem('rxUser',  data.user.name);
+    localStorage.setItem('rxEmail', data.user.email);
+    localStorage.setItem('role',    data.user.role);
+    localStorage.setItem('user',    JSON.stringify(data.user));
+
+    if (data.user.role === 'admin') {
+      window.location.href = '/admin.html';
+    } else {
+      window.location.href = '/';
+    }
+
+  } catch (err) {
+    console.error('Register error:', err);
+    RXValidation.showError(document.getElementById('regEmail'), 'Server error. Please try again.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Account'; }
+  }
+}
