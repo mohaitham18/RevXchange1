@@ -132,11 +132,13 @@ localStorage.setItem('rxEmail', data.user.email);
 localStorage.setItem('role',    data.user.role);
 localStorage.setItem('user',    JSON.stringify(data.user));
 
-    // Redirect based on role
+    // Redirect based on role, honouring returnTo param if present
     if (data.user.role === 'admin') {
       window.location.href = '/admin.html';
     } else {
-      window.location.href = '/';
+      const params   = new URLSearchParams(window.location.search);
+      const returnTo = params.get('returnTo');
+      window.location.href = returnTo ? decodeURIComponent(returnTo) : '/';
     }
 
   } catch (err) {
@@ -186,7 +188,9 @@ async function handleRegister() {
     if (data.user.role === 'admin') {
       window.location.href = '/admin.html';
     } else {
-      window.location.href = '/';
+      const params   = new URLSearchParams(window.location.search);
+      const returnTo = params.get('returnTo');
+      window.location.href = returnTo ? decodeURIComponent(returnTo) : '/';
     }
 
   } catch (err) {

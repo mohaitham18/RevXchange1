@@ -139,35 +139,45 @@
     </div>
   </section>
 
-  <!-- ── Brand Selector ────────────────────────────────────── -->
-  <section class="comm-brands-section">
+  <!-- ── Communities Layout ──────────────────────────────────── -->
+  <section class="comm-layout-section">
     <div class="container">
-      <div class="comm-brands-box">
-        <div class="comm-brands-header">
-          <h2 class="section-title">Choose Your Community</h2>
-          <div class="comm-search">
-            <input type="text" id="commSearch" placeholder="Search by model...">
+      <div class="comm-layout">
+
+        <!-- LEFT: Explore Communities (60%) -->
+        <div class="comm-explore">
+          <div class="comm-explore-header">
+            <h2 class="comm-section-title">Explore Communities</h2>
+            <div class="comm-search-wrap">
+              <input type="text" id="commSearch" placeholder="Search communities...">
+            </div>
+          </div>
+          <div class="comm-grid" id="commGrid">
+            <!-- Populated by JS -->
           </div>
         </div>
-        <div class="comm-brands-grid" id="commBrandsGrid"></div>
-        <div class="pagination-pill">
-          <button class="page-arrow" id="pageLeft">‹</button>
-          <span id="pageIndicator">Page 1 of 3</span>
-          <button class="page-arrow" id="pageRight">›</button>
+
+        <!-- RIGHT: Your Communities (40%) -->
+        <div class="comm-yours">
+          <h2 class="comm-section-title">Your Communities</h2>
+          <div class="comm-yours-list" id="commYoursList">
+            <!-- Populated by JS -->
+          </div>
         </div>
+
       </div>
     </div>
   </section>
 
-  <!-- ── Community Feed ─────────────────────────────────────── -->
-  <section class="comm-feed-section" id="commFeed">
+  <!-- ── Community Feed (hidden until Stage D) ─────────────────── -->
+  <section class="comm-feed-section" id="commFeed" style="display:none;">
     <div class="container">
       <div class="comm-feed-box">
         <div class="comm-feed-header" id="commFeedHeader"></div>
         <div class="comm-sort-bar">
           <button class="sort-btn active" data-sort="top">🔥 Top</button>
           <button class="sort-btn" data-sort="new">🕐 New</button>
-          <button class="sort-btn" data-sort="trending">📈 Trending</button>
+          <button class="sort-btn" data-sort="hot">📈 Trending</button>
           <button class="sort-btn" data-sort="controversial">⚡ Controversial</button>
         </div>
         <div class="posts-list" id="postsList"></div>
