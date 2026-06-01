@@ -402,7 +402,16 @@
     card.classList.toggle('rx-fullscreen', on);
 
     const navbar = document.querySelector('.navbar');
-    if (navbar) navbar.classList.toggle('rx-above-card', on);
+    if (navbar) {
+      navbar.classList.toggle('rx-above-card', on);
+      if (on) {
+        navbar.classList.add('scrolled');
+      } else {
+        if (window.scrollY <= 80) {
+          navbar.classList.remove('scrolled');
+        }
+      }
+    }
 
     applyTarget(targetRect());
 
