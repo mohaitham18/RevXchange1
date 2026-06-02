@@ -29,6 +29,7 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/communities', communityRoutes);
     app.use('/api/feed',feedRoutes);
     app.use('/api/posts', postRoutes);
+    app.use('/api/search', require('./routes/searchRoutes'));
    
 
     

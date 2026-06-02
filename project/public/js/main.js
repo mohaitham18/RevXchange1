@@ -72,24 +72,109 @@ const tabData = {
     ],
 
     'Price Ranges': [
-        { name: 'Under 100K', count: '920', label: '< 100K' },
-        { name: '100K – 200K', count: '1,540', label: '100–200K' },
-        { name: '200K – 300K', count: '1,830', label: '200–300K' },
-        { name: '300K – 400K', count: '1,100', label: '300–400K' },
-        { name: '400K – 500K', count: '740', label: '400–500K' },
-        { name: '500K – 600K', count: '530', label: '500–600K' },
-        { name: '600K – 800K', count: '410', label: '600–800K' },
-        { name: '800K – 1M', count: '280', label: '800K–1M' },
-        { name: '1M – 1.2M', count: '220', label: '1–1.2M' },
-        { name: '1.2M – 1.5M', count: '175', label: '1.2–1.5M' },
-        { name: '1.5M – 2M', count: '130', label: '1.5–2M' },
-        { name: '2M – 3M', count: '90', label: '2–3M' },
-        { name: '3M – 5M', count: '55', label: '3–5M' },
-        { name: '5M – 7M', count: '30', label: '5–7M' },
-        { name: '7M – 10M', count: '18', label: '7–10M' },
-        { name: 'Above 10M', count: '9', label: '10M+' },
+        { name: 'Under 100K',   count: '920',   label: '< 100K',   min: null,    max: 100000   },
+        { name: '100K – 200K',  count: '1,540', label: '100–200K', min: 100000,  max: 200000   },
+        { name: '200K – 300K',  count: '1,830', label: '200–300K', min: 200000,  max: 300000   },
+        { name: '300K – 400K',  count: '1,100', label: '300–400K', min: 300000,  max: 400000   },
+        { name: '400K – 500K',  count: '740',   label: '400–500K', min: 400000,  max: 500000   },
+        { name: '500K – 600K',  count: '530',   label: '500–600K', min: 500000,  max: 600000   },
+        { name: '600K – 800K',  count: '410',   label: '600–800K', min: 600000,  max: 800000   },
+        { name: '800K – 1M',    count: '280',   label: '800K–1M',  min: 800000,  max: 1000000  },
+        { name: '1M – 1.2M',    count: '220',   label: '1–1.2M',   min: 1000000, max: 1200000  },
+        { name: '1.2M – 1.5M',  count: '175',   label: '1.2–1.5M', min: 1200000, max: 1500000  },
+        { name: '1.5M – 2M',    count: '130',   label: '1.5–2M',   min: 1500000, max: 2000000  },
+        { name: '2M – 3M',      count: '90',    label: '2–3M',     min: 2000000, max: 3000000  },
+        { name: '3M – 5M',      count: '55',    label: '3–5M',     min: 3000000, max: 5000000  },
+        { name: '5M – 7M',      count: '30',    label: '5–7M',     min: 5000000, max: 7000000  },
+        { name: '7M – 10M',     count: '18',    label: '7–10M',    min: 7000000, max: 10000000 },
+        { name: 'Above 10M',    count: '9',     label: '10M+',     min: 10000000, max: null     },
     ],
 };
+
+// ─── Price bucket boundary → range name map ──────────────────
+const priceBucketMap = {
+    0:         'Under 100K',
+    100000:    '100K – 200K',
+    200000:    '200K – 300K',
+    300000:    '300K – 400K',
+    400000:    '400K – 500K',
+    500000:    '500K – 600K',
+    600000:    '600K – 800K',
+    800000:    '800K – 1M',
+    1000000:   '1M – 1.2M',
+    1200000:   '1.2M – 1.5M',
+    1500000:   '1.5M – 2M',
+    2000000:   '2M – 3M',
+    3000000:   '3M – 5M',
+    5000000:   '5M – 7M',
+    7000000:   '7M – 10M',
+    above:     'Above 10M'
+};
+
+// ─── Static lookup maps (logo/icon fallbacks) ─────────────────
+const brandImgMap  = {};
+const cityIconMap  = {};
+tabData['Top Brands'].forEach(b => brandImgMap[b.name.toLowerCase()] = b.img);
+tabData['Top Cities'].forEach(c => cityIconMap[c.name.toLowerCase()] = c.icon);
+
+// ─── Fetch real counts and rebuild tabData from DB ────────────
+async function loadCarStats() {
+    try {
+        const res  = await fetch('/api/cars/stats');
+        const data = await res.json();
+
+        // Brands — only show brands that exist in DB
+        if (data.brands?.length) {
+            tabData['Top Brands'] = data.brands
+                .filter(b => b._id)
+                .map(b => ({
+                    name:  b._id,
+                    count: b.count.toLocaleString(),
+                    img:   brandImgMap[b._id.toLowerCase()] || '/images/default-brand.png'
+                }));
+        }
+
+        // Cities — only show cities that exist in DB
+        if (data.cities?.length) {
+            tabData['Top Cities'] = data.cities
+                .filter(c => c._id)
+                .map(c => ({
+                    name:  c._id,
+                    count: c.count.toLocaleString(),
+                    icon:  cityIconMap[c._id.toLowerCase()] || '🏙️'
+                }));
+        }
+
+        // Models — only show models that exist in DB (top 16)
+        if (data.models?.length) {
+            tabData['Top Models'] = data.models
+                .filter(m => m._id?.model)
+                .slice(0, 16)
+                .map(m => ({
+                    name:  m._id.model,
+                    brand: m._id.brand,
+                    count: m.count.toLocaleString()
+                }));
+        }
+
+        // Price ranges — only show ranges with at least 1 car
+        if (data.prices?.length) {
+            const priceCountMap = {};
+            data.prices.forEach(p => {
+                const name = priceBucketMap[p._id];
+                if (name) priceCountMap[name] = p.count;
+            });
+            tabData['Price Ranges'] = tabData['Price Ranges']
+                .filter(item => priceCountMap[item.name] > 0)
+                .map(item => ({ ...item, count: priceCountMap[item.name].toLocaleString() }));
+        }
+
+    } catch (err) {
+        console.warn('Could not load car stats, using fallback counts.');
+    }
+
+    renderGrid('Top Brands');
+}
 
 // ─── Render Grid ─────────────────────────────────────────────
 function renderGrid(tabName) {
@@ -98,32 +183,39 @@ function renderGrid(tabName) {
     grid.innerHTML = items.map(item => {
         if (item.img) {
             // Brand card
+            const url = `/used-cars.html?brand=${encodeURIComponent(item.name)}`;
             return `
-        <div class="brand-card">
+        <div class="brand-card" style="cursor:pointer" onclick="window.location.href='${url}'">
           <img src="${item.img}" alt="${item.name}">
           <h4>${item.name}</h4>
           <span>(${item.count})</span>
         </div>`;
         } else if (item.brand) {
             // Model card
+            const url = `/used-cars.html?search=${encodeURIComponent(item.name)}`;
             return `
-        <div class="brand-card model-card">
+        <div class="brand-card model-card" style="cursor:pointer" onclick="window.location.href='${url}'">
           <div class="card-model-name">${item.name}</div>
           <h4>${item.name}</h4>
           <span>(${item.count})</span>
         </div>`;
         } else if (item.icon) {
             // City card
+            const url = `/used-cars.html?city=${encodeURIComponent(item.name)}`;
             return `
-        <div class="brand-card city-card">
+        <div class="brand-card city-card" style="cursor:pointer" onclick="window.location.href='${url}'">
           <div class="card-icon">${item.icon}</div>
           <h4>${item.name}</h4>
           <span>(${item.count})</span>
         </div>`;
         } else {
             // Price card
+            let url = '/used-cars.html?';
+            if (item.min) url += `minPrice=${item.min}&`;
+            if (item.max) url += `maxPrice=${item.max}`;
+            url = url.replace(/[?&]$/, '');
             return `
-        <div class="brand-card price-card">
+        <div class="brand-card price-card" style="cursor:pointer" onclick="window.location.href='${url}'">
           <div class="card-price-badge">EGP<br>${item.label}</div>
           <h4>${item.name}</h4>
           <span>(${item.count})</span>
@@ -249,8 +341,9 @@ function renderCarCard(car) {
           <span>🛣️ ${formatMileage(car.mileage)}</span>
         </div>
         <div class="car-tags">
-          <span class="car-tag">${car.transmission}</span>
-          <span class="car-tag">${car.fuel}</span>
+          <span class="car-tag">${car.transmission ? car.transmission.charAt(0).toUpperCase() + car.transmission.slice(1) : ''}</span>
+          <span class="car-tag">${car.fuel ? car.fuel.charAt(0).toUpperCase() + car.fuel.slice(1) : ''}</span>
+          ${car.color ? `<span class="car-tag">🎨 ${car.color.charAt(0).toUpperCase() + car.color.slice(1)}</span>` : ''}
           ${fabrikaTag}
         </div>
         <div class="car-card-actions">
@@ -297,51 +390,59 @@ document.addEventListener('click', function(e) {
 
 
 //Render: Discover Section
-function renderDiscover() {
+async function renderDiscover() {
     const el = document.getElementById('discoverSection');
     if (!el) return;
 
-    if (!isLoggedIn) {
-        el.innerHTML = `
-      <div class="discover-grid">
+    // Fetch popular searches and most viewed cars in parallel
+    let searchChips = '';
+    let carsToShow  = [];
 
+    try {
+        const [searchRes, carsRes] = await Promise.all([
+            fetch('/api/search/popular?limit=10'),
+            fetch('/api/cars?limit=6&sort=most-viewed')
+        ]);
+
+        const searchData = await searchRes.json();
+        const carsData   = await carsRes.json();
+
+        if (searchData.searches?.length) {
+            searchChips = searchData.searches
+                .map(s => renderChip(s.term.charAt(0).toUpperCase() + s.term.slice(1)))
+                .join('');
+        }
+
+        if (carsData.cars?.length) {
+            carsToShow = carsData.cars.map(c => ({ ...c, id: c._id }));
+        }
+    } catch (err) {
+        console.warn('Could not fetch discover data, using fallback.');
+    }
+
+    // Fallbacks
+    if (!searchChips) {
+        searchChips = popularSearches.map(renderChip).join('');
+    }
+    if (!carsToShow.length) {
+        carsToShow = (typeof mostViewedCars !== 'undefined') ? mostViewedCars.slice(0, 6) : [];
+    }
+
+    el.innerHTML = `
+      <div class="discover-grid">
         <div class="discover-panel">
           <h3 class="discover-panel-title">Popular Searches</h3>
-          <div class="search-chips">
-            ${popularSearches.map(renderChip).join('')}
-          </div>
+          <div class="search-chips">${searchChips}</div>
         </div>
-
         <div class="discover-panel">
           <h3 class="discover-panel-title">Most Viewed Cars</h3>
           <div class="car-cards-grid">
-            ${mostViewedCars.slice(0, 6).map(renderCarCard).join('')}
+            ${carsToShow.length
+              ? carsToShow.map(renderCarCard).join('')
+              : `<p style="color:var(--text-light);font-size:0.9rem;">No cars listed yet. <a href="/sell-car.html" style="color:var(--primary)">Be the first!</a></p>`}
           </div>
         </div>
-
       </div>`;
-    } else {
-        el.innerHTML = `
-      <div class="discover-grid">
-
-        <div class="discover-panel">
-          <h3 class="discover-panel-title">Saved Searches</h3>
-          <div class="discover-empty">
-            <span>🔍</span>
-            No saved searches yet.
-          </div>
-        </div>
-
-        <div class="discover-panel">
-          <h3 class="discover-panel-title">Saved Ads</h3>
-          <div class="discover-empty">
-            <span>🚗</span>
-            No saved ads yet.
-          </div>
-        </div>
-
-      </div>`;
-    }
 }
 
 /*Community Preview Data*/
@@ -424,6 +525,6 @@ document.querySelectorAll('.faq-question').forEach(button => {
 });
 
 // ─── Init ─────────────────────────────────────────────────────
-renderGrid('Top Brands');
+loadCarStats();
 renderDiscover();
 renderCommunityPreview();
