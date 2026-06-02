@@ -49,6 +49,7 @@ mongoose.connect(process.env.MONGO_URI)
     app.get('/used-cars.html',     (_, res) => res.sendFile(path.join(views, 'used-cars.html')));
     app.get('/buy-cars.html',      (_, res) => res.sendFile(path.join(views, 'buy-cars.html')));
     app.get('/communities.html',   (_, res) => res.sendFile(path.join(views, 'communities.html')));
+    app.get('/feed.html',          (_, res) => res.sendFile(path.join(views, 'feed.html')));
     app.get('/sell-car.html',      (_, res) => res.sendFile(path.join(views, 'sell-car.html')));
     app.get('/login.html',         (_, res) => res.sendFile(path.join(views, 'login.html')));
     app.get('/dashboard.html',     (_, res) => res.sendFile(path.join(views, 'dashboard.html')));
