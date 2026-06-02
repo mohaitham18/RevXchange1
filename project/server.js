@@ -13,21 +13,23 @@ mongoose.connect(process.env.MONGO_URI)
     console.log('MongoDB connected ✅');
 
     // ── Routes ──────────────────────────────────────────────
-    const userRoutes      = require('./routes/userRoutes');
-    const carRoutes       = require('./routes/carRoutes');
-    const adminRoutes     = require('./routes/adminRoutes');
-    const requestRoutes   = require('./routes/requestRoutes');
+    const userRoutes = require('./routes/userRoutes');
+    const carRoutes = require('./routes/carRoutes');
+    const adminRoutes = require('./routes/adminRoutes');
+    const requestRoutes = require('./routes/requestRoutes');
     const communityRoutes = require('./routes/communityRoutes');
-    const feedRoutes      = require('./routes/feedRoutes');
+    const feedRoutes = require('./routes/feedRoutes');
+     const postRoutes = require('./routes/postRoutes');
 
-
-    app.use('/api/auth',        userRoutes);
-    app.use('/api/users',       userRoutes);
-    app.use('/api/cars',        carRoutes);
-    app.use('/api/admin',       adminRoutes);
-    app.use('/api/requests',    requestRoutes);
+    app.use('/api/auth', userRoutes);
+    app.use('/api/users', userRoutes);
+    app.use('/api/cars', carRoutes);
+    app.use('/api/admin',  adminRoutes);
+    app.use('/api/requests', requestRoutes);
     app.use('/api/communities', communityRoutes);
-    app.use('/api/feed',        feedRoutes);
+    app.use('/api/feed',feedRoutes);
+    app.use('/api/posts', postRoutes);
+   
 
     
     console.log('Routes registered ✅');
