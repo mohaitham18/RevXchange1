@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Car Communities — RevXChange</title>
+  <title>Feed — RevXChange</title>
 
   <link rel="stylesheet" href="/css/base/reset.css">
   <link rel="stylesheet" href="/css/base/variables.css">
@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/css/components/navbar.css">
   <link rel="stylesheet" href="/css/components/cara.css">
   <link rel="stylesheet" href="/css/pages/communities.css">
+  <link rel="stylesheet" href="/css/pages/feed.css">
   <link rel="stylesheet" href="/css/base/ambient.css">
 </head>
 <body>
@@ -44,7 +45,7 @@
             <span class="cara-spark"></span>
           </a>
         </li>
-        <li><a href="/feed.html">Car Communities</a></li>
+        <li><a href="communities.html">Car Communities</a></li>
         <span class="nav-indicator" id="navIndicator"></span>
       </ul>
 
@@ -93,29 +94,38 @@
     </div>
   </nav>
 
-  <!-- ── Page Hero ──────────────────────────────────────────── -->
-  <section class="comm-hero">
+  <!-- ── Feed Hero (minimal) ──────────────────────────────────── -->
+  <section class="feed-hero">
     <div class="container">
-      <h1>Car Communities</h1>
-      <p>One community per model. Find owners, mechanics, and real advice.</p>
+      <div class="feed-hero-inner">
+        <div class="feed-hero-text">
+          <h1 id="feedHeroTitle">Community Feed</h1>
+          <p id="feedHeroSub">Top posts from across RevXChange communities</p>
+        </div>
+        <div class="feed-sort-tabs" id="feedSortTabs">
+          <button class="feed-sort-btn active" data-sort="top">🔥 Top</button>
+          <button class="feed-sort-btn" data-sort="new">🕐 New</button>
+          <button class="feed-sort-btn" data-sort="hot">📈 Trending</button>
+          <button class="feed-sort-btn" data-sort="controversial">⚡ Controversial</button>
+        </div>
+      </div>
     </div>
 
-    <!-- Hero → BG melt -->
     <div class="rx-melt-wrap">
       <svg viewBox="0 0 1440 74" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <linearGradient id="meltMainCM" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="meltMainFD" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stop-color="#5a0f1c" stop-opacity="1"/>
             <stop offset="55%"  stop-color="#6b1222" stop-opacity="0.80"/>
             <stop offset="100%" stop-color="#3e0a13" stop-opacity="0"/>
           </linearGradient>
-          <linearGradient id="meltBloomCM" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="meltBloomFD" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stop-color="#8b1a2a" stop-opacity="0.45"/>
             <stop offset="70%"  stop-color="#5a0f1c" stop-opacity="0.15"/>
             <stop offset="100%" stop-color="#5a0f1c" stop-opacity="0"/>
           </linearGradient>
         </defs>
-        <path fill="url(#meltBloomCM)">
+        <path fill="url(#meltBloomFD)">
           <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
             keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
             values="
@@ -125,7 +135,7 @@
               M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z
             "/>
         </path>
-        <path fill="url(#meltMainCM)">
+        <path fill="url(#meltMainFD)">
           <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
             keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
             values="
@@ -139,54 +149,133 @@
     </div>
   </section>
 
-  <!-- ── Communities Layout ──────────────────────────────────── -->
-  <section class="comm-layout-section">
+  <!-- ── Three-column layout ──────────────────────────────────── -->
+  <section class="feed-layout-section">
     <div class="container">
-      <div class="comm-layout">
+      <div class="feed-layout">
 
-        <!-- LEFT: Explore Communities (60%) -->
-        <div class="comm-explore">
-          <div class="comm-explore-header">
-            <h2 class="comm-section-title">Explore Communities</h2>
-            <div class="comm-search-wrap">
-              <input type="text" id="commSearch" placeholder="Search communities...">
+        <!-- LEFT: Your Communities -->
+        <aside class="feed-left" id="feedLeft">
+          <div class="feed-sidebar-box">
+            <div class="feed-sidebar-title">Your Communities</div>
+            <div id="feedYourComms">
+              <!-- populated by JS -->
+            </div>
+            <a href="/communities.html" class="feed-explore-btn">
+              + Explore Communities
+            </a>
+          </div>
+        </aside>
+
+        <!-- CENTER: Posts -->
+        <main class="feed-center">
+
+          <!-- What's on your mind bar -->
+          <div class="feed-compose-bar" id="feedComposeBar">
+            <div class="feed-compose-avatar" id="feedComposeAvatar">?</div>
+            <div class="feed-compose-input" id="feedComposeInput">
+              What's on your mind?
+            </div>
+            <button class="feed-compose-btn" id="feedComposeBtn">+ Post</button>
+          </div>
+
+          <!-- Create post modal -->
+          <div class="feed-modal-overlay" id="feedPostModal">
+            <div class="feed-modal-card">
+
+              <div class="feed-modal-header">
+                <h3 class="feed-modal-title">Create Post</h3>
+                <button class="feed-modal-close" id="feedModalClose">✕</button>
+              </div>
+
+              <div class="feed-modal-body">
+
+                <!-- Community selector -->
+                <div class="feed-modal-field">
+                  <label class="feed-modal-label">Community</label>
+                  <select class="feed-modal-select" id="feedPostCommunity">
+                    <option value="">Select a community...</option>
+                  </select>
+                </div>
+
+                <!-- Variant selector (hidden by default) -->
+                <div class="feed-modal-field" id="feedVariantField" style="display:none;">
+                  <label class="feed-modal-label">Posting as</label>
+                  <select class="feed-modal-select" id="feedPostVariant">
+                    <option value="">General — no specific variant</option>
+                  </select>
+                </div>
+
+                <!-- Title -->
+                <div class="feed-modal-field">
+                  <label class="feed-modal-label">Title <span class="feed-modal-required">*</span></label>
+                  <input type="text"
+                         class="feed-modal-input"
+                         id="feedPostTitle"
+                         placeholder="Give your post a title..."
+                         maxlength="300">
+                  <div class="feed-modal-counter" id="feedTitleCounter">0 / 300</div>
+                </div>
+
+                <!-- Body -->
+                <div class="feed-modal-field">
+                  <label class="feed-modal-label">Body <span style="font-size:0.75rem;color:var(--text-light);font-weight:400;">(optional)</span></label>
+                  <textarea class="feed-modal-textarea"
+                            id="feedPostBody"
+                            placeholder="Share your thoughts, questions, or tips..."
+                            maxlength="10000"
+                            rows="5"></textarea>
+                  <div class="feed-modal-counter" id="feedBodyCounter">0 / 10,000</div>
+                </div>
+
+              </div>
+
+              <div class="feed-modal-footer">
+                <button class="feed-modal-cancel" id="feedModalCancel">Cancel</button>
+                <button class="feed-modal-submit" id="feedModalSubmit" disabled>
+                  <span class="feed-submit-label">Post</span>
+                  <span class="feed-submit-spinner" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5"
+                         style="animation:feedSpin 0.8s linear infinite;">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                  </span>
+                </button>
+              </div>
+
             </div>
           </div>
-          <div class="comm-grid" id="commGrid">
-            <!-- Populated by JS -->
+
+          <div id="feedPosts">
+            <!-- populated by JS -->
           </div>
-        </div>
+          <div id="feedPagination" class="feed-pagination"></div>
+        </main>
 
-        <!-- RIGHT: Your Communities (40%) -->
-        <div class="comm-yours">
-          <h2 class="comm-section-title">Your Communities</h2>
-          <div class="comm-yours-list" id="commYoursList">
-            <!-- Populated by JS -->
+        <!-- RIGHT: Suggestions + Trending -->
+        <aside class="feed-right" id="feedRight">
+          <div class="feed-sidebar-box" id="feedSuggested">
+            <div class="feed-sidebar-title">Explore More</div>
+            <!-- populated by JS -->
           </div>
-        </div>
+          <div class="feed-sidebar-box feed-suggest-box">
+            <div class="feed-suggest-icon">✦</div>
+            <div class="feed-suggest-text">
+              Don't see your community?
+            </div>
+            <a href="/communities.html" class="feed-suggest-btn">
+              Suggest a Community
+            </a>
+          </div>
+        </aside>
 
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Community Feed (hidden until Stage D) ─────────────────── -->
-  <section class="comm-feed-section" id="commFeed" style="display:none;">
-    <div class="container">
-      <div class="comm-feed-box">
-        <div class="comm-feed-header" id="commFeedHeader"></div>
-        <div class="comm-sort-bar">
-          <button class="sort-btn active" data-sort="top">🔥 Top</button>
-          <button class="sort-btn" data-sort="new">🕐 New</button>
-          <button class="sort-btn" data-sort="hot">📈 Trending</button>
-          <button class="sort-btn" data-sort="controversial">⚡ Controversial</button>
-        </div>
-        <div class="posts-list" id="postsList"></div>
       </div>
     </div>
   </section>
 
   <script src="/js/ambient.js"></script>
-  <script src="/js/communities.js"></script>
+  <script src="/js/feed.js"></script>
   <script src="/js/navbar.js"></script>
   <script src="/js/cara.js"></script>
 </body>

@@ -114,7 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const allNavLinks = document.querySelectorAll('.nav-links a');
   let commNavLink = null;
   allNavLinks.forEach(a => {
-    if (a.getAttribute('href') && a.getAttribute('href').includes('communities')) {
+    const href = a.getAttribute('href') || '';
+    if (a.textContent.trim() === 'Car Communities' ||
+        href.includes('communities') || href.includes('feed')) {
       commNavLink = a;
     }
   });
