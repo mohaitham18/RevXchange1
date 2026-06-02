@@ -5,6 +5,8 @@ const router = express.Router();
 
 const Post = require('../models/Post');
 const CommunityMembership = require('../models/CommunityMembership');
+require('../models/Brand');
+require('../models/CarVariant');
 
 const optionalAuth = async (req, res, next) => {
   try {
