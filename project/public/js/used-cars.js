@@ -70,6 +70,8 @@ function buildParams(page = 1) {
   if (brandFilter?.value)    params.set('brand',        brandFilter.value);
   if (cityFilter?.value)     params.set('city',         cityFilter.value);
   if (transmissionFilter?.value) params.set('transmission', transmissionFilter.value);
+  const minPrice = document.getElementById('minPriceFilter')?.value;
+  if (minPrice)              params.set('minPrice',     minPrice);
   if (maxPriceFilter?.value) params.set('maxPrice',     maxPriceFilter.value);
   if (fabrikaFilter?.checked) params.set('fabrika',     'true');
   if (sortSelect?.value && sortSelect.value !== 'default') params.set('sort', sortSelect.value);
@@ -92,9 +94,9 @@ function renderCarCard(car) {
       <button type="button" class="save-car-btn ${isSaved ? 'saved' : ''}" data-id="${carId}">
         ${isSaved ? '♥ Saved' : '♡ Save'}
       </button>
-      <div class="car-card-img">
+      <div class="car-card-img carousel-wrapper">
         ${imgSrc
-          ? `<img src="${imgSrc}" alt="${car.brand}" class="car-card-brand-img">`
+          ? `<div class="carousel-slide active"><img src="${imgSrc}" alt="${car.brand}" class="car-card-brand-img"></div>`
           : `<span class="car-card-fallback">🚗</span>`}
       </div>
       <div class="car-card-info">
@@ -107,6 +109,8 @@ function renderCarCard(car) {
         <div class="car-tags">
           <span class="car-tag">${niceText(car.transmission)}</span>
           <span class="car-tag">${niceText(car.fuel)}</span>
+          ${car.color ? `<span class="car-tag">🎨 ${niceText(car.color)}</span>` : ''}
+          ${car.fabrika ? `<span class="car-tag car-tag-fabrika">Fabrika</span>` : ''}
         </div>
         <div class="car-card-actions">
           <a href="${whatsappHref}" target="_blank" class="car-action-btn car-action-whatsapp">WhatsApp</a>
@@ -186,10 +190,53 @@ async function loadBrands() {
   } catch { /* keep defaults */ }
 }
 
+// ── Search clear button ───────────────────────────────────────
+function updateSearchClearBtn(show) {
+  let btn = document.getElementById('ucClearSearchBtn');
+  if (show) {
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id        = 'ucClearSearchBtn';
+      btn.className = 'uc-clear-btn';
+      btn.textContent = '✕ Clear';
+      btn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        btn.remove();
+        loadCars(1);
+      });
+      searchBtn?.insertAdjacentElement('afterend', btn);
+    }
+  } else {
+    btn?.remove();
+  }
+}
+
+// ── Log search term ───────────────────────────────────────────
+function logSearchTerm(term) {
+  if (!term || term.length < 2) return;
+  const normalized = term.toLowerCase();
+  const key = 'rxSearch_' + normalized;
+  if (localStorage.getItem(key)) return;
+  fetch('/api/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ term: normalized })
+  }).then(() => localStorage.setItem(key, '1')).catch(() => {});
+}
+
 // ── Main load function ────────────────────────────────────────
 async function loadCars(page = 1) {
   if (!usedCarsGrid) return;
   currentPage = page;
+
+  // Log search term if present
+  const searchTerm = searchInput?.value.trim();
+  if (searchTerm) {
+    logSearchTerm(searchTerm);
+    updateSearchClearBtn(true);
+  } else {
+    updateSearchClearBtn(false);
+  }
 
   try {
     usedCarsGrid.innerHTML = `<div class="no-results">Loading cars...</div>`;
@@ -257,5 +304,18 @@ document.addEventListener('click', e => {
   if (carId) toggleSaveCar(carId, saveBtn);
 });
 
-loadCars(1);
-loadBrands();
+// ── Init: read URL params then load ──────────────────────────
+loadBrands().then(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get('brand')    && brandFilter)        brandFilter.value        = params.get('brand');
+  if (params.get('city')     && cityFilter)          cityFilter.value         = params.get('city');
+  if (params.get('search')   && searchInput)         searchInput.value        = params.get('search');
+  if (params.get('maxPrice') && maxPriceFilter)      maxPriceFilter.value     = params.get('maxPrice');
+
+  // minPrice needs its own input element
+  const minPriceFilter = document.getElementById('minPriceFilter');
+  if (params.get('minPrice') && minPriceFilter)      minPriceFilter.value     = params.get('minPrice');
+
+  loadCars(1);
+});
