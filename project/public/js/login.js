@@ -131,6 +131,7 @@ localStorage.setItem('rxUser',  data.user.name);
 localStorage.setItem('rxEmail', data.user.email);
 localStorage.setItem('role',    data.user.role);
 localStorage.setItem('user',    JSON.stringify(data.user));
+localStorage.setItem('rxUserId', data.user._id || data.user.id || '');
 
     // Redirect based on role, honouring returnTo param if present
     if (data.user.role === 'admin') {
@@ -184,6 +185,7 @@ async function handleRegister() {
     localStorage.setItem('rxEmail', data.user.email);
     localStorage.setItem('role',    data.user.role);
     localStorage.setItem('user',    JSON.stringify(data.user));
+    localStorage.setItem('rxUserId', data.user._id || data.user.id || '');
 
     if (data.user.role === 'admin') {
       window.location.href = '/admin.html';

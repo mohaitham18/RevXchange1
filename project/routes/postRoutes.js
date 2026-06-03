@@ -97,4 +97,55 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
+// PATCH /api/posts/:id — edit post (author only)
+router.patch('/:id', protect, async (req, res) => {
+  try {
+    const { title, body } = req.body;
+
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    if (post.isDeleted) return res.status(404).json({ message: 'Post not found' });
+    if (post.authorId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not your post' });
+    }
+
+    if (title) post.title = title.trim();
+    if (body !== undefined) post.body = body;
+    post.isEdited  = true;
+    post.editedAt  = new Date();
+    post.updatedAt = new Date();
+
+    await post.save();
+
+    res.json({ success: true, post });
+  } catch (err) {
+    console.error('PATCH /api/posts/:id error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// DELETE /api/posts/:id — soft delete (author only)
+router.delete('/:id', protect, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    if (post.authorId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not your post' });
+    }
+
+    post.isDeleted = true;
+    post.deletedAt = new Date();
+    await post.save();
+
+    await Community.findByIdAndUpdate(post.communityId, {
+      $inc: { postCount: -1 }
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /api/posts/:id error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
