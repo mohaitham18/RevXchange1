@@ -394,91 +394,267 @@
 
 .view-all-link:hover { opacity: 0.7; }
 
-.community-preview-grid {
+/* ── New two-column layout ── */
+.hc-layout {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    grid-template-columns: 3fr 2fr;
+    gap: 24px;
+    align-items: start;
 }
 
-.community-preview-card {
-    background: var(--white);
-    border-radius: var(--radius);
-    padding: 22px;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
-    cursor: pointer;
+/* ── Left: Live Posts ── */
+.hc-posts-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.hc-post-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px 22px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
     text-decoration: none;
     display: block;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
 }
 
-.community-preview-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    border-color: rgba(90,15,28,0.1);
+.hc-post-card:hover {
+    box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
 }
 
-.comm-card-label {
+.hc-post-comm-tag {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: rgba(90,15,28,0.07);
-    color: var(--primary);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 999px;
-    margin-bottom: 14px;
-    font-family: 'Segoe UI', sans-serif;
+    margin-bottom: 10px;
 }
 
-.comm-card-label img {
-    width: 16px;
-    height: 16px;
+.hc-post-comm-logo {
+    width: 18px;
+    height: 18px;
     object-fit: contain;
 }
 
-.comm-card-text {
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: var(--text-dark);
-    line-height: 1.65;
-    margin-bottom: 16px;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.hc-post-comm-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-light);
     font-family: 'Segoe UI', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
 }
 
-.comm-card-footer {
+.hc-post-title {
+    font-size: 0.97rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    font-family: 'Segoe UI', sans-serif;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.hc-post-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 12px;
+}
+
+.hc-post-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hc-post-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(90,15,28,0.08);
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.hc-post-author-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.hc-post-time {
+    font-size: 0.72rem;
     color: var(--text-light);
     font-family: 'Segoe UI', sans-serif;
 }
 
-.comm-card-author {
+.hc-post-stats {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    gap: 12px;
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 600;
 }
 
-.comm-card-avatar {
-    width: 24px;
-    height: 24px;
-    background: rgba(90,15,28,0.08);
+/* skeleton */
+.hc-skel {
+    background: linear-gradient(90deg, #e8eaed 25%, #f2f3f5 50%, #e8eaed 75%);
+    background-size: 200% 100%;
+    animation: hcSkel 1.3s infinite;
+    border-radius: 14px;
+    height: 110px;
+}
+
+@keyframes hcSkel {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ── Right: Community Highlights ── */
+.hc-comms-col {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+
+.hc-comms-header {
+    padding: 16px 18px 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-light);
+    font-family: 'Segoe UI', sans-serif;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.hc-comm-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 18px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    transition: background 0.15s ease;
+}
+
+.hc-comm-row:last-of-type {
+    border-bottom: none;
+}
+
+.hc-comm-row:hover {
+    background: rgba(90,15,28,0.03);
+}
+
+.hc-comm-logo-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.hc-comm-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    display: block;
+}
+
+.hc-comm-glow-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
+    border: 2px solid #fff;
 }
 
-.comm-card-stats {
-    display: flex;
-    gap: 10px;
+.hc-comm-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.hc-comm-name {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    font-family: 'Segoe UI', sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hc-comm-members {
+    font-size: 0.72rem;
+    color: var(--text-light);
+    font-family: 'Segoe UI', sans-serif;
+    margin-top: 2px;
+}
+
+.hc-comm-join-btn {
+    padding: 5px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--primary);
+    background: transparent;
+    color: var(--primary);
+    font-size: 11.5px;
+    font-weight: 700;
+    font-family: 'Segoe UI', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.hc-comm-join-btn:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+.hc-comm-join-btn.joined {
+    background: rgba(90,15,28,0.07);
+    border-color: transparent;
+    color: var(--primary);
+    cursor: default;
+    pointer-events: none;
+}
+
+.hc-comms-footer {
+    padding: 14px 18px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.hc-comms-explore-btn {
+    display: block;
+    text-align: center;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1.5px dashed rgba(90,15,28,0.25);
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Segoe UI', sans-serif;
+    text-decoration: none;
+    transition: all 0.18s ease;
+}
+
+.hc-comms-explore-btn:hover {
+    background: rgba(90,15,28,0.05);
+    border-color: var(--primary);
 }
 
 

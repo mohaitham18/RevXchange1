@@ -109,4 +109,70 @@ router.patch('/:id/variant', protect, async (req, res) => {
   }
 });
 
+// ── GET /api/communities/:slug/posts ─────────────────────────
+router.get('/:slug/posts', optionalAuth, async (req, res) => {
+  try {
+    const Post = require('../models/Post');
+
+    const community = await Community.findOne({ slug: req.params.slug })
+      .populate('brandId', 'name slug logoUrl glowColor')
+      .lean();
+    if (!community) {
+      return res.status(404).json({ message: 'Community not found' });
+    }
+
+    const allowed = ['top', 'new', 'hot', 'controversial'];
+    const sort  = allowed.includes(req.query.sort) ? req.query.sort : 'top';
+    const page  = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = 12;
+    const skip  = (page - 1) * limit;
+
+    const sortMap = {
+      top:           { score: -1, createdAt: -1 },
+      new:           { createdAt: -1 },
+      hot:           { hotScore: -1, createdAt: -1 },
+      controversial: { controversyScore: -1, createdAt: -1 }
+    };
+
+    const filter = { communityId: community._id, isDeleted: false };
+    const total  = await Post.countDocuments(filter);
+
+    const posts = await Post.find(filter)
+      .populate('authorId', 'name email')
+      .populate({
+        path: 'communityId',
+        select: 'name slug isCentral memberCount postCount brandId',
+        populate: { path: 'brandId', select: 'name slug logoUrl glowColor' }
+      })
+      .populate('variantId', 'label yearStart yearEnd order')
+      .sort(sortMap[sort])
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const formatted = posts.map(p => ({
+      ...p,
+      author:    p.authorId || null,
+      community: p.communityId
+        ? { ...p.communityId, brand: p.communityId.brandId || null }
+        : null,
+      variant: p.variantId || null
+    }));
+
+    res.json({
+      posts: formatted,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNextPage: page * limit < total,
+      sort,
+      source: 'community'
+    });
+  } catch (err) {
+    console.error('GET /api/communities/:slug/posts error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
