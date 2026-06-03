@@ -4,7 +4,10 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 const Post = require('../models/Post');
+const Vote = require('../models/Vote');
 const CommunityMembership = require('../models/CommunityMembership');
+
+// Register referenced models for populate()
 require('../models/Brand');
 require('../models/CarVariant');
 
@@ -112,6 +115,24 @@ router.get('/', optionalAuth, async (req, res) => {
       .limit(limit)
       .lean();
 
+    let userVoteMap = new Map();
+
+    if (isLoggedIn && posts.length > 0) {
+      const postIds = posts.map(post => post._id);
+
+      const userVotes = await Vote.find({
+        userId: req.user.id,
+        postId: { $in: postIds }
+      }).lean();
+
+      userVoteMap = new Map(
+        userVotes.map(vote => [
+          vote.postId.toString(),
+          vote.value
+        ])
+      );
+    }
+
     const formattedPosts = posts.map(post => {
       const community = post.communityId;
       const author = post.authorId;
@@ -136,6 +157,8 @@ router.get('/', optionalAuth, async (req, res) => {
         hotScore: post.hotScore || 0,
         controversyScore: post.controversyScore || 0,
         commentCount: post.commentCount || 0,
+
+        userVote: userVoteMap.get(post._id.toString()) || 0,
 
         isEdited: post.isEdited,
         editedAt: post.editedAt,
@@ -195,6 +218,7 @@ router.get('/', optionalAuth, async (req, res) => {
     });
   } catch (err) {
     console.error('GET /api/feed error:', err);
+
     res.status(500).json({
       message: 'Server error',
       error: err.message
