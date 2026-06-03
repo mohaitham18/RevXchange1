@@ -5,10 +5,21 @@
 
 (function () {
 
+  const DELETED_POST_TOMBSTONE_MS = 5 * 60 * 1000; // 5 minutes
+
   // ── Auth helpers ─────────────────────────────────────────
   function getToken() { return localStorage.getItem('rxToken') || null; }
   function isLoggedIn() { return !!getToken(); }
   function getUserName() { return localStorage.getItem('rxUser') || null; }
+
+  // Backfill rxUserId for sessions that predate the explicit save
+  if (!localStorage.getItem('rxUserId')) {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      const id = u._id || u.id || '';
+      if (id) localStorage.setItem('rxUserId', id);
+    } catch {}
+  }
 
   // ── State ────────────────────────────────────────────────
   let currentSort   = 'top';
@@ -102,13 +113,18 @@
                  src="${logo}" alt="${name}"
                  onerror="this.style.opacity='0'">
             <span class="feed-comm-name">${name}</span>
-            ${!isCentral ? `<span class="feed-comm-dot" style="background:${glow}"></span>` : ''}
+            ${!isCentral ? `<span class="feed-comm-dot" style="background:${glow}"></span>
+            <button class="feed-comm-menu-btn"
+                    data-commid="${c._id}"
+                    data-commname="${(c.brandId?.name || '') + ' ' + c.name}"
+                    aria-label="Community options">⋯</button>` : ''}
           </div>`;
       }).join('')}`;
 
     // Click handlers
     el.querySelectorAll('.feed-comm-item').forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.feed-comm-menu-btn')) return;
         const id = item.dataset.commid;
         currentCommId = id === 'null' ? null : id;
         currentPage   = 1;
@@ -221,6 +237,11 @@
     }
 
     container.innerHTML = posts.map(renderPostCard).join('');
+    // Build menus after render
+    posts.forEach(p => buildPostMenu(
+      p._id,
+      (p.author?._id || p.authorId?._id || '').toString()
+    ));
   }
 
   // ── Single post card ─────────────────────────────────────
@@ -267,6 +288,20 @@
         ${post.title ? `<div class="feed-post-title">${post.title}</div>` : ''}
         ${bodyPreview ? `<div class="feed-post-body">${bodyPreview}</div>` : ''}
 
+        <div class="feed-post-menu-wrap">
+          <button class="feed-post-menu-btn"
+                  data-postid="${post._id}"
+                  data-authorid="${post.author?._id || ''}"
+                  aria-label="Post options">⋯</button>
+          <div class="feed-post-dropdown" id="postMenu_${post._id}">
+            <button class="feed-post-dropdown-item"
+                    data-action="report"
+                    data-postid="${post._id}">
+              🚩 Report Post
+            </button>
+          </div>
+        </div>
+
         <div class="feed-post-actions">
           <div class="feed-post-vote">
             <button class="feed-vote-btn upvote-btn" data-id="${post._id}" data-value="1">
@@ -286,6 +321,40 @@
         </div>
 
       </div>`;
+  }
+
+  // Build post menu items based on ownership
+  function buildPostMenu(postId, authorId) {
+    const menu = document.getElementById('postMenu_' + postId);
+    if (!menu) return;
+
+    const token    = getToken();
+    const storedId = localStorage.getItem('rxUserId');
+
+    const isOwner = token && storedId && storedId === authorId;
+
+    if (isOwner) {
+      menu.innerHTML = `
+        <button class="feed-post-dropdown-item"
+                data-action="edit" data-postid="${postId}">
+          ✏️ Edit Post
+        </button>
+        <button class="feed-post-dropdown-item danger"
+                data-action="delete" data-postid="${postId}">
+          🗑️ Delete Post
+        </button>
+        <div class="feed-post-dropdown-divider"></div>
+        <button class="feed-post-dropdown-item"
+                data-action="report" data-postid="${postId}">
+          🚩 Report Post
+        </button>`;
+    } else {
+      menu.innerHTML = `
+        <button class="feed-post-dropdown-item"
+                data-action="report" data-postid="${postId}">
+          🚩 Report Post
+        </button>`;
+    }
   }
 
   // ── Pagination ───────────────────────────────────────────
@@ -479,6 +548,18 @@
     updateCounters();
     document.getElementById('feedModalSubmit').disabled = true;
     document.getElementById('feedVariantField').style.display = 'none';
+
+    const modalTitle  = document.querySelector('.feed-modal-title');
+    const submitLabel = document.querySelector('.feed-submit-label');
+    const titleInput  = document.getElementById('feedPostTitle');
+    if (modalTitle)  modalTitle.textContent  = 'Create Post';
+    if (submitLabel) submitLabel.textContent = 'Post';
+    if (titleInput)  titleInput.removeAttribute('data-editing-post-id');
+
+    // Restore community field visibility
+    const commField = document.getElementById('feedPostCommunity')
+                               ?.closest('.feed-modal-field');
+    if (commField) commField.style.display = '';
   }
 
   // Update character counters
@@ -513,53 +594,81 @@
 
   // Submit post
   async function submitPost() {
+    const titleInput  = document.getElementById('feedPostTitle');
+    const editingId   = titleInput?.getAttribute('data-editing-post-id') || null;
+    const isEditing   = !!editingId;
     const communityId = document.getElementById('feedPostCommunity')?.value;
-    const title       = document.getElementById('feedPostTitle')?.value.trim();
-    const body        = document.getElementById('feedPostBody')?.value.trim();
+    const title       = titleInput?.value.trim();
+    const body        = document.getElementById('feedPostBody')?.value.trim() || '';
     const variantId   = document.getElementById('feedPostVariant')?.value || null;
 
-    if (!title || !communityId) return;
+    if (!title) return;
+    if (!isEditing && !communityId) return;
 
     const submitBtn     = document.getElementById('feedModalSubmit');
-    const submitLabel   = submitBtn.querySelector('.feed-submit-label');
-    const submitSpinner = submitBtn.querySelector('.feed-submit-spinner');
+    const submitLabel   = submitBtn?.querySelector('.feed-submit-label');
+    const submitSpinner = submitBtn?.querySelector('.feed-submit-spinner');
 
     // Show spinner
-    submitBtn.disabled = true;
-    submitLabel.style.display = 'none';
-    submitSpinner.style.display = 'flex';
+    if (submitBtn)     submitBtn.disabled = true;
+    if (submitLabel)   submitLabel.style.display = 'none';
+    if (submitSpinner) submitSpinner.style.display = 'flex';
+
+    const url    = isEditing ? `/api/posts/${editingId}` : '/api/posts';
+    const method = isEditing ? 'PATCH' : 'POST';
+    const payload = isEditing
+      ? { title, body }
+      : { communityId, title, body, variantId: variantId || undefined };
 
     try {
-      const res = await fetch('/api/posts', {
-        method: 'POST',
+      const res  = await fetch(url, {
+        method,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type':  'application/json',
           'Authorization': 'Bearer ' + getToken()
         },
-        body: JSON.stringify({
-          communityId,
-          title,
-          body,
-          variantId: variantId || undefined
-        })
+        body: JSON.stringify(payload)
       });
+      const data = await res.json();
+
+      // Reset spinner regardless of outcome
+      if (submitBtn)     submitBtn.disabled = false;
+      if (submitLabel)   submitLabel.style.display = '';
+      if (submitSpinner) submitSpinner.style.display = 'none';
 
       if (res.ok) {
-        const data = await res.json();
         closePostModal();
-        insertPendingPost(data.post);
+
+        if (isEditing) {
+          const postEl = document.querySelector(`.feed-post[data-id="${editingId}"]`);
+          if (postEl) {
+            const titleEl  = postEl.querySelector('.feed-post-title');
+            const bodyEl   = postEl.querySelector('.feed-post-body');
+            const authorEl = postEl.querySelector('.feed-post-author');
+
+            if (titleEl) titleEl.textContent = title;
+            if (bodyEl && body) bodyEl.textContent = body;
+
+            if (authorEl && !authorEl.querySelector('.feed-edited-tag')) {
+              const tag = document.createElement('span');
+              tag.className = 'feed-edited-tag';
+              tag.textContent = ' (edited)';
+              authorEl.appendChild(tag);
+            }
+          }
+        } else {
+          insertPendingPost(data.post);
+        }
       } else {
-        const err = await res.json();
-        console.error('Post failed:', err.message);
-        submitBtn.disabled = false;
-        submitLabel.style.display = '';
-        submitSpinner.style.display = 'none';
+        console.error('Submit failed:', data.message);
+        alert(data.message || 'Failed to submit post. Please try again.');
       }
     } catch (e) {
       console.error('Submit error:', e);
-      submitBtn.disabled = false;
-      submitLabel.style.display = '';
-      submitSpinner.style.display = 'none';
+      if (submitBtn)     submitBtn.disabled = false;
+      if (submitLabel)   submitLabel.style.display = '';
+      if (submitSpinner) submitSpinner.style.display = 'none';
+      alert('Network error. Please try again.');
     }
   }
 
@@ -568,8 +677,26 @@
     const container = document.getElementById('feedPosts');
     if (!container) return;
 
+    // postRoutes returns authorId/communityId fields — normalize
+    // to match the shape renderPostCard expects (author/community)
+    const normalized = {
+      ...post,
+      author: post.authorId || post.author,
+      community: post.communityId
+        ? {
+            _id:         post.communityId._id,
+            name:        post.communityId.name,
+            slug:        post.communityId.slug,
+            isCentral:   post.communityId.isCentral,
+            memberCount: post.communityId.memberCount,
+            postCount:   post.communityId.postCount,
+            brand:       post.communityId.brandId || null
+          }
+        : (post.community || null),
+      variant: post.variantId || post.variant || null
+    };
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = renderPostCard(post);
+    wrapper.innerHTML = renderPostCard(normalized);
     const postEl = wrapper.firstElementChild;
     postEl.classList.add('feed-post-pending');
 
@@ -578,6 +705,10 @@
     postEl.appendChild(bar);
 
     container.insertBefore(postEl, container.firstChild);
+    buildPostMenu(
+      post._id || normalized?._id,
+      (post.author?._id || post.authorId?._id || '').toString()
+    );
 
     setTimeout(() => {
       postEl.classList.remove('feed-post-pending');
@@ -622,5 +753,345 @@
 
   // Init compose bar
   updateComposeBar();
+
+  // ── Post three-dot menu handler ───────────────────────────
+
+  let activePostMenu = null;
+  let postMenuJustOpened = false;
+
+  document.addEventListener('click', (e) => {
+    // Toggle post menu
+    const menuBtn = e.target.closest('.feed-post-menu-btn');
+    if (menuBtn) {
+      e.stopPropagation();
+      const postId = menuBtn.dataset.postid;
+      const menu   = document.getElementById('postMenu_' + postId);
+      if (!menu) return;
+
+      const isOpen = menu.classList.contains('rx-open');
+
+      // Close any other open menu first
+      if (activePostMenu && activePostMenu !== menu) {
+        activePostMenu.classList.remove('rx-open');
+        activePostMenu = null;
+      }
+
+      if (isOpen) {
+        menu.classList.remove('rx-open');
+        activePostMenu = null;
+      } else {
+        menu.classList.add('rx-open');
+        activePostMenu = menu;
+        postMenuJustOpened = true;
+        setTimeout(() => { postMenuJustOpened = false; }, 50);
+      }
+      return;
+    }
+
+    // Handle menu item clicks
+    const item = e.target.closest('.feed-post-dropdown-item');
+    if (item && item.closest('.feed-post-dropdown')) {
+      e.stopPropagation();
+      const action = item.dataset.action;
+      const postId = item.dataset.postid;
+
+      if (activePostMenu) {
+        activePostMenu.classList.remove('rx-open');
+        activePostMenu = null;
+      }
+
+      if (action === 'save')   handleSavePost(postId);
+      if (action === 'edit')   handleEditPost(postId);
+      if (action === 'delete') handleDeletePost(postId);
+      if (action === 'report') handleReportPost(postId);
+      return;
+    }
+
+    // Click outside — close menu (but not if we just opened it)
+    if (activePostMenu && !postMenuJustOpened) {
+      activePostMenu.classList.remove('rx-open');
+      activePostMenu = null;
+    }
+  });
+
+  function handleEditPost(postId) {
+    const postEl = document.querySelector(`.feed-post[data-id="${postId}"]`);
+    if (!postEl) return;
+
+    const titleEl = postEl.querySelector('.feed-post-title');
+    const bodyEl  = postEl.querySelector('.feed-post-body');
+
+    // Open modal
+    openPostModal();
+
+    setTimeout(() => {
+      // Hide community selector — can't change community when editing
+      const commField = document.getElementById('feedPostCommunity')?.closest('.feed-modal-field');
+      if (commField) commField.style.display = 'none';
+
+      // Hide variant field too
+      const variantField = document.getElementById('feedVariantField');
+      if (variantField) variantField.style.display = 'none';
+
+      // Pre-fill title
+      const titleInput = document.getElementById('feedPostTitle');
+      if (titleInput && titleEl) {
+        titleInput.value = titleEl.textContent
+          .replace('(edited)', '').trim();
+        // Store the post ID being edited
+        titleInput.setAttribute('data-editing-post-id', postId);
+      }
+
+      // Pre-fill body
+      const bodyInput = document.getElementById('feedPostBody');
+      if (bodyInput && bodyEl) {
+        bodyInput.value = bodyEl.textContent.trim();
+      }
+
+      // Update counters and enable submit
+      updateCounters();
+      const submitBtn = document.getElementById('feedModalSubmit');
+      if (submitBtn) submitBtn.disabled = false;
+
+      // Change modal title and submit label
+      const modalTitle  = document.querySelector('.feed-modal-title');
+      const submitLabel = document.querySelector('.feed-submit-label');
+      if (modalTitle)  modalTitle.textContent  = 'Edit Post';
+      if (submitLabel) submitLabel.textContent = 'Save Changes';
+    }, 80);
+  }
+
+  function handleDeletePost(postId) {
+    const existing = document.getElementById('commLeaveModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'commLeaveModal';
+    modal.innerHTML = `
+      <div class="comm-leave-overlay" id="commLeaveOverlay">
+        <div class="comm-leave-modal">
+          <div class="comm-leave-icon">🗑️</div>
+          <h3 class="comm-leave-title">Delete Post?</h3>
+          <p class="comm-leave-desc">
+            Are you sure you want to delete this post?
+            This action <strong>cannot be undone</strong>.
+          </p>
+          <div class="comm-leave-actions">
+            <button class="comm-leave-no" id="commLeaveNo">Cancel</button>
+            <button class="comm-leave-yes" id="commLeaveYes">Yes, Delete</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    requestAnimationFrame(() => {
+      modal.querySelector('.comm-leave-overlay').classList.add('rx-visible');
+    });
+
+    document.getElementById('commLeaveNo').addEventListener('click', () => {
+      modal.querySelector('.comm-leave-overlay').classList.remove('rx-visible');
+      setTimeout(() => modal.remove(), 300);
+    });
+
+    document.getElementById('commLeaveOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('commLeaveOverlay')) {
+        modal.querySelector('.comm-leave-overlay').classList.remove('rx-visible');
+        setTimeout(() => modal.remove(), 300);
+      }
+    });
+
+    document.getElementById('commLeaveYes').addEventListener('click', async () => {
+      modal.querySelector('.comm-leave-overlay').classList.remove('rx-visible');
+      setTimeout(() => modal.remove(), 300);
+
+      try {
+        const res = await fetch(`/api/posts/${postId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+
+        if (res.ok) {
+          const postEl = document.querySelector(`.feed-post[data-id="${postId}"]`);
+          if (postEl) {
+            const authorName = postEl.querySelector('.feed-post-author')
+                                     ?.textContent
+                                     ?.replace('(edited)', '')
+                                     .trim() || 'Deleted User';
+
+            postEl.classList.add('feed-post-tombstone');
+            postEl.innerHTML = `
+              <div class="feed-tombstone-inner">
+                <span class="feed-tombstone-author">${authorName}</span>
+                <span class="feed-tombstone-text">[Deleted post]</span>
+              </div>`;
+
+            setTimeout(() => {
+              postEl.style.transition = 'opacity 0.4s ease, max-height 0.4s ease';
+              postEl.style.opacity    = '0';
+              postEl.style.maxHeight  = '0';
+              postEl.style.padding    = '0';
+              postEl.style.margin     = '0';
+              setTimeout(() => postEl.remove(), 420);
+            }, DELETED_POST_TOMBSTONE_MS);
+          }
+        } else {
+          const err = await res.json();
+          console.error('Delete failed:', err.message);
+          alert('Failed to delete post. Please try again.');
+        }
+      } catch (e) {
+        console.error('Delete error:', e);
+      }
+    });
+  }
+
+  function handleReportPost(postId) {
+    alert('Thank you for your report. Our team will review this post.');
+  }
+
+  // ── Community sidebar menu (body-level dropdown) ─────────
+
+  let activeCommMenu     = null;
+  let activeCommMenuBtn  = null;
+  let commMenuJustOpened = false;
+
+  function openCommMenu(btn) {
+    const commId   = btn.dataset.commid;
+    const commName = btn.dataset.commname || 'this community';
+
+    const existing = document.getElementById('feedCommMenuDropdown');
+    if (existing) existing.remove();
+
+    const dropdown = document.createElement('div');
+    dropdown.id        = 'feedCommMenuDropdown';
+    dropdown.className = 'feed-comm-dropdown rx-open';
+    dropdown.innerHTML = `
+      <button class="feed-comm-dropdown-item"
+              data-action="leave"
+              data-commid="${commId}"
+              data-commname="${commName}">
+        🚪 Leave Community
+      </button>
+      <div class="feed-post-dropdown-divider"></div>
+      <button class="feed-comm-dropdown-item"
+              data-action="manage"
+              data-commid="${commId}">
+        ⚙️ Manage Membership
+      </button>`;
+
+    document.body.appendChild(dropdown);
+
+    const rect = btn.getBoundingClientRect();
+    dropdown.style.position = 'fixed';
+    dropdown.style.top      = (rect.bottom + 6) + 'px';
+    dropdown.style.left     = Math.max(8, rect.right - 190) + 'px';
+    dropdown.style.width    = '190px';
+    dropdown.style.zIndex   = '9999';
+
+    activeCommMenu     = dropdown;
+    activeCommMenuBtn  = btn;
+    commMenuJustOpened = true;
+    setTimeout(() => { commMenuJustOpened = false; }, 50);
+  }
+
+  function closeCommMenu() {
+    if (activeCommMenu) {
+      activeCommMenu.remove();
+      activeCommMenu    = null;
+      activeCommMenuBtn = null;
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const commBtn = e.target.closest('.feed-comm-menu-btn');
+    if (commBtn) {
+      e.stopPropagation();
+      if (activeCommMenu) {
+        closeCommMenu();
+        if (activeCommMenuBtn === commBtn) return;
+      }
+      openCommMenu(commBtn);
+      return;
+    }
+
+    const commItem = e.target.closest('.feed-comm-dropdown-item');
+    if (commItem && commItem.closest('#feedCommMenuDropdown')) {
+      e.stopPropagation();
+      const action   = commItem.dataset.action;
+      const commId   = commItem.dataset.commid;
+      const commName = commItem.dataset.commname || 'this community';
+      closeCommMenu();
+
+      if (action === 'leave')  showFeedLeaveConfirm(commId, commName);
+      if (action === 'manage') alert('Membership management coming in a future update!');
+      return;
+    }
+
+    if (!commMenuJustOpened) closeCommMenu();
+  });
+
+  function showFeedLeaveConfirm(communityId, communityName) {
+    const existing = document.getElementById('commLeaveModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'commLeaveModal';
+    modal.innerHTML = `
+      <div class="comm-leave-overlay" id="commLeaveOverlay">
+        <div class="comm-leave-modal">
+          <div class="comm-leave-icon">🚗</div>
+          <h3 class="comm-leave-title">Leave Community?</h3>
+          <p class="comm-leave-desc">
+            Are you sure you want to leave
+            <strong>${communityName}</strong>?
+            You can always rejoin later.
+          </p>
+          <div class="comm-leave-actions">
+            <button class="comm-leave-no" id="commLeaveNo">No, Stay</button>
+            <button class="comm-leave-yes" id="commLeaveYes">Yes, Leave</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    requestAnimationFrame(() => {
+      modal.querySelector('.comm-leave-overlay').classList.add('rx-visible');
+    });
+
+    const closeModal = () => {
+      modal.querySelector('.comm-leave-overlay').classList.remove('rx-visible');
+      setTimeout(() => modal.remove(), 300);
+    };
+
+    document.getElementById('commLeaveNo').addEventListener('click', closeModal);
+    document.getElementById('commLeaveOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('commLeaveOverlay')) closeModal();
+    });
+
+    document.getElementById('commLeaveYes').addEventListener('click', async () => {
+      closeModal();
+      try {
+        const res = await fetch(`/api/communities/${communityId}/leave`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        if (res.ok) {
+          const comm = communities.find(c => c._id === communityId);
+          if (comm) {
+            comm.joined = false;
+            comm.memberCount = Math.max(0, comm.memberCount - 1);
+          }
+          if (currentCommId === communityId) {
+            currentCommId = null;
+            currentPage   = 1;
+          }
+          renderLeftSidebar();
+          loadFeed();
+        }
+      } catch (err) {
+        console.error('Leave failed:', err);
+      }
+    });
+  }
 
 }());

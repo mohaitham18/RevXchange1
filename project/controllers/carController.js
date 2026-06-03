@@ -137,6 +137,7 @@ const getAllCars = async (req, res) => {
       'price-high': { price:    -1  },
       'year-new':   { year:     -1  },
       'mileage-low':{ mileage:   1  },
+      'most-viewed':{ views:    -1  },
     };
     const sortObj = sortMap[sort] || { createdAt: -1 };
 
@@ -159,6 +160,41 @@ const getAllCars = async (req, res) => {
     });
   } catch (err) {
     console.error('GET ALL CARS ERROR:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+const getCarStats = async (req, res) => {
+  try {
+    const [brands, cities, models, prices] = await Promise.all([
+      Car.aggregate([
+        { $match: { status: 'active' } },
+        { $group: { _id: '$brand', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+      Car.aggregate([
+        { $match: { status: 'active' } },
+        { $group: { _id: '$city', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+      Car.aggregate([
+        { $match: { status: 'active' } },
+        { $group: { _id: { model: '$model', brand: '$brand' }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+      Car.aggregate([
+        { $match: { status: 'active' } },
+        { $bucket: {
+          groupBy: '$price',
+          boundaries: [0, 100000, 200000, 300000, 400000, 500000, 600000, 800000, 1000000, 1200000, 1500000, 2000000, 3000000, 5000000, 7000000, 10000000],
+          default: 'above',
+          output: { count: { $sum: 1 } }
+        }}
+      ])
+    ]);
+
+    res.json({ brands, cities, models, prices });
+  } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
@@ -315,12 +351,43 @@ const deleteCar = async (req, res) => {
   }
 };
 
+const incrementViews = async (req, res) => {
+  try {
+    const carId = req.params.id;
+
+    // Logged-in user — check viewedCars array in DB
+    if (req.user) {
+      const User = require('../models/User');
+      const user = await User.findById(req.user.id);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+
+      const alreadyViewed = user.viewedCars.some(id => id.toString() === carId);
+      if (alreadyViewed) return res.json({ skipped: true });
+
+      // Add to viewedCars and increment
+      await User.findByIdAndUpdate(req.user.id, { $addToSet: { viewedCars: carId } });
+      const car = await Car.findByIdAndUpdate(carId, { $inc: { views: 1 } }, { new: true });
+      if (!car) return res.status(404).json({ message: 'Car not found' });
+      return res.json({ views: car.views });
+    }
+
+    // Guest — just increment (localStorage handles dedup on frontend)
+    const car = await Car.findByIdAndUpdate(carId, { $inc: { views: 1 } }, { new: true });
+    if (!car) return res.status(404).json({ message: 'Car not found' });
+    res.json({ views: car.views });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 module.exports = {
   addCar,
   getMyCars,
   getAllCars,
+  getCarStats,
   getCarFilters,
   getCarById,
   updateCar,
-  deleteCar
+  deleteCar,
+  incrementViews
 };

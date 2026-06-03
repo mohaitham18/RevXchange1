@@ -454,6 +454,23 @@
       return;
     }
 
+    // Increment view count — server deduplicates for logged-in users, localStorage for guests
+    const viewedKey = 'rxViewed_' + id;
+    const token = localStorage.getItem('rxToken');
+
+    if (token) {
+      // Logged-in: server handles deduplication via viewedCars array
+      fetch('/api/cars/' + encodeURIComponent(id) + '/view', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).catch(() => {});
+    } else if (!localStorage.getItem(viewedKey)) {
+      // Guest: use localStorage to deduplicate
+      fetch('/api/cars/' + encodeURIComponent(id) + '/view', { method: 'POST' })
+        .then(() => localStorage.setItem(viewedKey, '1'))
+        .catch(() => {});
+    }
+
     await loadSavedIds();
 
     isOpen = true;

@@ -176,11 +176,12 @@
 }
 
 /* ── Search clear button (outlined style) ────────────────────── */
-.bc-clear-search-btn {
+.bc-clear-search-btn,
+.bc-search-bar .bc-clear-search-btn {
     padding: 7px 16px;
-    background: transparent;
-    color: var(--primary);
-    border: 1.5px solid var(--primary);
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
     border-radius: 20px;
     font-size: 0.82rem;
     font-weight: 600;
@@ -190,8 +191,9 @@
     white-space: nowrap;
 }
 
-.bc-clear-search-btn:hover {
-    background: var(--primary);
+.bc-clear-search-btn:hover,
+.bc-search-bar .bc-clear-search-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
     color: white;
     transform: translateY(-1px);
 }
