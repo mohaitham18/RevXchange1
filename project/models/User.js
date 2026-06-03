@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema({
       ref: 'Car'
     }
   ],
+  viewedCars: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Car'
+    }
+  ],
   createdAt: { 
     type: Date, 
     default: Date.now 
