@@ -148,4 +148,111 @@ router.delete('/:id', protect, async (req, res) => {
   }
 });
 
+
+// PUT /api/posts/:id/vote
+router.put('/:id/vote', protect, async (req, res) => {
+  try {
+    const { value } = req.body;
+
+    if (![1, -1, 0].includes(value)) {
+      return res.status(400).json({
+        message: 'Vote value must be 1, -1, or 0'
+      });
+    }
+
+    const post = await Post.findById(req.params.id);
+
+    if (!post || post.isDeleted) {
+      return res.status(404).json({
+        message: 'Post not found'
+      });
+    }
+
+    const existingVote = await Vote.findOne({
+      userId: req.user.id,
+      postId: post._id
+    });
+
+    let upvoteChange = 0;
+    let downvoteChange = 0;
+
+    if (!existingVote) {
+      if (value === 1) {
+        await Vote.create({
+          userId: req.user.id,
+          postId: post._id,
+          value: 1
+        });
+
+        upvoteChange = 1;
+      }
+
+      if (value === -1) {
+        await Vote.create({
+          userId: req.user.id,
+          postId: post._id,
+          value: -1
+        });
+
+        downvoteChange = 1;
+      }
+    } else {
+      if (value === 0) {
+        if (existingVote.value === 1) {
+          upvoteChange = -1;
+        }
+
+        if (existingVote.value === -1) {
+          downvoteChange = -1;
+        }
+
+        await Vote.deleteOne({
+          _id: existingVote._id
+        });
+      } else if (existingVote.value !== value) {
+        if (existingVote.value === 1 && value === -1) {
+          upvoteChange = -1;
+          downvoteChange = 1;
+        }
+
+        if (existingVote.value === -1 && value === 1) {
+          upvoteChange = 1;
+          downvoteChange = -1;
+        }
+
+        existingVote.value = value;
+        await existingVote.save();
+      }
+    }
+
+    post.upvotes += upvoteChange;
+    post.downvotes += downvoteChange;
+    post.score = post.upvotes - post.downvotes;
+
+    if (post.upvotes < 0) post.upvotes = 0;
+    if (post.downvotes < 0) post.downvotes = 0;
+
+    post.controversyScore = Math.min(post.upvotes, post.downvotes);
+
+    await post.save();
+
+    res.json({
+      success: true,
+      postId: post._id,
+      userVote: value,
+      upvotes: post.upvotes,
+      downvotes: post.downvotes,
+      score: post.score,
+      controversyScore: post.controversyScore
+    });
+  } catch (err) {
+    console.error('PUT /api/posts/:id/vote error:', err);
+
+    res.status(500).json({
+      message: 'Server error',
+      error: err.message
+    });
+  }
+});
+
 module.exports = router;
