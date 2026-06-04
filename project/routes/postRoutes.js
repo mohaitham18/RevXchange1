@@ -255,4 +255,138 @@ router.put('/:id/vote', protect, async (req, res) => {
   }
 });
 
+// ── GET /api/posts/:id/comments ──────────────────────────────
+router.get('/:id/comments', async (req, res) => {
+  try {
+    const Comment = require('../models/Comment');
+
+    const post = await Post.findById(req.params.id);
+    if (!post || post.isDeleted) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const allowed = ['top', 'new'];
+    const sort = allowed.includes(req.query.sort) ? req.query.sort : 'top';
+    const sortObj = sort === 'new' ? { createdAt: -1 } : { createdAt: 1 };
+
+    // Fetch all non-deleted comments for this post in one query
+    const allComments = await Comment.find({
+      postId: req.params.id,
+      isDeleted: false
+    })
+      .populate('authorId', 'name email')
+      .sort(sortObj)
+      .lean();
+
+    // Normalize each comment
+    const normalized = allComments.map(c => ({
+      _id:       c._id,
+      postId:    c.postId,
+      parentId:  c.parentId || null,
+      depth:     c.depth || 0,
+      body:      c.body,
+      imageUrls: c.imageUrls || [],
+      isEdited:  c.isEdited,
+      editedAt:  c.editedAt,
+      createdAt: c.createdAt,
+      author: c.authorId
+        ? { _id: c.authorId._id, name: c.authorId.name, email: c.authorId.email }
+        : null
+    }));
+
+    // Build tree: top-level comments with nested replies
+    const map = {};
+    const roots = [];
+
+    normalized.forEach(c => { map[c._id.toString()] = { ...c, replies: [] }; });
+
+    normalized.forEach(c => {
+      if (c.parentId) {
+        const parent = map[c.parentId.toString()];
+        if (parent) parent.replies.push(map[c._id.toString()]);
+      } else {
+        roots.push(map[c._id.toString()]);
+      }
+    });
+
+    res.json({ success: true, comments: roots, total: allComments.length });
+  } catch (err) {
+    console.error('GET /api/posts/:id/comments error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ── POST /api/posts/:id/comments ─────────────────────────────
+router.post('/:id/comments', protect, async (req, res) => {
+  try {
+    const Comment = require('../models/Comment');
+
+    const { body, parentId } = req.body;
+
+    if (!body || !body.trim()) {
+      return res.status(400).json({ message: 'Comment body is required' });
+    }
+
+    if (body.trim().length > 5000) {
+      return res.status(400).json({ message: 'Comment too long (max 5000 chars)' });
+    }
+
+    const post = await Post.findById(req.params.id);
+    if (!post || post.isDeleted) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    let depth = 0;
+    let resolvedParentId = null;
+
+    if (parentId) {
+      const parent = await Comment.findById(parentId);
+      if (!parent || parent.isDeleted) {
+        return res.status(404).json({ message: 'Parent comment not found' });
+      }
+      if (parent.postId.toString() !== req.params.id) {
+        return res.status(400).json({ message: 'Parent comment does not belong to this post' });
+      }
+      depth = Math.min((parent.depth || 0) + 1, 5);
+      resolvedParentId = parent._id;
+    }
+
+    const comment = await Comment.create({
+      postId:   post._id,
+      authorId: req.user.id,
+      parentId: resolvedParentId,
+      depth,
+      body:     body.trim()
+    });
+
+    // Increment post comment count
+    await Post.findByIdAndUpdate(post._id, { $inc: { commentCount: 1 } });
+
+    const populated = await Comment.findById(comment._id)
+      .populate('authorId', 'name email')
+      .lean();
+
+    res.status(201).json({
+      success: true,
+      comment: {
+        _id:       populated._id,
+        postId:    populated.postId,
+        parentId:  populated.parentId || null,
+        depth:     populated.depth,
+        body:      populated.body,
+        imageUrls: populated.imageUrls || [],
+        isEdited:  populated.isEdited,
+        createdAt: populated.createdAt,
+        replies:   [],
+        author: populated.authorId
+          ? { _id: populated.authorId._id, name: populated.authorId.name, email: populated.authorId.email }
+          : null
+      }
+    });
+  } catch (err) {
+    console.error('POST /api/posts/:id/comments error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = router;
