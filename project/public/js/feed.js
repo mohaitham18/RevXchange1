@@ -304,11 +304,13 @@
 
         <div class="feed-post-actions">
           <div class="feed-post-vote">
-            <button class="feed-vote-btn upvote-btn" data-id="${post._id}" data-value="1">
+            <button class="feed-vote-btn upvote-btn ${post.userVote === 1 ? 'upvoted' : ''}"
+                    data-id="${post._id}" data-value="1">
               ▲ ${formatNum(post.upvotes)}
             </button>
             <div class="feed-vote-divider"></div>
-            <button class="feed-vote-btn downvote-btn" data-id="${post._id}" data-value="-1">
+            <button class="feed-vote-btn downvote-btn ${post.userVote === -1 ? 'downvoted' : ''}"
+                    data-id="${post._id}" data-value="-1">
               ▼ ${formatNum(post.downvotes)}
             </button>
           </div>
@@ -945,9 +947,117 @@
     });
   }
 
+  function handleSavePost(postId) {
+    // Stage H: will connect to /api/users/saved-posts
+    const saved = JSON.parse(localStorage.getItem('rxSavedPosts') || '[]');
+    if (!saved.includes(postId)) {
+      saved.push(postId);
+      localStorage.setItem('rxSavedPosts', JSON.stringify(saved));
+    }
+  }
+
   function handleReportPost(postId) {
     alert('Thank you for your report. Our team will review this post.');
   }
+
+  // ── Vote handler ─────────────────────────────────────────
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.feed-vote-btn');
+    if (!btn) return;
+
+    // Auth gate
+    if (!isLoggedIn()) {
+      window.location.href = '/login.html?returnTo=%2Ffeed.html';
+      return;
+    }
+
+    const postId = btn.dataset.id;
+    const value  = parseInt(btn.dataset.value, 10); // 1 or -1
+    const postEl = btn.closest('.feed-post');
+    if (!postEl) return;
+
+    const upBtn   = postEl.querySelector('.upvote-btn');
+    const downBtn = postEl.querySelector('.downvote-btn');
+
+    // Read current vote state from CSS classes
+    const wasUpvoted   = upBtn.classList.contains('upvoted');
+    const wasDownvoted = downBtn.classList.contains('downvoted');
+
+    // Determine new vote value — clicking same direction toggles off
+    let newValue;
+    if (value === 1  && wasUpvoted)   newValue = 0;
+    else if (value === -1 && wasDownvoted) newValue = 0;
+    else newValue = value;
+
+    // ── Optimistic update ──────────────────────────────────
+    const parseCount = (b) => {
+      const txt = b.textContent.replace(/[▲▼\s]/g, '');
+      if (txt.endsWith('K')) return Math.round(parseFloat(txt) * 1000);
+      return parseInt(txt, 10) || 0;
+    };
+
+    let ups   = parseCount(upBtn);
+    let downs = parseCount(downBtn);
+
+    // Undo previous vote
+    if (wasUpvoted)   ups   = Math.max(0, ups - 1);
+    if (wasDownvoted) downs = Math.max(0, downs - 1);
+
+    // Apply new vote
+    if (newValue === 1)  ups++;
+    if (newValue === -1) downs++;
+
+    upBtn.textContent   = '▲ ' + formatNum(ups);
+    downBtn.textContent = '▼ ' + formatNum(downs);
+    upBtn.classList.toggle('upvoted',     newValue === 1);
+    downBtn.classList.toggle('downvoted', newValue === -1);
+
+    // Disable during API call
+    upBtn.disabled   = true;
+    downBtn.disabled = true;
+
+    try {
+      const res = await fetch(`/api/posts/${postId}/vote`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        },
+        body: JSON.stringify({ value: newValue })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Reconcile with server truth
+        upBtn.textContent   = '▲ ' + formatNum(data.upvotes);
+        downBtn.textContent = '▼ ' + formatNum(data.downvotes);
+        upBtn.classList.toggle('upvoted',     data.userVote === 1);
+        downBtn.classList.toggle('downvoted', data.userVote === -1);
+      } else if (res.status === 403) {
+        // Own post — revert silently
+        upBtn.textContent   = '▲ ' + formatNum(wasUpvoted ? ups + 1 : ups);
+        downBtn.textContent = '▼ ' + formatNum(wasDownvoted ? downs + 1 : downs);
+        upBtn.classList.toggle('upvoted',     wasUpvoted);
+        downBtn.classList.toggle('downvoted', wasDownvoted);
+      } else {
+        // Any other error — revert
+        upBtn.textContent   = '▲ ' + formatNum(wasUpvoted ? ups + 1 : ups);
+        downBtn.textContent = '▼ ' + formatNum(wasDownvoted ? downs + 1 : downs);
+        upBtn.classList.toggle('upvoted',     wasUpvoted);
+        downBtn.classList.toggle('downvoted', wasDownvoted);
+      }
+    } catch (err) {
+      console.error('Vote error:', err);
+      // Network error — revert
+      upBtn.textContent   = '▲ ' + formatNum(wasUpvoted ? ups + 1 : ups);
+      downBtn.textContent = '▼ ' + formatNum(wasDownvoted ? downs + 1 : downs);
+      upBtn.classList.toggle('upvoted',     wasUpvoted);
+      downBtn.classList.toggle('downvoted', wasDownvoted);
+    } finally {
+      upBtn.disabled   = false;
+      downBtn.disabled = false;
+    }
+  });
 
   // ── Community sidebar menu (body-level dropdown) ─────────
 
@@ -1093,5 +1203,321 @@
       }
     });
   }
+
+  // ── Comments ──────────────────────────────────────────────
+
+  // Toggle comments section on 💬 button click
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.feed-post-action-btn');
+    if (!btn) return;
+    if (!btn.textContent.includes('💬')) return;
+
+    const postEl = btn.closest('.feed-post');
+    if (!postEl) return;
+    const postId = postEl.dataset.id;
+
+    // Toggle — close if already open
+    const existing = postEl.querySelector('.feed-comments-section');
+    if (existing) {
+      existing.classList.remove('rx-open');
+      setTimeout(() => existing.remove(), 380);
+      return;
+    }
+
+    // Create section, append, then animate open
+    const section = document.createElement('div');
+    section.className = 'feed-comments-section';
+    section.innerHTML = `
+      <div class="feed-comment-skel"></div>
+      <div class="feed-comment-skel" style="width:70%;"></div>`;
+    postEl.appendChild(section);
+
+    // Trigger animation on next frame
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        section.classList.add('rx-open');
+      });
+    });
+
+    await loadComments(postId, section, 'top');
+  });
+
+  async function loadComments(postId, section, sort) {
+    try {
+      const headers = {};
+      if (getToken()) headers['Authorization'] = 'Bearer ' + getToken();
+
+      const res  = await fetch(`/api/posts/${postId}/comments?sort=${sort}`, { headers });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message);
+
+      renderCommentSection(postId, section, data.comments || [], sort);
+
+      // Auto-focus the comment input after render
+      const input = section.querySelector('.feed-comment-input');
+      if (input) setTimeout(() => input.focus(), 60);
+
+    } catch (e) {
+      console.error('Comments load failed:', e);
+      section.innerHTML = '<div style="font-size:0.82rem;color:var(--text-light);font-family:Segoe UI,sans-serif;padding:8px 0;">Failed to load comments.</div>';
+      section.classList.add('rx-open');
+    }
+  }
+
+  function renderCommentSection(postId, section, comments, sort) {
+    const name    = getUserName();
+    const initial = name ? name.charAt(0).toUpperCase() : '?';
+
+    // Send icon SVG
+    const sendIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+    </svg>`;
+
+    const composeHtml = isLoggedIn()
+      ? `<div class="feed-comment-compose">
+           <div class="feed-comment-compose-avatar">${initial}</div>
+           <div class="feed-comment-pill-wrap">
+             <input class="feed-comment-input"
+                    type="text"
+                    placeholder="Write a comment..."
+                    data-postid="${postId}">
+             <button class="feed-comment-send-btn" disabled>${sendIcon}</button>
+           </div>
+         </div>`
+      : `<div class="feed-comments-login">
+           <a href="/login.html?returnTo=%2Ffeed.html">Log in</a> to leave a comment.
+         </div>`;
+
+    section.innerHTML = `
+      <div class="feed-comments-sort">
+        <button class="feed-comments-sort-btn ${sort === 'top' ? 'active' : ''}"
+                data-sort="top" data-postid="${postId}">Top</button>
+        <button class="feed-comments-sort-btn ${sort === 'new' ? 'active' : ''}"
+                data-sort="new" data-postid="${postId}">New</button>
+      </div>
+      ${composeHtml}
+      <div class="feed-comment-list" id="commentList_${postId}">
+        ${comments.length === 0
+          ? '<div style="font-size:0.82rem;color:var(--text-light);font-family:Segoe UI,sans-serif;padding:4px 0;">No comments yet. Be the first!</div>'
+          : comments.map(c => renderComment(c, postId)).join('')}
+      </div>`;
+
+    // Wire sort buttons
+    section.querySelectorAll('.feed-comments-sort-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newSort = btn.dataset.sort;
+        section.querySelectorAll('.feed-comments-sort-btn')
+          .forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        loadComments(btn.dataset.postid, section, newSort);
+      });
+    });
+
+    // Wire pill input
+    const input   = section.querySelector('.feed-comment-input');
+    const sendBtn = section.querySelector('.feed-comment-send-btn');
+
+    if (input && sendBtn) {
+      input.addEventListener('input', () => {
+        sendBtn.disabled = input.value.trim().length === 0;
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
+          e.preventDefault();
+          sendBtn.click();
+        }
+      });
+
+      sendBtn.addEventListener('click', async () => {
+        const body = input.value.trim();
+        if (!body) return;
+
+        sendBtn.disabled = true;
+        const origIcon = sendBtn.innerHTML;
+        sendBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="animation:feedSpin 0.7s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>';
+
+        const newComment = await postComment(postId, body, null);
+        if (newComment) {
+          input.value = '';
+
+          const list = section.querySelector(`#commentList_${postId}`);
+          if (list) {
+            const empty = list.querySelector('div');
+            if (empty && empty.textContent.includes('No comments')) empty.remove();
+
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = renderComment(newComment, postId);
+            list.insertBefore(wrapper.firstElementChild, list.firstChild);
+
+            // Update comment count button
+            const postEl  = section.closest('.feed-post');
+            const commBtn = postEl?.querySelector('.feed-post-action-btn');
+            if (commBtn && commBtn.textContent.includes('💬')) {
+              const current = parseInt(commBtn.textContent.replace(/\D/g, '')) || 0;
+              commBtn.textContent = '💬 ' + formatNum(current + 1);
+            }
+          }
+        }
+
+        sendBtn.innerHTML = origIcon;
+        sendBtn.disabled = input.value.trim().length === 0;
+        input.focus();
+      });
+    }
+  }
+
+  function renderComment(comment, postId) {
+    const authorName = comment.author?.name || 'Anonymous';
+    const initial    = authorName.charAt(0).toUpperCase();
+    const timeAgo    = formatTime(comment.createdAt);
+    const editedTag  = comment.isEdited
+      ? '<span class="feed-comment-edited">(edited)</span>' : '';
+
+    const repliesHtml = comment.replies && comment.replies.length > 0
+      ? `<div class="feed-comment-replies">
+           ${comment.replies.map(r => renderComment(r, postId)).join('')}
+         </div>`
+      : '';
+
+    const maxDepth = (comment.depth || 0) >= 5;
+
+    return `
+      <div class="feed-comment" data-comment-id="${comment._id}" data-depth="${comment.depth || 0}">
+        <div class="feed-comment-avatar">${initial}</div>
+        <div class="feed-comment-content">
+          <div class="feed-comment-meta">
+            <span class="feed-comment-author">${authorName}</span>
+            <span class="feed-comment-time">${timeAgo}</span>
+            ${editedTag}
+          </div>
+          <div class="feed-comment-body">${comment.body}</div>
+          <div class="feed-comment-actions">
+            ${!maxDepth
+              ? `<button class="feed-comment-action reply-btn"
+                         data-comment-id="${comment._id}"
+                         data-postid="${postId}">
+                   Reply
+                 </button>`
+              : ''}
+          </div>
+          <div class="feed-reply-area" id="replyArea_${comment._id}"></div>
+        </div>
+      </div>
+      ${repliesHtml}`;
+  }
+
+  async function postComment(postId, body, parentId) {
+    try {
+      const res = await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        },
+        body: JSON.stringify({ body, parentId: parentId || undefined })
+      });
+
+      const data = await res.json();
+      if (res.ok) return data.comment;
+
+      console.error('Post comment failed:', data.message);
+      return null;
+    } catch (e) {
+      console.error('Post comment error:', e);
+      return null;
+    }
+  }
+
+  // Reply button handler
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.reply-btn');
+    if (!btn) return;
+
+    const commentId = btn.dataset.commentId;
+    const postId    = btn.dataset.postid;
+    const area      = document.getElementById('replyArea_' + commentId);
+    if (!area) return;
+
+    // Toggle reply box
+    if (area.innerHTML.trim()) { area.innerHTML = ''; return; }
+
+    if (!isLoggedIn()) {
+      window.location.href = '/login.html?returnTo=%2Ffeed.html';
+      return;
+    }
+
+    const name    = getUserName();
+    const initial = name ? name.charAt(0).toUpperCase() : '?';
+
+    const sendIcon = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+    </svg>`;
+
+    area.innerHTML = `
+      <div class="feed-reply-compose">
+        <div class="feed-comment-avatar" style="width:24px;height:24px;font-size:0.65rem;flex-shrink:0;">${initial}</div>
+        <div class="feed-reply-pill-wrap">
+          <input class="feed-reply-input"
+                 type="text"
+                 placeholder="Write a reply...">
+          <button class="feed-reply-send-btn" disabled>${sendIcon}</button>
+        </div>
+      </div>`;
+
+    const input     = area.querySelector('.feed-reply-input');
+    const submitBtn = area.querySelector('.feed-reply-send-btn');
+
+    input.focus();
+
+    input.addEventListener('input', () => {
+      submitBtn.disabled = input.value.trim().length === 0;
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !submitBtn.disabled) {
+        e.preventDefault();
+        submitBtn.click();
+      }
+    });
+
+    submitBtn.addEventListener('click', async () => {
+      const body = input.value.trim();
+      if (!body) return;
+
+      submitBtn.disabled = true;
+      const origIcon = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="animation:feedSpin 0.7s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>';
+
+      const newComment = await postComment(postId, body, commentId);
+      if (newComment) {
+        area.innerHTML = '';
+
+        const commentEl = document.querySelector(`[data-comment-id="${commentId}"]`);
+        let repliesEl   = commentEl?.nextElementSibling;
+
+        if (!repliesEl || !repliesEl.classList.contains('feed-comment-replies')) {
+          repliesEl = document.createElement('div');
+          repliesEl.className = 'feed-comment-replies';
+          commentEl.parentNode.insertBefore(repliesEl, commentEl.nextSibling);
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = renderComment(newComment, postId);
+        repliesEl.appendChild(wrapper.firstElementChild);
+
+        const postEl  = commentEl?.closest('.feed-post');
+        const commBtn = postEl?.querySelector('.feed-post-action-btn');
+        if (commBtn && commBtn.textContent.includes('💬')) {
+          const current = parseInt(commBtn.textContent.replace(/\D/g, '')) || 0;
+          commBtn.textContent = '💬 ' + formatNum(current + 1);
+        }
+      } else {
+        submitBtn.innerHTML = origIcon;
+        submitBtn.disabled = false;
+      }
+    });
+  });
 
 }());
