@@ -1,37 +1,102 @@
-const usedCarsGrid = document.getElementById('usedCarsGrid');
-const resultsCount = document.getElementById('resultsCount');
-
-const brandFilter = document.getElementById('brandFilter');
-const cityFilter = document.getElementById('cityFilter');
+const usedCarsGrid   = document.getElementById('usedCarsGrid');
+const resultsCount   = document.getElementById('resultsCount');
+const brandFilter    = document.getElementById('brandFilter');
+const cityFilter     = document.getElementById('cityFilter');
 const transmissionFilter = document.getElementById('transmissionFilter');
 const maxPriceFilter = document.getElementById('maxPriceFilter');
-const fabrikaFilter = document.getElementById('fabrikaFilter');
-const sortSelect = document.getElementById('sortSelect');
-
+const fabrikaFilter  = document.getElementById('fabrikaFilter');
+const sortSelect     = document.getElementById('sortSelect');
 const applyFiltersBtn = document.getElementById('applyFiltersBtn');
 const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+const searchInput    = document.getElementById('searchInput');
+const searchBtn      = document.getElementById('searchBtn');
 
-const searchInput = document.getElementById('searchInput');
-const searchBtn = document.getElementById('searchBtn');
+let currentPage  = 1;
+let totalPages   = 1;
+let savedCarIds  = new Set();
 
-let allCars = [];
+function getToken() { return localStorage.getItem('rxToken'); }
 
-function formatPrice(price) {
-  return price.toLocaleString() + ' EGP';
+function formatPrice(price)   { return Number(price || 0).toLocaleString() + ' EGP'; }
+function formatMileage(miles) { return Number(miles || 0).toLocaleString() + ' km'; }
+function niceText(val)        { if (!val) return ''; return String(val).charAt(0).toUpperCase() + String(val).slice(1); }
+
+async function safeJson(res) {
+  try   { return await res.json(); }
+  catch { return { message: 'Server returned invalid response' }; }
 }
 
-function formatMileage(mileage) {
-  return mileage.toLocaleString() + ' km';
+// ── Saved car IDs ─────────────────────────────────────────────
+async function loadSavedCarIds() {
+  const token = getToken();
+  if (!token) { savedCarIds = new Set(); return; }
+  try {
+    const res  = await fetch('/api/auth/saved-car-ids', { headers: { Authorization: `Bearer ${token}` } });
+    const data = await safeJson(res);
+    savedCarIds = new Set((data.savedCarIds || []).map(String));
+  } catch { savedCarIds = new Set(); }
 }
 
+function updateAllSaveButtons(carId, saved) {
+  document.querySelectorAll(`[data-id="${CSS.escape(String(carId))}"]`).forEach(el => {
+    if (el.classList.contains('save-car-btn') || el.classList.contains('rx-save-btn')) {
+      el.classList.toggle('saved', saved);
+      el.textContent = saved ? '♥ Saved' : '♡ Save';
+    }
+  });
+}
+
+async function toggleSaveCar(carId, btn) {
+  const token = getToken();
+  if (!token) { window.location.href = '/login.html'; return; }
+  try {
+    btn.disabled = true;
+    const res  = await fetch('/api/auth/save-car/' + encodeURIComponent(carId), {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await safeJson(res);
+    if (!res.ok) { alert(data.message || 'Could not save this car'); return; }
+    if (data.saved) { savedCarIds.add(String(carId));    updateAllSaveButtons(carId, true);  }
+    else            { savedCarIds.delete(String(carId)); updateAllSaveButtons(carId, false); }
+  } catch { alert('Server error. Please try again.'); }
+  finally { btn.disabled = false; }
+}
+
+// ── Build query params from current filter state ──────────────
+function buildParams(page = 1) {
+  const params = new URLSearchParams();
+  const search = searchInput?.value.trim();
+  if (search)                params.set('search',       search);
+  if (brandFilter?.value)    params.set('brand',        brandFilter.value);
+  if (cityFilter?.value)     params.set('city',         cityFilter.value);
+  if (transmissionFilter?.value) params.set('transmission', transmissionFilter.value);
+  const minPrice = document.getElementById('minPriceFilter')?.value;
+  if (minPrice)              params.set('minPrice',     minPrice);
+  if (maxPriceFilter?.value) params.set('maxPrice',     maxPriceFilter.value);
+  if (fabrikaFilter?.checked) params.set('fabrika',     'true');
+  if (sortSelect?.value && sortSelect.value !== 'default') params.set('sort', sortSelect.value);
+  params.set('page',  page);
+  params.set('limit', 12);
+  return params.toString();
+}
+
+// ── Render a single car card ──────────────────────────────────
 function renderCarCard(car) {
-  const imgSrc = car.images?.[0] || (brandImages?.[car.brand] || '');
+  const imgSrc  = car.images?.[0] || (typeof brandImages !== 'undefined' ? brandImages?.[car.brand] : '');
+  const carId   = String(car._id || car.id);
+  const isSaved = savedCarIds.has(carId);
+  const phone   = String(car.phone || '').replace(/\D/g, '');
+  const whatsappHref = phone ? `https://wa.me/${phone}` : '#';
+  const callHref     = phone ? `tel:+${phone}` : '#';
 
   return `
-    <div class="car-card-placeholder" data-id="${car._id}">
-      <div class="car-card-img">
+    <div class="car-card-placeholder" data-id="${carId}">
+      <button type="button" class="save-car-btn ${isSaved ? 'saved' : ''}" data-id="${carId}">
+        ${isSaved ? '♥ Saved' : '♡ Save'}
+      </button>
+      <div class="car-card-img carousel-wrapper">
         ${imgSrc
-          ? `<img src="${imgSrc}" alt="${car.brand}" class="car-card-brand-img">`
+          ? `<div class="carousel-slide active"><img src="${imgSrc}" alt="${car.brand}" class="car-card-brand-img"></div>`
           : `<span class="car-card-fallback">🚗</span>`}
       </div>
       <div class="car-card-info">
@@ -42,111 +107,215 @@ function renderCarCard(car) {
           <span>🛣️ ${formatMileage(car.mileage)}</span>
         </div>
         <div class="car-tags">
-          <span class="car-tag">${car.transmission}</span>
-          <span class="car-tag">${car.fuel}</span>
+          <span class="car-tag">${niceText(car.transmission)}</span>
+          <span class="car-tag">${niceText(car.fuel)}</span>
+          ${car.color ? `<span class="car-tag">🎨 ${niceText(car.color)}</span>` : ''}
+          ${car.fabrika ? `<span class="car-tag car-tag-fabrika">Fabrika</span>` : ''}
         </div>
         <div class="car-card-actions">
-          <button class="car-action-btn car-action-whatsapp">WhatsApp</button>
-          <button class="car-action-btn car-action-call">Call</button>
+          <a href="${whatsappHref}" target="_blank" class="car-action-btn car-action-whatsapp">WhatsApp</a>
+          <a href="${callHref}" class="car-action-btn car-action-call">Call</a>
+          <button type="button" class="car-action-btn car-action-buy"
+            onclick="event.stopPropagation(); openRequestModal('${carId}', 'buy', '${car.brand} ${car.model} ${car.year}', '${car.price}')">
+            Buy
+          </button>
+          <button type="button" class="car-action-btn car-action-rent"
+            onclick="event.stopPropagation(); openRequestModal('${carId}', 'rent', '${car.brand} ${car.model} ${car.year}', '${car.price}')">
+            Rent
+          </button>
         </div>
       </div>
     </div>
   `;
 }
 
-function populateFilters() {
-  const brands = [...new Set(allCars.map(car => car.brand))];
-  const cities = [...new Set(allCars.map(car => car.city))];
+// ── Render pagination ─────────────────────────────────────────
+function renderPagination() {
+  let pag = document.getElementById('paginationBar');
+  if (!pag) {
+    pag = document.createElement('div');
+    pag.id = 'paginationBar';
+    pag.className = 'rx-pagination';
+    usedCarsGrid?.parentNode?.insertBefore(pag, usedCarsGrid.nextSibling);
+  }
 
-  brandFilter.innerHTML = '<option value="">All Brands</option>';
-  cityFilter.innerHTML = '<option value="">All Cities</option>';
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
 
-  brands.forEach(brand => {
-    brandFilter.innerHTML += `<option value="${brand}">${brand}</option>`;
+  let html = '';
+
+  html += `<button class="rx-page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹ Prev</button>`;
+
+  for (let i = 1; i <= totalPages; i++) {
+    if (
+      i === 1 || i === totalPages ||
+      (i >= currentPage - 1 && i <= currentPage + 1)
+    ) {
+      html += `<button class="rx-page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+    } else if (i === currentPage - 2 || i === currentPage + 2) {
+      html += `<span class="rx-page-ellipsis">…</span>`;
+    }
+  }
+
+  html += `<button class="rx-page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Next ›</button>`;
+
+  pag.innerHTML = html;
+
+  pag.querySelectorAll('.rx-page-btn:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => {
+      loadCars(parseInt(btn.dataset.page));
+      usedCarsGrid?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   });
-
-  cities.forEach(city => {
-    cityFilter.innerHTML += `<option value="${city}">${city}</option>`;
-  });
 }
 
-function getFilteredCars() {
-  let cars = [...allCars];
-  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+// ── Load brands and cities from API ───────────────────────────
+async function loadBrands() {
+  try {
+    const res  = await fetch('/api/cars/filters');
+    const data = await res.json();
 
-  if (brandFilter.value) cars = cars.filter(car => car.brand === brandFilter.value);
-  if (cityFilter.value) cars = cars.filter(car => car.city === cityFilter.value);
-  if (transmissionFilter.value) cars = cars.filter(car => car.transmission === transmissionFilter.value);
-  if (maxPriceFilter.value) cars = cars.filter(car => car.price <= Number(maxPriceFilter.value));
+    if (brandFilter && data.brands?.length) {
+      brandFilter.innerHTML = '<option value="">All Brands</option>';
+      data.brands.forEach(brand => {
+        brandFilter.innerHTML += `<option value="${brand}">${brand}</option>`;
+      });
+    }
 
-  if (query) {
-    cars = cars.filter(car =>
-      car.brand.toLowerCase().includes(query) ||
-      car.model.toLowerCase().includes(query) ||
-      car.city.toLowerCase().includes(query)
-    );
-  }
-
-  switch (sortSelect.value) {
-    case 'price-low': cars.sort((a, b) => a.price - b.price); break;
-    case 'price-high': cars.sort((a, b) => b.price - a.price); break;
-    case 'year-new': cars.sort((a, b) => b.year - a.year); break;
-    case 'mileage-low': cars.sort((a, b) => a.mileage - b.mileage); break;
-  }
-
-  return cars;
+    if (cityFilter && data.cities?.length) {
+      cityFilter.innerHTML = '<option value="">All Cities</option>';
+      data.cities.forEach(city => {
+        cityFilter.innerHTML += `<option value="${city}">${city}</option>`;
+      });
+    }
+  } catch { /* keep defaults */ }
 }
 
-function renderUsedCars() {
-  const cars = getFilteredCars();
-  resultsCount.textContent = `${cars.length} Cars Found`;
-
-  if (!cars.length) {
-    usedCarsGrid.innerHTML = `
-      <div class="no-results">
-        <span>🚗</span>
-        No cars match your search or filters.
-      </div>
-    `;
-    return;
+// ── Search clear button ───────────────────────────────────────
+function updateSearchClearBtn(show) {
+  let btn = document.getElementById('ucClearSearchBtn');
+  if (show) {
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id        = 'ucClearSearchBtn';
+      btn.className = 'uc-clear-btn';
+      btn.textContent = '✕ Clear';
+      btn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        btn.remove();
+        loadCars(1);
+      });
+      searchBtn?.insertAdjacentElement('afterend', btn);
+    }
+  } else {
+    btn?.remove();
   }
-
-  usedCarsGrid.innerHTML = cars.map(renderCarCard).join('');
 }
 
-async function loadCars() {
+// ── Log search term ───────────────────────────────────────────
+function logSearchTerm(term) {
+  if (!term || term.length < 2) return;
+  const normalized = term.toLowerCase();
+  const key = 'rxSearch_' + normalized;
+  if (localStorage.getItem(key)) return;
+  fetch('/api/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ term: normalized })
+  }).then(() => localStorage.setItem(key, '1')).catch(() => {});
+}
+
+// ── Main load function ────────────────────────────────────────
+async function loadCars(page = 1) {
+  if (!usedCarsGrid) return;
+  currentPage = page;
+
+  // Log search term if present
+  const searchTerm = searchInput?.value.trim();
+  if (searchTerm) {
+    logSearchTerm(searchTerm);
+    updateSearchClearBtn(true);
+  } else {
+    updateSearchClearBtn(false);
+  }
+
   try {
     usedCarsGrid.innerHTML = `<div class="no-results">Loading cars...</div>`;
-    const res = await fetch('/api/cars');
-    const data = await res.json();
-    allCars = data.cars || [];
-    populateFilters();
-    renderUsedCars();
+
+    await loadSavedCarIds();
+
+    const res  = await fetch('/api/cars?' + buildParams(page));
+    const data = await safeJson(res);
+
+    if (!res.ok) {
+      usedCarsGrid.innerHTML = `<div class="no-results">${data.message || 'Could not load cars.'}</div>`;
+      return;
+    }
+
+    const cars = data.cars || [];
+    totalPages = data.pages || 1;
+
+    if (resultsCount) resultsCount.textContent = `${data.total || 0} Cars Found`;
+
+    if (!cars.length) {
+      usedCarsGrid.innerHTML = `<div class="no-results"><span>🚗</span>No cars match your search or filters.</div>`;
+      renderPagination();
+      return;
+    }
+
+    usedCarsGrid.innerHTML = cars.map(renderCarCard).join('');
+    renderPagination();
+
   } catch (err) {
     console.error('Load cars error:', err);
     usedCarsGrid.innerHTML = `<div class="no-results">Failed to load cars. Please try again.</div>`;
   }
 }
 
-applyFiltersBtn.addEventListener('click', renderUsedCars);
-sortSelect.addEventListener('change', renderUsedCars);
+// ── Events ────────────────────────────────────────────────────
+if (applyFiltersBtn) applyFiltersBtn.addEventListener('click',  () => loadCars(1));
+if (sortSelect)      sortSelect.addEventListener('change',       () => loadCars(1));
+if (searchBtn)       searchBtn.addEventListener('click',         () => loadCars(1));
 
-if (searchBtn) searchBtn.addEventListener('click', renderUsedCars);
 if (searchInput) {
-  searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); renderUsedCars(); }
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); loadCars(1); }
   });
 }
 
-resetFiltersBtn.addEventListener('click', () => {
-  brandFilter.value = '';
-  cityFilter.value = '';
-  transmissionFilter.value = '';
-  maxPriceFilter.value = '';
-  if (fabrikaFilter) fabrikaFilter.checked = false;
-  sortSelect.value = 'default';
-  if (searchInput) searchInput.value = '';
-  renderUsedCars();
+if (resetFiltersBtn) {
+  resetFiltersBtn.addEventListener('click', () => {
+    if (brandFilter)        brandFilter.value       = '';
+    if (cityFilter)         cityFilter.value        = '';
+    if (transmissionFilter) transmissionFilter.value = '';
+    if (maxPriceFilter)     maxPriceFilter.value    = '';
+    if (fabrikaFilter)      fabrikaFilter.checked   = false;
+    if (sortSelect)         sortSelect.value        = 'default';
+    if (searchInput)        searchInput.value       = '';
+    loadCars(1);
+  });
+}
+
+document.addEventListener('click', e => {
+  const saveBtn = e.target.closest('.save-car-btn');
+  if (!saveBtn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const carId = saveBtn.dataset.id;
+  if (carId) toggleSaveCar(carId, saveBtn);
 });
 
-loadCars();
+// ── Init: read URL params then load ──────────────────────────
+loadBrands().then(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get('brand')    && brandFilter)        brandFilter.value        = params.get('brand');
+  if (params.get('city')     && cityFilter)          cityFilter.value         = params.get('city');
+  if (params.get('search')   && searchInput)         searchInput.value        = params.get('search');
+  if (params.get('maxPrice') && maxPriceFilter)      maxPriceFilter.value     = params.get('maxPrice');
+
+  // minPrice needs its own input element
+  const minPriceFilter = document.getElementById('minPriceFilter');
+  if (params.get('minPrice') && minPriceFilter)      minPriceFilter.value     = params.get('minPrice');
+
+  loadCars(1);
+});

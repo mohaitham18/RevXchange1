@@ -6,9 +6,20 @@
 #rxAmbientCanvas {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   display: block;
+}
+
+html,
+body {
+  min-height: 100%;
+  background: #f7f8fb !important;
+}
+
+body {
+  position: relative;
+  isolation: isolate;
 }
 
 body {
@@ -16,11 +27,33 @@ body {
 }
 
 /* Hero above canvas so melt SVG can hang below it */
-.hero-bg {
+.hero-bg,
+.bc-hero,
+.used-page-hero,
+.comm-hero {
   position: relative;
   z-index: 2;
   overflow: visible !important;
 }
+
+.rx-melt-wrap {
+  z-index: 100;
+}
+
+/* Make page sections transparent so the ambient canvas shows through */
+.bc-section,
+.used-page-content,
+.comm-brands-section,
+.comm-feed-section,
+.home-brands,
+.home-discover,
+.home-communities {
+  background: transparent !important;
+}
+
+/* Hero needs to overflow the melt OUT of its own stacking context.
+   Pull the melt OUT of the isolated parent by using position:fixed... no.
+   Real fix: keep melt parent NOT isolated, and use page-level z-layering. */
 
 /* Everything else above canvas */
 section:not(.hero-bg),

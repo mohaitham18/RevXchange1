@@ -16,7 +16,9 @@
     <link rel="stylesheet" href="/css/pages/home.css">
     <link rel="stylesheet" href="/css/base/ambient.css">
     <link rel="stylesheet" href="/css/base/footer.css">
-</head>
+    <link rel="stylesheet" href="/css/components/car-expand.css">
+    <link rel="stylesheet" href="/css/components/footer-melt.css">
+</head
 
 <body>
 
@@ -48,12 +50,11 @@
                         <span class="cara-spark"></span>
                     </a>
                 </li>
-                <li><a href="/communities.html">Car Communities</a></li>
+                <li><a href="/feed.html">Car Communities</a></li>
                 <span class="nav-indicator" id="navIndicator"></span>
             </ul>
 
             <div class="nav-actions">
-                <button class="lang-btn">🌐 عربي</button>
                 <a href="/sell-car.html" class="sell-btn">+ Sell My Car</a>
                 <a href="/login.html" class="login-btn" id="loginBtn">Login</a>
 
@@ -106,7 +107,7 @@
                 <a href="/used-cars.html" class="hero-btn">Browse All Cars</a>
             </div>
             <div class="hero-image">
-                <img src="/images/BMW2.png" alt="Featured Car">
+                <img src="/images/mec.png" alt="Featured Car">
                 <div class="hero-glow"></div>
                 <div class="car-shadow"></div>
             </div>
@@ -228,6 +229,51 @@
 
     <!-- ── Footer ────────────────────────────────────────────── -->
     <footer class="main-footer">
+      <!-- BG → Footer melt (mirror of hero melt) -->
+      <div class="rx-footer-melt-wrap">
+        <svg viewBox="0 0 1440 74" preserveAspectRatio="none"
+             xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="footerMeltMain" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="1"/>
+              <stop offset="55%"  stop-color="#1a1a1a" stop-opacity="0.80"/>
+              <stop offset="100%" stop-color="#1a1a1a" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="footerMeltBloom" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="0.55"/>
+              <stop offset="70%"  stop-color="#0d0d0d" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#0d0d0d" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+
+          <path fill="url(#footerMeltBloom)">
+            <animate attributeName="d"
+              dur="9s" repeatCount="indefinite"
+              calcMode="spline"
+              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+              values="
+                M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z;
+                M0,74 L1440,74 L1440,30 C1260,6  1020,60 840,24 C640,2  440,64 270,26 C120,6  40,50 0,30 Z;
+                M0,74 L1440,74 L1440,6  C1320,34 1060,2  840,36 C620,66 380,6  180,38 C80,56 30,22 0,44 Z;
+                M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z
+              "/>
+          </path>
+
+          <path fill="url(#footerMeltMain)">
+            <animate attributeName="d"
+              dur="9s" repeatCount="indefinite"
+              calcMode="spline"
+              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+              values="
+                M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z;
+                M0,74 L1440,74 L1440,46 C1260,24 1020,72 840,40 C640,16 440,74 270,42 C120,22 40,64 0,46 Z;
+                M0,74 L1440,74 L1440,22 C1320,50 1060,18 840,52 C620,74 380,22 180,54 C80,70 30,36 0,60 Z;
+                M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z
+              "/>
+          </path>
+        </svg>
+      </div>
+
         <div class="container footer-grid">
             <div class="footer-col">
                 <h4>Company</h4>
@@ -279,6 +325,7 @@
     <script src="/js/ambient.js"></script>
     <script src="/js/cars.js"></script>
     <script src="/js/main.js"></script>
+    <script src="/js/car-expand.js"></script>
     <script src="/js/navbar.js"></script>
     <script src="/js/cara.js"></script>
 

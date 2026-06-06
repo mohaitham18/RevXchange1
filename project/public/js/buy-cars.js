@@ -2,7 +2,7 @@
 const newCarsData = [
   {
     id: 1, brand: 'Chery', model: 'Arrizo 5', year: 2026,
-    image: '../assets/images/chery.png', warranty: '100,000 Km / 5 Years',
+    image: '/images/chery.png', warranty: '100,000 Km / 5 Years',
     officialPrice: { min: 655000, max: 735000 },
     marketPrice:   { min: 655000, max: 770000 },
     classes: [
@@ -13,7 +13,7 @@ const newCarsData = [
   },
   {
     id: 2, brand: 'Nissan', model: 'Sunny', year: 2026,
-    image: '../assets/images/nissan.png', warranty: '100,000 Km / 3 Years',
+    image: '/images/nissan.png', warranty: '100,000 Km / 3 Years',
     officialPrice: { min: 645000, max: 810000 },
     marketPrice:   { min: 645000, max: 825000 },
     classes: [
@@ -25,7 +25,7 @@ const newCarsData = [
   },
   {
     id: 3, brand: 'Toyota', model: 'Corolla', year: 2026,
-    image: '../assets/images/toyota.png', warranty: '100,000 Km / 3 Years',
+    image: '/images/toyota.png', warranty: '100,000 Km / 3 Years',
     officialPrice: { min: 1280000, max: 1630000 },
     marketPrice:   { min: 1280000, max: 1650000 },
     classes: [
@@ -38,7 +38,7 @@ const newCarsData = [
   },
   {
     id: 4, brand: 'Chevrolet', model: 'Optra', year: 2027,
-    image: '../assets/images/chevrolet.png', warranty: '100,000 Km / 3 Years',
+    image: '/images/chevrolet.png', warranty: '100,000 Km / 3 Years',
     officialPrice: { min: 745000, max: 770000 },
     marketPrice:   { min: 745000, max: 780000 },
     classes: [
@@ -48,7 +48,7 @@ const newCarsData = [
   },
   {
     id: 5, brand: 'Hyundai', model: 'Elantra', year: 2026,
-    image: '../assets/images/hyundai.png', warranty: '100,000 Km / 5 Years',
+    image: '/images/hyundai.png', warranty: '100,000 Km / 5 Years',
     officialPrice: { min: 980000, max: 1250000 },
     marketPrice:   { min: 980000, max: 1270000 },
     classes: [
@@ -59,7 +59,7 @@ const newCarsData = [
   },
   {
     id: 6, brand: 'Kia', model: 'Sportage', year: 2026,
-    image: '../assets/images/kia.png', warranty: '150,000 Km / 5 Years',
+    image: '/images/kia.png', warranty: '150,000 Km / 5 Years',
     officialPrice: { min: 1350000, max: 1750000 },
     marketPrice:   { min: 1350000, max: 1780000 },
     classes: [
@@ -70,7 +70,7 @@ const newCarsData = [
   },
   {
     id: 7, brand: 'MG', model: 'RX5', year: 2026,
-    image: '../assets/images/mg.png', warranty: '100,000 Km / 5 Years',
+    image: '/images/mg.png', warranty: '100,000 Km / 5 Years',
     officialPrice: { min: 890000, max: 1050000 },
     marketPrice:   { min: 890000, max: 1070000 },
     classes: [
@@ -80,7 +80,7 @@ const newCarsData = [
   },
   {
     id: 8, brand: 'Skoda', model: 'Octavia', year: 2026,
-    image: '../assets/images/skoda.png', warranty: '100,000 Km / 2 Years',
+    image: '/images/skoda.png', warranty: '100,000 Km / 2 Years',
     officialPrice: { min: 1100000, max: 1400000 },
     marketPrice:   { min: 1100000, max: 1430000 },
     classes: [
@@ -95,16 +95,45 @@ const newCarsData = [
 function egp(n) { return n.toLocaleString() + ' EGP'; }
 function range(o) { return o.min === o.max ? egp(o.min) : `${o.min.toLocaleString()} - ${o.max.toLocaleString()} EGP`; }
 
+// ─── Active brand state ────────────────────────────────────────
+let activeBrand = null;
+
 // ─── Brands grid ──────────────────────────────────────────────
 function renderBrands(data) {
   const unique = [...new Map(data.map(c => [c.brand, c])).values()];
   document.getElementById('bcBrandsGrid').innerHTML = unique.map(car => `
-    <div class="bc-brand-card" onclick="filterByBrand('${car.brand}')">
+    <div class="bc-brand-card ${activeBrand === car.brand ? 'active' : ''}" data-brand="${car.brand}" onclick="filterByBrand('${car.brand}')">
       <img src="${car.image}" alt="${car.brand}">
       <h4>${car.brand}</h4>
       <span>(${data.filter(c => c.brand === car.brand).length} model${data.filter(c => c.brand === car.brand).length > 1 ? 's' : ''})</span>
     </div>
   `).join('');
+  updateClearBtn();
+}
+
+// ─── Clear filter button ───────────────────────────────────────
+function updateClearBtn() {
+  const titleRow = document.querySelector('.bc-brands-header');
+  if (!titleRow) return;
+
+  let clearBtn = document.getElementById('bcClearBrandBtn');
+
+  if (activeBrand) {
+    if (!clearBtn) {
+      clearBtn = document.createElement('button');
+      clearBtn.id = 'bcClearBrandBtn';
+      clearBtn.className = 'bc-clear-brand-btn';
+      clearBtn.textContent = '✕ Clear Filter';
+      clearBtn.addEventListener('click', () => {
+        activeBrand = null;
+        renderBrands(newCarsData);
+        renderCards(newCarsData);
+      });
+      titleRow.appendChild(clearBtn);
+    }
+  } else {
+    clearBtn?.remove();
+  }
 }
 
 // ─── Car cards ────────────────────────────────────────────────
@@ -126,17 +155,63 @@ function renderCards(data) {
 }
 
 function filterByBrand(brand) {
-  renderCards(newCarsData.filter(c => c.brand === brand));
-  document.getElementById('bcGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Clear search when using brand filter
+  document.getElementById('bcSearchInput').value = '';
+  updateSearchClearBtn(false);
+
+  if (activeBrand === brand) {
+    activeBrand = null;
+    renderBrands(newCarsData);
+    renderCards(newCarsData);
+  } else {
+    activeBrand = brand;
+    renderBrands(newCarsData);
+    renderCards(newCarsData.filter(c => c.brand === brand));
+    document.getElementById('bcGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 // ─── Search ───────────────────────────────────────────────────
 document.getElementById('bcSearchBtn').addEventListener('click', search);
 document.getElementById('bcSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
+document.getElementById('bcSearchInput').addEventListener('input', () => {
+  if (!document.getElementById('bcSearchInput').value.trim()) {
+    clearSearch();
+  }
+});
+
+function updateSearchClearBtn(show) {
+  let clearBtn = document.getElementById('bcClearSearchBtn');
+  if (show) {
+    if (!clearBtn) {
+      clearBtn = document.createElement('button');
+      clearBtn.id = 'bcClearSearchBtn';
+      clearBtn.className = 'bc-clear-search-btn';
+      clearBtn.textContent = '✕ Clear';
+      clearBtn.addEventListener('click', clearSearch);
+      document.getElementById('bcSearchBtn').insertAdjacentElement('afterend', clearBtn);
+    }
+  } else {
+    clearBtn?.remove();
+  }
+}
+
+function clearSearch() {
+  document.getElementById('bcSearchInput').value = '';
+  updateSearchClearBtn(false);
+  renderCards(activeBrand ? newCarsData.filter(c => c.brand === activeBrand) : newCarsData);
+}
 
 function search() {
   const q = document.getElementById('bcSearchInput').value.trim().toLowerCase();
-  renderCards(!q ? newCarsData : newCarsData.filter(c =>
+  if (!q) { clearSearch(); return; }
+
+  // Clear brand filter when searching
+  activeBrand = null;
+  renderBrands(newCarsData);
+
+  updateSearchClearBtn(true);
+  renderCards(newCarsData.filter(c =>
     c.brand.toLowerCase().includes(q) || c.model.toLowerCase().includes(q) || String(c.year).includes(q)
   ));
 }

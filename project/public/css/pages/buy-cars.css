@@ -134,3 +134,66 @@
 .bc-class-name span { display: block; font-size: 0.9rem; font-weight: 600; color: var(--primary); margin-bottom: 3px; }
 .bc-class-name small { font-size: 0.78rem; color: var(--text-light); }
 .bc-class-price { font-size: 0.9rem; font-weight: 600; color: var(--text-dark); font-family: 'Segoe UI', sans-serif; }
+/* ── Brand filter active state & clear button ────────────────── */
+.bc-brands-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.bc-brands-header .bc-section-title {
+    margin-bottom: 0;
+}
+
+.bc-brand-card.active {
+    background: rgba(90, 10, 20, 0.08);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary);
+}
+
+.bc-brand-card.active img {
+    filter: brightness(0.85);
+}
+
+.bc-clear-brand-btn {
+    padding: 7px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: 'Segoe UI', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    white-space: nowrap;
+}
+
+.bc-clear-brand-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+/* ── Search clear button (outlined style) ────────────────────── */
+.bc-clear-search-btn,
+.bc-search-bar .bc-clear-search-btn {
+    padding: 7px 16px;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: 'Segoe UI', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+    white-space: nowrap;
+}
+
+.bc-clear-search-btn:hover,
+.bc-search-bar .bc-clear-search-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    transform: translateY(-1px);
+}

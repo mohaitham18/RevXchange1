@@ -122,8 +122,10 @@ async function signIn() {
     const password = document.getElementById('loginPassword').value.trim();
     const btn = document.querySelector('.card-front .btn-primary');
 
-    if (btn) { btn.disabled = true;
-        btn.textContent = 'Signing in...'; }
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Signing in...';
+    }
 
     try {
         const res = await fetch('/api/auth/login', {
@@ -137,16 +139,20 @@ async function signIn() {
         if (!res.ok) {
             RXValidation.showError(document.getElementById('loginEmail'), 'No account found with these credentials');
             RXValidation.showError(document.getElementById('loginPassword'), data.message || 'Invalid password');
-            if (btn) { btn.disabled = false;
-                btn.textContent = 'Sign In'; }
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
             return;
         }
 
+        // Save to localStorage
         localStorage.setItem('rxToken', data.token);
         localStorage.setItem('rxUser', data.user.name);
         localStorage.setItem('rxEmail', data.user.email);
         localStorage.setItem('role', data.user.role);
 
+        // Redirect based on role
         if (data.user.role === 'admin') {
             window.location.href = '/admin.html';
         } else {
@@ -156,35 +162,27 @@ async function signIn() {
     } catch (err) {
         console.error('Login error:', err);
         RXValidation.showError(document.getElementById('loginEmail'), 'Server error. Please try again.');
-        if (btn) { btn.disabled = false;
-            btn.textContent = 'Sign In'; }
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+        }
     }
 }
 
-// ── DOMContentLoaded ──────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-
-    // Show/hide password toggles
-    togglePassword('loginPassword', 'toggleLoginPass');
-    togglePassword('regPassword', 'toggleRegPass');
-
-    // Register submit
-    const registerBtn = document.getElementById('registerBtn');
-    if (registerBtn) {
-        registerBtn.addEventListener('click', async function() {
+// ── Register submit ───────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('.card-back .btn-primary') ?
+        .addEventListener('click', async() => {
             const nameOk = validateRegName();
             const emailOk = validateRegEmail();
             const passOk = validateRegPassword();
             if (!nameOk || !emailOk || !passOk) return;
 
-            ['regName', 'regEmail', 'regPassword'].forEach(function(id) { dirtyReg.add(id); });
+            ['regName', 'regEmail', 'regPassword'].forEach(id => dirtyReg.add(id));
 
             const name = document.getElementById('regName').value.trim();
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
-
-            registerBtn.disabled = true;
-            registerBtn.textContent = 'Creating account...';
 
             try {
                 const res = await fetch('/api/auth/register', {
@@ -197,11 +195,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (!res.ok) {
                     RXValidation.showError(document.getElementById('regEmail'), data.message || 'Registration failed');
-                    registerBtn.disabled = false;
-                    registerBtn.textContent = 'Create Account';
                     return;
                 }
 
+                // Save to localStorage
                 localStorage.setItem('rxToken', data.token);
                 localStorage.setItem('rxUser', data.user.name);
                 localStorage.setItem('rxEmail', data.user.email);
@@ -212,10 +209,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (err) {
                 console.error('Register error:', err);
                 RXValidation.showError(document.getElementById('regEmail'), 'Server error. Please try again.');
-                registerBtn.disabled = false;
-                registerBtn.textContent = 'Create Account';
             }
         });
-    }
-
 });
