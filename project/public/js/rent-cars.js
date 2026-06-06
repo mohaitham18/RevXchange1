@@ -11,47 +11,25 @@ const resetFiltersBtn = document.getElementById('resetFiltersBtn');
 const searchInput    = document.getElementById('searchInput');
 const searchBtn      = document.getElementById('searchBtn');
 
-let currentPage  = 1;
-let totalPages   = 1;
-let savedCarIds  = new Set();
+let currentPage = 1;
+let totalPages = 1;
+let savedCarIds = new Set();
 
 function getToken() {
   return localStorage.getItem('rxToken');
 }
 
-function formatPrice(price) {
-  return Number(price || 0).toLocaleString() + ' EGP';
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString() + ' EGP';
 }
 
-function formatMileage(miles) {
-  return Number(miles || 0).toLocaleString() + ' km';
+function formatMileage(value) {
+  return Number(value || 0).toLocaleString() + ' km';
 }
 
-function niceText(val) {
-  if (!val) return '';
-  return String(val).charAt(0).toUpperCase() + String(val).slice(1);
-}
-
-function buildWhatsAppHref(car) {
-  const phone = String(car.phone || '').replace(/\D/g, '');
-
-  if (!phone) return '#';
-
-  const title = `${car.brand} ${car.model} ${car.year}`;
-  const msg = `Hello, I saw your ${title} on RevXchange. Is it still available?`;
-
-  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-}
-
-function buildAppointmentHref(car) {
-  const phone = String(car.phone || '').replace(/\D/g, '');
-
-  if (!phone) return '#';
-
-  const title = `${car.brand} ${car.model} ${car.year}`;
-  const msg = `Hello, I saw your ${title} on RevXchange. I want to book an appointment to view the car.`;
-
-  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+function niceText(value) {
+  if (!value) return '';
+  return String(value).charAt(0).toUpperCase() + String(value).slice(1);
 }
 
 async function safeJson(res) {
@@ -64,7 +42,33 @@ async function safeJson(res) {
   }
 }
 
-// ── Saved car IDs ─────────────────────────────────────────────
+function getPhone(car) {
+  return String(car.phone || '').replace(/\D/g, '');
+}
+
+function buildWhatsAppHref(car) {
+  const phone = getPhone(car);
+
+  if (!phone) return '#';
+
+  const title = `${car.brand} ${car.model} ${car.year}`;
+  const msg = `Hello, I saw your ${title} for rent on RevXchange. Is it available?`;
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+}
+
+function buildRentRequestHref(car) {
+  const phone = getPhone(car);
+
+  if (!phone) return '#';
+
+  const title = `${car.brand} ${car.model} ${car.year}`;
+  const msg = `Hello, I saw your ${title} for rent on RevXchange. I want to request rental details and availability.`;
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+}
+
+// ── Saved cars ────────────────────────────────────────────────
 async function loadSavedCarIds() {
   const token = getToken();
 
@@ -136,7 +140,7 @@ async function toggleSaveCar(carId, btn) {
   }
 }
 
-// ── Build query params ─────────────────────────────────────────
+// ── Query params ──────────────────────────────────────────────
 function buildParams(page = 1) {
   const params = new URLSearchParams();
 
@@ -158,12 +162,6 @@ function buildParams(page = 1) {
     params.set('transmission', transmissionFilter.value);
   }
 
-  const minPrice = document.getElementById('minPriceFilter')?.value;
-
-  if (minPrice) {
-    params.set('minPrice', minPrice);
-  }
-
   if (maxPriceFilter?.value) {
     params.set('maxPrice', maxPriceFilter.value);
   }
@@ -176,8 +174,8 @@ function buildParams(page = 1) {
     params.set('sort', sortSelect.value);
   }
 
-  // Important: Used Cars page should show sale cars only
-  params.set('listingType', 'sale');
+  // Important: Rent Cars page should show rent cars only
+  params.set('listingType', 'rent');
 
   params.set('page', page);
   params.set('limit', 12);
@@ -185,20 +183,24 @@ function buildParams(page = 1) {
   return params.toString();
 }
 
-// ── Render one used car card ───────────────────────────────────
-function renderCarCard(car) {
+// ── Render rent card ──────────────────────────────────────────
+function renderRentCarCard(car) {
   const imgSrc = car.images?.[0] || (typeof brandImages !== 'undefined' ? brandImages?.[car.brand] : '');
   const carId = String(car._id || car.id);
   const isSaved = savedCarIds.has(carId);
 
-  const phone = String(car.phone || '').replace(/\D/g, '');
+  const phone = getPhone(car);
   const callHref = phone ? `tel:+${phone}` : '#';
+
+  const dailyRent = car.rentPricePerDay || car.price || 0;
+  const monthlyRent = car.rentPricePerMonth || null;
+  const deposit = car.rentDeposit || null;
 
   const carTitle = `${car.brand || ''} ${car.model || ''} ${car.year || ''}`.trim();
   const safeTitle = carTitle.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
   return `
-    <div class="car-card-placeholder" data-id="${carId}">
+    <div class="car-card-placeholder rent-car-card" data-id="${carId}">
       <button type="button" class="save-car-btn ${isSaved ? 'saved' : ''}" data-id="${carId}">
         ${isSaved ? '♥ Saved' : '♡ Save'}
       </button>
@@ -209,12 +211,28 @@ function renderCarCard(car) {
             ? `<div class="carousel-slide active"><img src="${imgSrc}" alt="${car.brand}" class="car-card-brand-img"></div>`
             : `<span class="car-card-fallback">🚗</span>`
         }
+
+        <span class="rent-card-badge">For Rent</span>
       </div>
 
       <div class="car-card-info">
         <h4>${car.brand} ${car.model} ${car.year}</h4>
 
-        <div class="car-price">${formatPrice(car.price)}</div>
+        <div class="car-price rent-price">
+          ${formatMoney(dailyRent)} <span>/ day</span>
+        </div>
+
+        ${
+          monthlyRent
+            ? `<div class="rent-sub-price">Monthly: ${formatMoney(monthlyRent)}</div>`
+            : ''
+        }
+
+        ${
+          deposit
+            ? `<div class="rent-sub-price">Deposit: ${formatMoney(deposit)}</div>`
+            : ''
+        }
 
         <div class="car-meta">
           <span>📍 ${car.city || '—'}</span>
@@ -239,9 +257,9 @@ function renderCarCard(car) {
 
           <button
             type="button"
-            class="car-action-btn car-action-appointment"
-            onclick="event.stopPropagation(); openRequestModal('${carId}', 'appointment', '${safeTitle}', '${car.price || 0}')">
-            Appointment
+            class="car-action-btn car-action-rent-request"
+            onclick="event.stopPropagation(); openRequestModal('${carId}', 'rent', '${safeTitle}', '${dailyRent || 0}')">
+            Rent
           </button>
         </div>
       </div>
@@ -249,7 +267,7 @@ function renderCarCard(car) {
   `;
 }
 
-// ── Pagination ─────────────────────────────────────────────────
+// ── Pagination ────────────────────────────────────────────────
 function renderPagination() {
   let pag = document.getElementById('paginationBar');
 
@@ -287,7 +305,8 @@ function renderPagination() {
 
   pag.querySelectorAll('.rx-page-btn:not([disabled])').forEach(btn => {
     btn.addEventListener('click', () => {
-      loadCars(parseInt(btn.dataset.page, 10));
+      loadRentCars(parseInt(btn.dataset.page, 10));
+
       usedCarsGrid?.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
@@ -296,11 +315,11 @@ function renderPagination() {
   });
 }
 
-// ── Load filter data ───────────────────────────────────────────
+// ── Load filters ──────────────────────────────────────────────
 async function loadBrands() {
   try {
     const res = await fetch('/api/cars/filters');
-    const data = await res.json();
+    const data = await safeJson(res);
 
     if (brandFilter && data.brands?.length) {
       brandFilter.innerHTML = '<option value="">All Brands</option>';
@@ -318,11 +337,11 @@ async function loadBrands() {
       });
     }
   } catch {
-    // keep default filters
+    // keep defaults
   }
 }
 
-// ── Search clear button ────────────────────────────────────────
+// ── Search clear button ───────────────────────────────────────
 function updateSearchClearBtn(show) {
   let btn = document.getElementById('ucClearSearchBtn');
 
@@ -339,7 +358,7 @@ function updateSearchClearBtn(show) {
         }
 
         btn.remove();
-        loadCars(1);
+        loadRentCars(1);
       });
 
       searchBtn?.insertAdjacentElement('afterend', btn);
@@ -349,30 +368,8 @@ function updateSearchClearBtn(show) {
   }
 }
 
-// ── Log search term ────────────────────────────────────────────
-function logSearchTerm(term) {
-  if (!term || term.length < 2) return;
-
-  const normalized = term.toLowerCase();
-  const key = 'rxSearch_' + normalized;
-
-  if (localStorage.getItem(key)) return;
-
-  fetch('/api/search', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      term: normalized
-    })
-  })
-    .then(() => localStorage.setItem(key, '1'))
-    .catch(() => {});
-}
-
-// ── Load cars ──────────────────────────────────────────────────
-async function loadCars(page = 1) {
+// ── Load rent cars ────────────────────────────────────────────
+async function loadRentCars(page = 1) {
   if (!usedCarsGrid) return;
 
   currentPage = page;
@@ -380,14 +377,13 @@ async function loadCars(page = 1) {
   const searchTerm = searchInput?.value.trim();
 
   if (searchTerm) {
-    logSearchTerm(searchTerm);
     updateSearchClearBtn(true);
   } else {
     updateSearchClearBtn(false);
   }
 
   try {
-    usedCarsGrid.innerHTML = `<div class="no-results">Loading cars...</div>`;
+    usedCarsGrid.innerHTML = `<div class="no-results">Loading rent cars...</div>`;
 
     await loadSavedCarIds();
 
@@ -395,7 +391,7 @@ async function loadCars(page = 1) {
     const data = await safeJson(res);
 
     if (!res.ok) {
-      usedCarsGrid.innerHTML = `<div class="no-results">${data.message || 'Could not load cars.'}</div>`;
+      usedCarsGrid.innerHTML = `<div class="no-results">${data.message || 'Could not load rent cars.'}</div>`;
       return;
     }
 
@@ -403,41 +399,47 @@ async function loadCars(page = 1) {
     totalPages = data.pages || 1;
 
     if (resultsCount) {
-      resultsCount.textContent = `${data.total || 0} Cars Found`;
+      resultsCount.textContent = `${data.total || 0} Rent Cars Found`;
     }
 
     if (!cars.length) {
-      usedCarsGrid.innerHTML = `<div class="no-results"><span>🚗</span>No cars match your search or filters.</div>`;
+      usedCarsGrid.innerHTML = `
+        <div class="no-results">
+          <span>🚘</span>
+          No rent cars found yet.
+        </div>
+      `;
+
       renderPagination();
       return;
     }
 
-    usedCarsGrid.innerHTML = cars.map(renderCarCard).join('');
+    usedCarsGrid.innerHTML = cars.map(renderRentCarCard).join('');
     renderPagination();
   } catch (err) {
-    console.error('Load cars error:', err);
-    usedCarsGrid.innerHTML = `<div class="no-results">Failed to load cars. Please try again.</div>`;
+    console.error('Load rent cars error:', err);
+    usedCarsGrid.innerHTML = `<div class="no-results">Failed to load rent cars. Please try again.</div>`;
   }
 }
 
-// ── Events ─────────────────────────────────────────────────────
+// ── Events ────────────────────────────────────────────────────
 if (applyFiltersBtn) {
-  applyFiltersBtn.addEventListener('click', () => loadCars(1));
+  applyFiltersBtn.addEventListener('click', () => loadRentCars(1));
 }
 
 if (sortSelect) {
-  sortSelect.addEventListener('change', () => loadCars(1));
+  sortSelect.addEventListener('change', () => loadRentCars(1));
 }
 
 if (searchBtn) {
-  searchBtn.addEventListener('click', () => loadCars(1));
+  searchBtn.addEventListener('click', () => loadRentCars(1));
 }
 
 if (searchInput) {
   searchInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      loadCars(1);
+      loadRentCars(1);
     }
   });
 }
@@ -452,13 +454,7 @@ if (resetFiltersBtn) {
     if (sortSelect) sortSelect.value = 'default';
     if (searchInput) searchInput.value = '';
 
-    const minPriceFilter = document.getElementById('minPriceFilter');
-
-    if (minPriceFilter) {
-      minPriceFilter.value = '';
-    }
-
-    loadCars(1);
+    loadRentCars(1);
   });
 }
 
@@ -477,7 +473,7 @@ document.addEventListener('click', e => {
   }
 });
 
-// ── Init ───────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────
 loadBrands().then(() => {
   const params = new URLSearchParams(window.location.search);
 
@@ -497,11 +493,5 @@ loadBrands().then(() => {
     maxPriceFilter.value = params.get('maxPrice');
   }
 
-  const minPriceFilter = document.getElementById('minPriceFilter');
-
-  if (params.get('minPrice') && minPriceFilter) {
-    minPriceFilter.value = params.get('minPrice');
-  }
-
-  loadCars(1);
+  loadRentCars(1);
 });
