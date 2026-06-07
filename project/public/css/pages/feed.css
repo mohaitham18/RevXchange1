@@ -1176,13 +1176,14 @@
 .feed-comment-pill-wrap {
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0;
   background: #f5f6f8;
   border: 1.5px solid rgba(0,0,0,0.08);
-  border-radius: 999px;
+  border-radius: 20px;
   padding: 0 6px 0 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+              background 0.2s ease, border-radius 0.2s ease;
 }
 
 .feed-comment-pill-wrap:focus-within {
@@ -1201,6 +1202,14 @@
   color: var(--text-dark);
   padding: 9px 0;
   min-width: 0;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.5;
+  min-height: 36px;
+  max-height: 120px;
+  overflow-y: auto;
+  display: block;
+  width: 100%;
 }
 
 .feed-comment-input::placeholder { color: var(--text-light); }
@@ -1208,6 +1217,8 @@
 .feed-comment-send-btn {
   width: 30px;
   height: 30px;
+  align-self: flex-end;
+  margin-bottom: 4px;
   border-radius: 50%;
   border: none;
   background: var(--primary);
@@ -1341,13 +1352,14 @@
 .feed-reply-pill-wrap {
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0;
   background: #f5f6f8;
   border: 1.5px solid rgba(0,0,0,0.08);
-  border-radius: 999px;
+  border-radius: 20px;
   padding: 0 6px 0 12px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+              background 0.2s ease, border-radius 0.2s ease;
 }
 
 .feed-reply-pill-wrap:focus-within {
@@ -1363,6 +1375,14 @@
   outline: none;
   font-size: 0.82rem;
   font-family: 'Segoe UI', sans-serif;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.5;
+  min-height: 34px;
+  max-height: 100px;
+  overflow-y: auto;
+  display: block;
+  width: 100%;
   color: var(--text-dark);
   padding: 8px 0;
   min-width: 0;
@@ -1373,6 +1393,8 @@
 .feed-reply-send-btn {
   width: 26px;
   height: 26px;
+  align-self: flex-end;
+  margin-bottom: 3px;
   border-radius: 50%;
   border: none;
   background: var(--primary);
@@ -1913,26 +1935,123 @@
 }
 
 /* ── Video on post card ─────────────────────────────────────── */
+/* ── Video card wrapper ─────────────────────────────────── */
 .feed-post-video-wrap {
   margin: 10px 0 6px;
   border-radius: 14px;
   overflow: hidden;
   background: #000;
   position: relative;
+  cursor: pointer;
+  width: 100%;
+  transition: max-width 0.15s ease;
+  /* max-width set by JS based on video aspect ratio */
 }
 
+/* Thumbnail — aspect-ratio set by JS to match video exactly */
+.feed-post-video-thumb {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  min-height: 200px;
+  /* aspect-ratio set by JS after thumbnail loads */
+}
+
+.feed-post-video-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: brightness(0.88);
+  transition: filter 0.2s ease;
+}
+
+.feed-post-video-wrap:hover .feed-post-video-thumb img {
+  filter: brightness(0.72);
+}
+
+.feed-post-video-thumb-fallback {
+  width: 100%;
+  height: 220px;
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feed-post-video-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(90,15,28,0.82);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1.5px solid rgba(255,255,255,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 24px rgba(90,15,28,0.45),
+              0 1px 0 rgba(255,255,255,0.12) inset;
+  transition: background 0.28s ease,
+              box-shadow 0.28s ease,
+              transform 0.28s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.feed-post-video-wrap:hover .feed-post-video-play-btn {
+  background: rgba(90,15,28,0.96);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 6px 32px rgba(58,8,18,0.65),
+              0 0 0 6px rgba(90,15,28,0.18),
+              0 1px 0 rgba(255,255,255,0.08) inset;
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.feed-post-video-play-btn svg {
+  margin-left: -2px;
+  margin-top: 0;
+  display: block;
+}
+
+.feed-post-video-duration {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  background: rgba(0,0,0,0.72);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 3px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+/* Actual video player (shown after click) */
 .feed-post-video {
   width: 100%;
-  max-height: 420px;
+  height: auto;
+  max-height: 460px;
   display: block;
   border-radius: 14px;
+  background: #000;
 }
 
 .feed-post-video-expiry {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--text-light);
   font-family: 'Segoe UI', sans-serif;
-  padding: 4px 0 2px;
+  padding: 3px 2px 0;
   text-align: right;
 }
 
@@ -1953,14 +2072,139 @@
   background: #f9fafb;
   margin: 4px 0 8px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.25s ease,
+              background 0.25s ease,
+              padding 0.35s ease,
+              box-shadow 0.25s ease;
   text-decoration: none;
   display: block;
+  user-select: none;
+  overflow: hidden;
 }
 
-.feed-share-embed:hover {
+.feed-share-embed:hover:not(.expanded) {
   border-color: rgba(90,15,28,0.18);
   background: #f5f6f8;
+}
+
+.feed-share-embed.expanded {
+  background: #fff;
+  border-color: rgba(90,15,28,0.15);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  cursor: default;
+  padding: 0;
+}
+
+.feed-share-embed.loading {
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* Expanded post inside embed */
+.feed-share-embed .fse-expanded-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  background: #f9fafb;
+  border-radius: 10px 10px 0 0;
+}
+
+.feed-share-embed .fse-comm-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.feed-share-embed .fse-comm-label img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.feed-share-embed .fse-collapse-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.feed-share-embed .fse-collapse-btn:hover {
+  background: rgba(0,0,0,0.06);
+  color: var(--text-dark);
+}
+
+.feed-share-embed .fse-body {
+  padding: 16px;
+}
+
+.feed-share-embed.expanded {
+  animation: fseExpandIn 0.38s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+
+.feed-share-embed.collapsing {
+  animation: fseCollapseOut 0.28s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes fseExpandIn {
+  from {
+    opacity: 0.4;
+    transform: scaleY(0.92);
+    transform-origin: top;
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+}
+
+@keyframes fseCollapseOut {
+  from {
+    opacity: 1;
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  to {
+    opacity: 0;
+    transform: scaleY(0.88);
+    transform-origin: top;
+  }
+}
+
+.feed-share-embed .fse-body .feed-post-actions {
+  margin-top: 12px;
+}
+
+.feed-share-embed .fse-comments-section {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.38s cubic-bezier(0.22,1,0.36,1),
+              opacity 0.28s ease,
+              padding 0.28s ease;
+  padding: 0 16px;
+}
+
+.feed-share-embed .fse-comments-section.rx-open {
+  max-height: 2000px;
+  opacity: 1;
+  padding: 0 16px 14px;
 }
 
 .feed-share-embed-deleted {
@@ -2073,4 +2317,87 @@
 #feedPostTitle[dir="rtl"] {
   text-align: right;
   direction: rtl;
+}
+
+/* ── Share embed expand ─────────────────────────────────────── */
+.feed-share-expanded {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.42s cubic-bezier(0.22,1,0.36,1),
+              opacity 0.3s ease,
+              margin 0.3s ease;
+  margin-top: 0;
+}
+
+.feed-share-expanded.rx-open {
+  max-height: 1200px;
+  opacity: 1;
+  margin-top: 12px;
+}
+
+.feed-share-expanded-inner {
+  border: 1.5px solid rgba(90,15,28,0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.feed-share-expanded-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  background: #f9fafb;
+}
+
+.feed-share-expanded-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.feed-share-expanded-collapse {
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.feed-share-expanded-collapse:hover {
+  background: rgba(0,0,0,0.06);
+  color: var(--text-dark);
+}
+
+.feed-share-expanded-post {
+  padding: 16px 18px;
+}
+
+.feed-share-expanded-post .feed-post-comm-name {
+  font-size: 0.72rem;
+}
+
+.feed-share-expanded-post .feed-post-title {
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+
+.feed-share-expanded-post .feed-post-body {
+  font-size: 0.85rem;
+  -webkit-line-clamp: 6;
+  margin-bottom: 10px;
 }
