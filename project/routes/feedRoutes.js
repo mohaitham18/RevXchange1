@@ -110,6 +110,18 @@ router.get('/', optionalAuth, async (req, res) => {
         }
       })
       .populate('variantId', 'label yearStart yearEnd order')
+      .populate({
+        path: 'sharedPostId',
+        select: 'title body imageUrls videoUrl authorId communityId isDeleted',
+        populate: [
+          { path: 'authorId', select: 'name' },
+          {
+            path: 'communityId',
+            select: 'name slug brandId',
+            populate: { path: 'brandId', select: 'name logoUrl' }
+          }
+        ]
+      })
       .sort(getSortObject(sort))
       .skip(skip)
       .limit(limit)
@@ -150,6 +162,26 @@ router.get('/', optionalAuth, async (req, res) => {
         isShare: post.isShare,
         sharedPostId: post.sharedPostId,
         shareCommentary: post.shareCommentary,
+        sharedPost: post.sharedPostId
+          ? {
+              _id:       post.sharedPostId._id,
+              title:     post.sharedPostId.title,
+              body:      post.sharedPostId.body,
+              imageUrls: post.sharedPostId.imageUrls || [],
+              videoUrl:  post.sharedPostId.videoUrl  || null,
+              isDeleted: post.sharedPostId.isDeleted,
+              author: post.sharedPostId.authorId
+                ? { name: post.sharedPostId.authorId.name }
+                : null,
+              community: post.sharedPostId.communityId
+                ? {
+                    name:  post.sharedPostId.communityId.name,
+                    slug:  post.sharedPostId.communityId.slug,
+                    brand: post.sharedPostId.communityId.brandId || null
+                  }
+                : null
+            }
+          : null,
 
         upvotes: post.upvotes || 0,
         downvotes: post.downvotes || 0,
