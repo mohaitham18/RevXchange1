@@ -720,58 +720,616 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  const myPosts = [
-    {
-      id: 1,
-      community: 'Toyota Corolla',
-      text: 'Anyone know a reliable mechanic in Cairo for a Corolla 2019? AC compressor is making a grinding noise.',
-      time: '2h ago',
-      likes: 24,
-      comments: 8
-    },
-    {
-      id: 2,
-      community: 'Kia Sportage',
-      text: 'Comparing the 2023 Sportage vs MG RX5 for a family car. Which holds better resale value in Egypt long term?',
-      time: '1d ago',
-      likes: 41,
-      comments: 15
-    }
-  ];
+  // ── My Posts helpers ──────────────────────────────────────
 
-  function renderMyPosts() {
+  function dpFormatTime(dateStr) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return 'just now';
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ago';
+    const d = Math.floor(h / 24);
+    if (d < 7)  return d + 'd ago';
+    return new Date(dateStr).toLocaleDateString();
+  }
+
+  function dpFormatNum(n) {
+    if (!n && n !== 0) return '0';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K';
+    return n.toString();
+  }
+
+  function dpIsRTL(text) {
+    if (!text || !text.trim()) return false;
+    const ar = /[؀-ۿ]/;
+    if (ar.test(text.trim()[0])) return true;
+    const count = (text.match(/[؀-ۿ]/g) || []).length;
+    return count > text.length * 0.25;
+  }
+
+  // ── New comment tracking ──────────────────────────────────
+  function dpGetSeen() {
+    try { return JSON.parse(localStorage.getItem('rxPostCommentsSeen') || '{}'); }
+    catch { return {}; }
+  }
+
+  function dpSetSeen(data) {
+    localStorage.setItem('rxPostCommentsSeen', JSON.stringify(data));
+  }
+
+  function dpMarkSeen(postId, count) {
+    const seen = dpGetSeen();
+    seen[postId.toString()] = count;
+    dpSetSeen(seen);
+  }
+
+  function dpGetNewCount(postId, currentCount) {
+    const seen  = dpGetSeen();
+    const key   = postId.toString();
+    const last  = seen[key];
+    if (last === undefined && currentCount > 0) return currentCount;
+    if (last === undefined) return 0;
+    return Math.max(0, currentCount - last);
+  }
+
+  // ── Load My Posts ─────────────────────────────────────────
+  async function loadMyPosts() {
     const list = document.getElementById('myPostsList');
-
     if (!list) return;
 
-    if (myPosts.length === 0) {
-      list.innerHTML = `
-        <div class="dash-empty">
-          <span>💬</span>
-          <p>You haven't posted in any community yet.</p>
-          <a href="/communities.html">Explore Communities</a>
+    list.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        ${Array(3).fill(`<div style="height:130px;background:linear-gradient(90deg,#e8eaed 25%,#f2f3f5 50%,#e8eaed 75%);background-size:200% 100%;animation:dashSkel 1.3s infinite;border-radius:14px;"></div>`).join('')}
+      </div>`;
+
+    try {
+      const res  = await fetch('/api/posts/my-posts', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await safeJson(res);
+
+      if (!res.ok) {
+        list.innerHTML = `<div class="dash-empty"><span>⚠️</span><p>${data.message || 'Failed to load posts.'}</p></div>`;
+        return;
+      }
+
+      const posts = data.posts || [];
+
+      if (posts.length === 0) {
+        list.innerHTML = `
+          <div class="dash-empty">
+            <span>💬</span>
+            <p>You haven't posted in any community yet.</p>
+            <a href="/feed.html">Go to Feed</a>
+          </div>`;
+        return;
+      }
+
+      // Update tab badge
+      let totalNew = 0;
+      posts.forEach(p => { totalNew += dpGetNewCount(p._id, p.commentCount); });
+      const tabBadge = document.getElementById('postsBadge');
+      if (tabBadge) {
+        if (totalNew > 0) {
+          tabBadge.textContent = totalNew > 99 ? '99+' : totalNew;
+          tabBadge.style.display = 'inline-flex';
+        } else {
+          tabBadge.style.display = 'none';
+        }
+      }
+
+      list.innerHTML = posts.map(post => dpRenderPostCard(post)).join('');
+
+      // Wire View buttons
+      list.querySelectorAll('.dash-post-action-btn.view').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const slug = btn.dataset.slug;
+          window.location.href = slug ? `/feed.html?community=${slug}` : '/feed.html';
+        });
+      });
+
+      // Wire Edit buttons
+      list.querySelectorAll('.dash-post-action-btn.edit').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const postId = btn.dataset.postid;
+          const post   = posts.find(p => p._id.toString() === postId);
+          if (post) dpOpenEditModal(post);
+        });
+      });
+
+      // Wire Delete buttons
+      list.querySelectorAll('.dash-post-action-btn.delete').forEach(btn => {
+        btn.addEventListener('click', () => {
+          dpConfirmDelete(btn.dataset.postid);
+        });
+      });
+
+      // Wire Comment stat click
+      list.querySelectorAll('.dash-post-comment-stat').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const postId = btn.dataset.postid;
+          const post   = posts.find(p => p._id.toString() === postId);
+          if (post) dpOpenCommentsModal(post);
+        });
+      });
+
+    } catch (err) {
+      console.error('Load my posts error:', err);
+      list.innerHTML = `<div class="dash-empty"><span>⚠️</span><p>Server error. Please try again.</p></div>`;
+    }
+  }
+
+  function dpRenderPostCard(post) {
+    const community = post.community;
+    const commName  = community
+      ? (community.isCentral
+          ? 'RevXChange Central'
+          : ((community.brand?.name || '') + ' ' + community.name).trim())
+      : 'Unknown Community';
+    const commLogo = community?.brand?.logoUrl || '';
+    const commSlug = community?.slug || '';
+
+    const thumb    = post.imageUrls?.[0] || null;
+    const hasVideo = !!post.videoUrl;
+    const titleDir = dpIsRTL(post.title) ? ' dir="rtl"' : '';
+    const bodyDir  = dpIsRTL(post.body)  ? ' dir="rtl"' : '';
+    const preview  = post.body ? post.body.slice(0, 200) : '';
+    const newCount = dpGetNewCount(post._id, post.commentCount);
+
+    const newBadge = newCount > 0
+      ? `<span class="dash-post-new-badge">${newCount > 99 ? '99+' : newCount}</span>`
+      : '';
+
+    const mediaThumb = thumb
+      ? `<img class="dash-post-thumb" src="${thumb}" alt="Post image" loading="lazy">`
+      : hasVideo
+        ? `<div class="dash-post-thumb-video">🎥</div>`
+        : '';
+
+    const shareTag = post.isShare
+      ? `<div class="dash-post-share-tag">↗ Shared post</div>`
+      : '';
+
+    const editedTag = post.isEdited
+      ? `<span class="dash-post-edited">(edited)</span>`
+      : '';
+
+    return `
+      <div class="dash-post-card" data-postid="${post._id}">
+        <div class="dash-post-top">
+          ${mediaThumb}
+          <div class="dash-post-main">
+            ${shareTag}
+            <div class="dash-post-comm-tag">
+              <img class="dash-post-comm-logo"
+                   src="${commLogo}" alt="${commName}"
+                   onerror="this.style.opacity='0'">
+              ${commName}
+            </div>
+            ${post.title
+              ? `<div class="dash-post-title"${titleDir}>${post.title}</div>`
+              : ''}
+            ${preview
+              ? `<div class="dash-post-preview"${bodyDir}>${preview}</div>`
+              : ''}
+          </div>
         </div>
-      `;
-      return;
+        <div class="dash-post-meta">
+          <div class="dash-post-stats-row">
+            <span>▲ ${dpFormatNum(post.upvotes)}</span>
+            <span class="dash-post-comment-stat"
+                  data-postid="${post._id}">
+              💬 ${dpFormatNum(post.commentCount)}${newBadge}
+            </span>
+            <span>${dpFormatTime(post.createdAt)}${editedTag}</span>
+          </div>
+          <div class="dash-post-actions-row">
+            <button class="dash-post-action-btn view"
+                    data-slug="${commSlug}">View Feed</button>
+            ${!post.isShare
+              ? `<button class="dash-post-action-btn edit"
+                         data-postid="${post._id}">Edit</button>`
+              : ''}
+            <button class="dash-post-action-btn delete"
+                    data-postid="${post._id}">Delete</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Delete post ───────────────────────────────────────────
+  function dpConfirmDelete(postId) {
+    const card = document.querySelector(`[data-postid="${postId}"]`);
+    if (!card) return;
+
+    const actionsRow = card.querySelector('.dash-post-actions-row');
+    if (!actionsRow) return;
+
+    const originalHTML = actionsRow.innerHTML;
+
+    actionsRow.innerHTML = `
+      <span style="font-size:0.78rem;color:var(--text-light);font-family:'Segoe UI',sans-serif;align-self:center;">Delete this post?</span>
+      <button class="dash-post-action-btn delete" id="dpDelYes_${postId}">Yes, Delete</button>
+      <button class="dash-post-action-btn edit"   id="dpDelNo_${postId}">Cancel</button>`;
+
+    document.getElementById(`dpDelNo_${postId}`)?.addEventListener('click', () => {
+      actionsRow.innerHTML = originalHTML;
+      loadMyPosts();
+    });
+
+    document.getElementById(`dpDelYes_${postId}`)?.addEventListener('click', async () => {
+      try {
+        const res = await fetch(`/api/posts/${postId}`, {
+          method:  'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          card.style.transition = 'opacity 0.3s ease, max-height 0.3s ease';
+          card.style.opacity    = '0';
+          card.style.maxHeight  = '0';
+          card.style.overflow   = 'hidden';
+          card.style.padding    = '0';
+          card.style.margin     = '0';
+          setTimeout(() => { card.remove(); showToast('Post deleted ✓'); }, 320);
+        } else {
+          actionsRow.innerHTML = originalHTML;
+          loadMyPosts();
+          showToast('Failed to delete post');
+        }
+      } catch (err) {
+        console.error('Delete post error:', err);
+        actionsRow.innerHTML = originalHTML;
+        loadMyPosts();
+      }
+    });
+  }
+
+  // ── Edit post modal ───────────────────────────────────────
+  function dpOpenEditModal(post) {
+    document.getElementById('dashEditPostOverlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id        = 'dashEditPostOverlay';
+    overlay.className = 'dash-edit-post-overlay';
+
+    const safeTitle = (post.title || '').replace(/"/g, '&quot;');
+    const safeBody  = post.body || '';
+
+    overlay.innerHTML = `
+      <div class="dash-edit-post-card">
+        <div class="dash-edit-header">
+          <h3 class="dash-edit-modal-title">Edit Post</h3>
+          <button class="dash-edit-close" id="dashEditClose">✕</button>
+        </div>
+        <div class="dash-edit-body">
+          <div class="dash-edit-field">
+            <label class="dash-edit-label">
+              Title <span class="dash-edit-required">*</span>
+            </label>
+            <input type="text" class="dash-edit-input" id="dashEditTitleInput"
+                   value="${safeTitle}" maxlength="300">
+          </div>
+          <div class="dash-edit-field">
+            <label class="dash-edit-label">Body</label>
+            <textarea class="dash-edit-textarea" id="dashEditBodyInput"
+                      maxlength="10000" rows="6">${safeBody}</textarea>
+          </div>
+        </div>
+        <div class="dash-edit-footer">
+          <button class="dash-edit-cancel" id="dashEditCancelBtn">Cancel</button>
+          <button class="dash-edit-save"   id="dashEditSaveBtn">
+            <span id="dashEditSaveLabel">Save Changes</span>
+            <span id="dashEditSaveSpinner" style="display:none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5"
+                   style="animation:dashSpin 0.8s linear infinite;">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => overlay.classList.add('rx-open'));
+    });
+
+    const titleInput = document.getElementById('dashEditTitleInput');
+    const bodyInput  = document.getElementById('dashEditBodyInput');
+
+    // Set initial direction
+    if (titleInput) titleInput.dir = dpIsRTL(titleInput.value) ? 'rtl' : 'ltr';
+    if (bodyInput)  bodyInput.dir  = dpIsRTL(bodyInput.value)  ? 'rtl' : 'ltr';
+
+    // Auto-direction on type
+    titleInput?.addEventListener('input', () => {
+      titleInput.dir = dpIsRTL(titleInput.value) ? 'rtl' : 'ltr';
+    });
+    bodyInput?.addEventListener('input', () => {
+      bodyInput.dir = dpIsRTL(bodyInput.value) ? 'rtl' : 'ltr';
+    });
+
+    const close = () => {
+      overlay.classList.remove('rx-open');
+      setTimeout(() => { overlay.remove(); document.body.style.overflow = ''; }, 280);
+    };
+
+    document.getElementById('dashEditClose')?.addEventListener('click', close);
+    document.getElementById('dashEditCancelBtn')?.addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+    document.getElementById('dashEditSaveBtn')?.addEventListener('click', async () => {
+      const title = titleInput?.value.trim();
+      const body  = bodyInput?.value.trim() || '';
+      if (!title) { showToast('Title is required'); return; }
+
+      const saveBtn = document.getElementById('dashEditSaveBtn');
+      const label   = document.getElementById('dashEditSaveLabel');
+      const spinner = document.getElementById('dashEditSaveSpinner');
+
+      saveBtn.disabled          = true;
+      if (label)  label.style.display   = 'none';
+      if (spinner) spinner.style.display = 'flex';
+
+      try {
+        const res = await fetch(`/api/posts/${post._id}`, {
+          method:  'PATCH',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ title, body })
+        });
+
+        if (res.ok) {
+          close();
+          showToast('Post updated ✓');
+          loadMyPosts();
+        } else {
+          const data = await safeJson(res);
+          showToast(data.message || 'Failed to update post');
+          saveBtn.disabled          = false;
+          if (label)  label.style.display   = '';
+          if (spinner) spinner.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Edit post error:', err);
+        showToast('Server error. Please try again.');
+        saveBtn.disabled          = false;
+        if (label)  label.style.display   = '';
+        if (spinner) spinner.style.display = 'none';
+      }
+    });
+  }
+
+  // ── Comments modal ────────────────────────────────────────
+  function dpOpenCommentsModal(post) {
+    // Mark as seen immediately
+    dpMarkSeen(post._id, post.commentCount);
+
+    // Remove new badge from card
+    const card = document.querySelector(`[data-postid="${post._id}"]`);
+    card?.querySelector('.dash-post-new-badge')?.remove();
+
+    // Recalculate tab badge
+    const allCards = document.querySelectorAll('[data-postid]');
+    let remaining  = 0;
+    allCards.forEach(c => {
+      const badge = c.querySelector('.dash-post-new-badge');
+      if (badge) remaining += parseInt(badge.textContent) || 0;
+    });
+    const tabBadge = document.getElementById('postsBadge');
+    if (tabBadge) {
+      if (remaining > 0) {
+        tabBadge.textContent    = remaining > 99 ? '99+' : remaining;
+        tabBadge.style.display  = 'inline-flex';
+      } else {
+        tabBadge.style.display  = 'none';
+      }
     }
 
-    list.innerHTML = myPosts.map(post => `
-      <div class="dash-post-card">
-        <div class="dash-post-community">${post.community}</div>
+    document.getElementById('dashCommentsOverlay')?.remove();
 
-        <p class="dash-post-text">${post.text}</p>
+    const overlay = document.createElement('div');
+    overlay.id        = 'dashCommentsOverlay';
+    overlay.className = 'dash-comments-overlay';
 
-        <div class="dash-post-footer">
-          <div class="dash-post-stats">
-            <span>▲ ${post.likes}</span>
-            <span>💬 ${post.comments}</span>
-            <span>${post.time}</span>
+    const titleDir = dpIsRTL(post.title) ? 'dir="rtl"' : '';
+    const userName = localStorage.getItem('rxUser') || '';
+    const initial  = userName ? userName.charAt(0).toUpperCase() : '?';
+    const sendIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
+
+    overlay.innerHTML = `
+      <div class="dash-comments-card">
+        <div class="dash-comments-header">
+          <div class="dash-comments-post-title" ${titleDir}>
+            ${post.title || 'Post'}
           </div>
+          <button class="dash-comments-close" id="dashCommClose">✕</button>
+        </div>
+        <div class="dash-comments-body" id="dashCommList">
+          <div class="dash-comments-empty">Loading comments...</div>
+        </div>
+        <div class="dash-comments-footer">
+          <div class="dp-compose">
+            <div class="dp-compose-avatar">${initial}</div>
+            <div class="dp-pill-wrap">
+              <input class="dp-input" type="text"
+                     id="dashCommInput" placeholder="Write a comment...">
+              <button class="dp-send-btn" id="dashCommSend" disabled>
+                ${sendIcon}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
 
-          <button class="dash-post-delete">Delete</button>
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => overlay.classList.add('rx-open'));
+    });
+
+    const close = () => {
+      overlay.classList.remove('rx-open');
+      setTimeout(() => { overlay.remove(); document.body.style.overflow = ''; }, 280);
+    };
+
+    document.getElementById('dashCommClose')?.addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function escH(e) {
+      if (e.key === 'Escape' && document.getElementById('dashCommentsOverlay')) {
+        close();
+        document.removeEventListener('keydown', escH);
+      }
+    });
+
+    const input   = document.getElementById('dashCommInput');
+    const sendBtn = document.getElementById('dashCommSend');
+
+    input?.addEventListener('input', () => {
+      sendBtn.disabled = input.value.trim().length === 0;
+      if (input) input.dir = dpIsRTL(input.value) ? 'rtl' : 'ltr';
+    });
+
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !sendBtn.disabled) {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+
+    sendBtn?.addEventListener('click', async () => {
+      const body = input.value.trim();
+      if (!body) return;
+
+      sendBtn.disabled    = true;
+      const origIcon      = sendBtn.innerHTML;
+      sendBtn.innerHTML   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"
+        style="animation:dashSpin 0.7s linear infinite">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      </svg>`;
+
+      try {
+        const res  = await fetch(`/api/posts/${post._id}/comments`, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ body })
+        });
+        const data = await safeJson(res);
+
+        if (res.ok) {
+          input.value       = '';
+          sendBtn.innerHTML = origIcon;
+          sendBtn.disabled  = true;
+
+          post.commentCount++;
+          dpMarkSeen(post._id, post.commentCount);
+
+          const listEl = document.getElementById('dashCommList');
+          const empty  = listEl?.querySelector('.dash-comments-empty');
+          if (empty) empty.remove();
+
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = dpRenderComment(data.comment);
+          listEl?.insertBefore(wrapper.firstElementChild, listEl.firstChild);
+
+          // Update count on card
+          const stat = document.querySelector(`[data-postid="${post._id}"] .dash-post-comment-stat`);
+          if (stat) {
+            stat.innerHTML = `💬 ${dpFormatNum(post.commentCount)}`;
+            stat.dataset.postid = post._id;
+          }
+        } else {
+          showToast(data.message || 'Failed to post comment');
+          sendBtn.innerHTML = origIcon;
+          sendBtn.disabled  = false;
+        }
+      } catch (err) {
+        console.error('Post comment error:', err);
+        sendBtn.innerHTML = origIcon;
+        sendBtn.disabled  = false;
+      }
+    });
+
+    dpLoadComments(post._id);
+  }
+
+  async function dpLoadComments(postId) {
+    const listEl = document.getElementById('dashCommList');
+    if (!listEl) return;
+
+    try {
+      const res  = await fetch(`/api/posts/${postId}/comments?sort=top`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await safeJson(res);
+
+      if (!res.ok) {
+        listEl.innerHTML = '<div class="dash-comments-empty">Failed to load comments.</div>';
+        return;
+      }
+
+      const comments = data.comments || [];
+
+      if (comments.length === 0) {
+        listEl.innerHTML = '<div class="dash-comments-empty">No comments yet. Be the first!</div>';
+        return;
+      }
+
+      listEl.innerHTML = comments.map(c => dpRenderComment(c)).join('');
+
+    } catch (err) {
+      console.error('Load comments error:', err);
+      listEl.innerHTML = '<div class="dash-comments-empty">Failed to load comments.</div>';
+    }
+  }
+
+  function dpRenderComment(comment) {
+    const authorName = comment.author?.name || 'Anonymous';
+    const initial    = authorName.charAt(0).toUpperCase();
+    const timeAgo    = dpFormatTime(comment.createdAt);
+    const bodyDir    = dpIsRTL(comment.body) ? ' dir="rtl"' : '';
+    const editedTag  = comment.isEdited
+      ? '<span class="dp-comment-edited">(edited)</span>' : '';
+
+    const repliesHtml = comment.replies?.length > 0
+      ? `<div class="dp-comment-replies">
+           ${comment.replies.map(r => dpRenderComment(r)).join('')}
+         </div>`
+      : '';
+
+    const imagesHtml = comment.imageUrls?.length > 0
+      ? `<div class="dp-comment-images">
+           ${comment.imageUrls.map(url =>
+             `<img src="${url}" alt="comment image" loading="lazy">`
+           ).join('')}
+         </div>`
+      : '';
+
+    return `
+      <div class="dp-comment">
+        <div class="dp-comment-avatar">${initial}</div>
+        <div class="dp-comment-content">
+          <div class="dp-comment-meta">
+            <span class="dp-comment-author">${authorName}</span>
+            <span class="dp-comment-time">${timeAgo}</span>
+            ${editedTag}
+          </div>
+          <div class="dp-comment-body"${bodyDir}>${comment.body}</div>
+          ${imagesHtml}
         </div>
       </div>
-    `).join('');
+      ${repliesHtml}`;
   }
 
   const saveBtn = document.getElementById('saveProfileBtn');
@@ -987,6 +1545,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Init ───────────────────────────────────────────────────
     loadMyAds();
     renderSavedAds();
-    renderMyPosts();
+    loadMyPosts();
     loadIncomingRequests();
 });

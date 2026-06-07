@@ -438,6 +438,138 @@ router.post('/:id/share', protect, async (req, res) => {
   }
 });
 
+// ── GET /api/posts/:id ───────────────────────────────────────
+router.get('/:id', async (req, res) => {
+  try {
+    const jwt = require('jsonwebtoken');
+    let userId = null;
+    try {
+      const header = req.headers.authorization;
+      if (header?.startsWith('Bearer ')) {
+        const decoded = jwt.verify(header.split(' ')[1], process.env.JWT_SECRET);
+        userId = decoded.id;
+      }
+    } catch {}
+
+    const post = await Post.findById(req.params.id)
+      .populate('authorId', 'name email')
+      .populate({
+        path: 'communityId',
+        select: 'name slug isCentral memberCount postCount brandId',
+        populate: { path: 'brandId', select: 'name slug logoUrl glowColor' }
+      })
+      .populate('variantId', 'label yearStart yearEnd')
+      .lean();
+
+    if (!post || post.isDeleted) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    let userVote = 0;
+    if (userId) {
+      const vote = await Vote.findOne({ userId, postId: post._id }).lean();
+      userVote = vote?.value || 0;
+    }
+
+    res.json({
+      success: true,
+      post: {
+        _id:             post._id,
+        title:           post.title,
+        body:            post.body,
+        imageUrls:       post.imageUrls || [],
+        videoUrl:        post.videoUrl  || null,
+        videoExpiresAt:  post.videoExpiresAt || null,
+        isShare:         post.isShare,
+        upvotes:         post.upvotes   || 0,
+        downvotes:       post.downvotes || 0,
+        score:           post.score     || 0,
+        commentCount:    post.commentCount || 0,
+        isEdited:        post.isEdited,
+        editedAt:        post.editedAt,
+        createdAt:       post.createdAt,
+        userVote,
+        author: post.authorId
+          ? { _id: post.authorId._id, name: post.authorId.name }
+          : null,
+        community: post.communityId ? {
+          _id:      post.communityId._id,
+          name:     post.communityId.name,
+          slug:     post.communityId.slug,
+          isCentral: post.communityId.isCentral,
+          memberCount: post.communityId.memberCount,
+          brand:    post.communityId.brandId || null
+        } : null,
+        variant: post.variantId
+          ? { label: post.variantId.label }
+          : null
+      }
+    });
+  } catch (err) {
+    console.error('GET /api/posts/:id error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ── GET /api/posts/my-posts ───────────────────────────────────
+router.get('/my-posts', protect, async (req, res) => {
+  try {
+    const page  = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = 20;
+    const skip  = (page - 1) * limit;
+
+    const filter = { authorId: req.user.id, isDeleted: false };
+    const total  = await Post.countDocuments(filter);
+
+    const posts = await Post.find(filter)
+      .populate({
+        path: 'communityId',
+        select: 'name slug isCentral brandId',
+        populate: { path: 'brandId', select: 'name slug logoUrl glowColor' }
+      })
+      .populate('variantId', 'label')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const formatted = posts.map(p => ({
+      _id:          p._id,
+      title:        p.title,
+      body:         p.body,
+      imageUrls:    p.imageUrls  || [],
+      videoUrl:     p.videoUrl   || null,
+      isShare:      p.isShare    || false,
+      upvotes:      p.upvotes    || 0,
+      downvotes:    p.downvotes  || 0,
+      score:        p.score      || 0,
+      commentCount: p.commentCount || 0,
+      isEdited:     p.isEdited,
+      createdAt:    p.createdAt,
+      community: p.communityId ? {
+        _id:      p.communityId._id,
+        name:     p.communityId.name,
+        slug:     p.communityId.slug,
+        isCentral: p.communityId.isCentral,
+        brand:    p.communityId.brandId || null
+      } : null,
+      variant: p.variantId ? { label: p.variantId.label } : null
+    }));
+
+    res.json({
+      success:     true,
+      posts:       formatted,
+      page,
+      total,
+      totalPages:  Math.ceil(total / limit),
+      hasNextPage: page * limit < total
+    });
+  } catch (err) {
+    console.error('GET /api/posts/my-posts error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 // ── GET /api/posts/:id/comments ──────────────────────────────
 router.get('/:id/comments', async (req, res) => {
   try {
