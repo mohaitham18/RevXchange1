@@ -808,3 +808,131 @@
     margin-top: 10px;
     margin-bottom: 16px;
 }
+
+
+/* ── Incoming Requests ───────────────────────────────────────── */
+.dash-request-card {
+    background: var(--white);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.dash-request-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.dash-request-car {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+
+.dash-request-type {
+    font-size: 0.82rem;
+    color: var(--text-light);
+}
+
+.dash-request-status {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.dash-request-status.pending {
+    background: rgba(242,194,48,0.15);
+    color: #9a6a00;
+}
+
+.dash-request-status.accepted {
+    background: rgba(30,180,90,0.12);
+    color: #187a43;
+}
+
+.dash-request-status.rejected {
+    background: rgba(220,50,50,0.10);
+    color: #a32020;
+}
+
+.dash-request-status.closed {
+    background: rgba(0,0,0,0.06);
+    color: #666;
+}
+
+.dash-request-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.88rem;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+}
+
+.dash-request-message {
+    font-size: 0.88rem;
+    color: var(--text-light);
+    font-style: italic;
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+}
+
+.dash-request-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.dash-req-btn {
+    padding: 8px 18px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dash-req-btn.accept {
+    background: rgba(30,180,90,0.12);
+    color: #187a43;
+}
+
+.dash-req-btn.accept:hover {
+    background: rgba(30,180,90,0.22);
+}
+
+.dash-req-btn.reject {
+    background: rgba(220,50,50,0.10);
+    color: #a32020;
+}
+
+.dash-req-btn.reject:hover {
+    background: rgba(220,50,50,0.20);
+}
+
+/* ── Tab Badge ───────────────────────────────────────────────── */
+.dash-tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #c0392b;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    padding: 0 5px;
+    margin-left: 6px;
+}

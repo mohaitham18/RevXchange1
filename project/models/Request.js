@@ -34,10 +34,17 @@ const requestSchema = new mongoose.Schema({
   rentFrom: { type: Date, default: null },
   rentTo:   { type: Date, default: null },
 
+    // Car owner
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+
   // Admin workflow
   status: {
     type: String,
-    enum: ['pending', 'contacted', 'closed'],
+    enum: ['pending', 'contacted', 'closed', 'accepted', 'rejected'],
     default: 'pending'
   },
   adminNote: { type: String, default: '' }
