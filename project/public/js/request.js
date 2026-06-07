@@ -35,24 +35,21 @@ function openRequestModal(carId, type, carTitle, carPrice) {
   // Show/hide sections
   const reqOfferGroup = document.getElementById('reqOfferGroup');
   const reqDatesGroup = document.getElementById('reqDatesGroup');
+  const reqAppointmentGroup = document.getElementById('reqAppointmentGroup');
 
   if (reqOfferGroup) reqOfferGroup.style.display = type === 'buy' ? 'block' : 'none';
-  if (reqDatesGroup) reqDatesGroup.style.display = (type === 'rent' || type === 'appointment') ? 'block' : 'none';
+  if (reqDatesGroup) reqDatesGroup.style.display = type === 'rent' ? 'block' : 'none';
+  if (reqAppointmentGroup) reqAppointmentGroup.style.display = type === 'appointment' ? 'block' : 'none';
 
   // Auto-fill user info
   const user = getLoggedUser();
   const rxUser = localStorage.getItem('rxUser');
-  const rxEmail = localStorage.getItem('rxEmail');
 
   const reqName = document.getElementById('reqName');
   const reqPhone = document.getElementById('reqPhone');
 
-  if (reqName && !reqName.value) {
-    reqName.value = user.name || rxUser || '';
-  }
-  if (reqPhone && !reqPhone.value) {
-    reqPhone.value = user.phone || '';
-  }
+  if (reqName && !reqName.value) reqName.value = user.name || rxUser || '';
+  if (reqPhone && !reqPhone.value) reqPhone.value = user.phone || '';
 
   // Reset contact chips
   reqContact = 'call';
@@ -60,11 +57,13 @@ function openRequestModal(carId, type, carTitle, carPrice) {
     chip.classList.toggle('active', chip.dataset.val === 'call');
   });
 
-  // Reset dates
+  // Reset all date fields
   const reqRentFrom = document.getElementById('reqRentFrom');
   const reqRentTo = document.getElementById('reqRentTo');
+  const reqAppointmentDate = document.getElementById('reqAppointmentDate');
   if (reqRentFrom) reqRentFrom.value = '';
   if (reqRentTo) reqRentTo.value = '';
+  if (reqAppointmentDate) reqAppointmentDate.value = '';
 
   hideReqError();
   overlay.style.display = 'flex';
@@ -114,20 +113,19 @@ async function submitRequest() {
     if (offer) payload.offerPrice = Number(offer);
   }
 
-  if (type === 'rent' || type === 'appointment') {
+  if (type === 'rent') {
     const rentFrom = document.getElementById('reqRentFrom').value;
     const rentTo = document.getElementById('reqRentTo').value;
-
-    console.log('rentFrom:', rentFrom, 'rentTo:', rentTo);
-
-    if (!rentFrom || !rentTo) {
-      return showReqError('Please select pickup and return dates.');
-    }
-    if (new Date(rentFrom) >= new Date(rentTo)) {
-      return showReqError('Return date must be after pickup date.');
-    }
+    if (!rentFrom || !rentTo) return showReqError('Please select pickup and return dates.');
+    if (new Date(rentFrom) >= new Date(rentTo)) return showReqError('Return date must be after pickup date.');
     payload.rentFrom = rentFrom;
     payload.rentTo = rentTo;
+  }
+
+  if (type === 'appointment') {
+    const appointmentDate = document.getElementById('reqAppointmentDate').value;
+    if (!appointmentDate) return showReqError('Please select a preferred visit date.');
+    payload.appointmentDate = appointmentDate;
   }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
@@ -165,10 +163,11 @@ async function submitRequest() {
         btn.style.background = '';
         btn.style.color = '';
       }
-      document.getElementById('reqOfferPrice').value = '';
-      document.getElementById('reqMessage').value = '';
-      document.getElementById('reqRentFrom').value = '';
-      document.getElementById('reqRentTo').value = '';
+      const fields = ['reqOfferPrice', 'reqMessage', 'reqRentFrom', 'reqRentTo', 'reqAppointmentDate'];
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
     }, 1500);
 
   } catch (err) {

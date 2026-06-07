@@ -20,6 +20,7 @@ mongoose.connect(process.env.MONGO_URI)
     const communityRoutes = require('./routes/communityRoutes');
     const feedRoutes = require('./routes/feedRoutes');
     const postRoutes = require('./routes/postRoutes');
+    const caraRoutes = require('./routes/caraRoutes');
 
     app.use('/api/auth', userRoutes);
     app.use('/api/users', userRoutes);
@@ -30,7 +31,7 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/feed',feedRoutes);
     app.use('/api/posts', postRoutes);
     app.use('/api/search', require('./routes/searchRoutes'));
-   
+    app.use('/api/cara', caraRoutes);
 
     
     console.log('Routes registered ✅');

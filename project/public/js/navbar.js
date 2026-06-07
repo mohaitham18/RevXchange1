@@ -192,4 +192,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('caraOpen', () => mega.classList.remove('rx-open'));
 
+
+  // ─── Language Toggle ──────────────────────────────────────
+    const langBtn = document.getElementById('langToggleBtn');
+    if (langBtn) {
+        const currentLang = localStorage.getItem('rxLang') || 'en';
+        langBtn.textContent = currentLang === 'ar' ? '🌐 English' : '🌐 العربية';
+
+        langBtn.addEventListener('click', function() {
+            const lang = localStorage.getItem('rxLang') || 'en';
+            if (lang === 'en') {
+                localStorage.setItem('rxLang', 'ar');
+                langBtn.textContent = '🌐 English';
+                document.documentElement.dir = 'rtl';
+                document.documentElement.lang = 'ar';
+            } else {
+                localStorage.setItem('rxLang', 'en');
+                langBtn.textContent = '🌐 العربية';
+                document.documentElement.dir = 'ltr';
+                document.documentElement.lang = 'en';
+            }
+        });
+
+        // Apply saved language on page load
+        if (currentLang === 'ar') {
+            document.documentElement.dir = 'rtl';
+            document.documentElement.lang = 'ar';
+            langBtn.textContent = '🌐 English';
+        }
+    }
+
 }());
