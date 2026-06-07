@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema({
       ref: 'Car'
     }
   ],
+  viewedCars: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Car'
+    }
+  ],
   createdAt: { 
     type: Date, 
     default: Date.now 
@@ -37,22 +43,14 @@ const userSchema = new mongoose.Schema({
 });
 
 // ── Password Hashing Middleware ────────────────────────────────
-// Added the 'next' parameter so Mongoose knows when to advance!
-userSchema.pre('save', async function(next) {
-  // If the password wasn't changed, advance immediately
+userSchema.pre('save', async function () {
+  // If the password wasn't changed, do nothing
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
 
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    
-    // 🔥 CRITICAL: Tells Mongoose the hashing is complete and saves the user record!
-    next();
-  } catch (err) {
-    next(err); // Passes errors safely down the execution chain
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // ── Password Verification Method ───────────────────────────────

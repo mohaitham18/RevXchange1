@@ -249,15 +249,57 @@ body {
   display: grid;
   grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1.5fr;
   gap: 16px;
-  align-items: center;
+  align-items: start;
   padding: 14px 16px;
   border-radius: 14px;
   background: #fafafb;
+  font-size: 0.9rem;
 }
 
 .table-head {
   font-weight: 700;
+  font-size: 0.82rem;
   background: #f1f2f4;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+}
+
+/* ── Cars table (5 cols) ─────────────────────────────────── */
+.table-row:not(.users-row):not(.req-row),
+.table-head:not(.users-head):not(.req-head) {
+  grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1.5fr;
+}
+
+/* ── Users table (5 cols) ────────────────────────────────── */
+.table-row.users-row,
+.table-head.users-head {
+  grid-template-columns: 1.4fr 2fr 0.8fr 1fr 1.6fr;
+}
+
+/* ── Requests table (6 cols) ─────────────────────────────── */
+.table-row.req-row,
+.table-head.req-head {
+  grid-template-columns: 1.5fr 1.8fr 1.2fr 1.4fr 0.9fr 1.2fr;
+}
+
+/* ── Actions cell ────────────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── Status badge ────────────────────────────────────────── */
+.status {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .status {
@@ -324,4 +366,34 @@ body {
   padding: 12px 14px;
   background: #f7f8fa;
   border-radius: 12px;
+}
+
+/* ── Row styling ─────────────────────────────────────────── */
+.table-row:not(.table-head):nth-child(even) {
+  background: #f7f8fa;
+}
+
+.table-row:not(.table-head):nth-child(odd) {
+  background: #ffffff;
+}
+
+.table-row:not(.table-head) {
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s;
+}
+
+.table-row:not(.table-head):hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* ── Sub text in cells ───────────────────────────────────── */
+.cell-sub {
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: 2px;
+}
+
+.cell-main {
+  font-weight: 600;
+  color: var(--text-dark);
 }

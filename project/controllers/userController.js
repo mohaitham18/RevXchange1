@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken');
 
 // ── Token & Data Formatters ────────────────────────────────────
 const generateToken = (id, role) => {
-  // Uses ID cleanly to avoid any payload mismatches across your application
   return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
@@ -52,12 +51,30 @@ const register = async (req, res) => {
 
     const role = getRoleForEmail(email);
 
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role
-    });
+    const user = await User.create({ name, email, password, role });
+
+    // Send welcome email
+    try {
+      const sendMail = require('../utils/mailer');
+      await sendMail({
+        to: user.email,
+        subject: 'Welcome to RevXChange! 🚗',
+        html: `
+          <div style="font-family:Segoe UI,sans-serif;max-width:600px;margin:0 auto">
+            <div style="background:#5a0f1c;padding:28px;border-radius:12px 12px 0 0;text-align:center">
+              <h1 style="color:#fff;margin:0">RevXChange</h1>
+            </div>
+            <div style="background:#f9fafb;padding:32px;border-radius:0 0 12px 12px">
+              <h2 style="color:#1a1a1a">Welcome, ${user.name}! 👋</h2>
+              <p style="color:#555;line-height:1.7">Your account has been created successfully. You can now buy, sell and rent cars across Egypt.</p>
+              <a href="http://localhost:3000/used-cars.html" style="display:inline-block;margin-top:16px;background:#5a0f1c;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700">Browse Cars</a>
+            </div>
+          </div>
+        `
+      });
+    } catch (mailErr) {
+      console.error('Welcome email failed:', mailErr.message);
+    }
 
     res.status(201).json({
       message: 'Registration successful',
@@ -82,17 +99,15 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // Compares password using bcrypt method
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // Sync role changes against environment variable setup instantly
     const correctRole = getRoleForEmail(user.email);
     if (user.role !== correctRole) {
       user.role = correctRole;
-      await user.save(); // Safe to execute now that next() is implemented in schema hooks
+      await user.save();
     }
 
     res.json({
@@ -131,7 +146,6 @@ const updateProfile = async (req, res) => {
     if (email && email !== user.email) {
       const existing = await User.findOne({ email });
       if (existing) return res.status(400).json({ message: 'Email already in use' });
-
       user.email = email;
       user.role = getRoleForEmail(email);
     }

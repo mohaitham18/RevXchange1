@@ -34,6 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const carInfo = document.getElementById('carInfo');
   const kmsDriven = document.getElementById('kmsDriven');
   const carPrice = document.getElementById('carPrice');
+  const priceLabel = document.getElementById('priceLabel');
+  const priceSectionTitle = document.getElementById('priceSectionTitle');
+  const rentExtraFields = document.getElementById('rentExtraFields');
+  const rentPricePerMonth = document.getElementById('rentPricePerMonth');
+  const rentDeposit = document.getElementById('rentDeposit');
   const citySelect = document.getElementById('citySelect');
   const carDesc = document.getElementById('carDesc');
 
@@ -69,6 +74,24 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeFuel = 'Gas';
   let activeFabrika = 'no';
   let activeCondition = 'Used';
+  let activeListingType = 'sale';
+
+  function ensurePreviewThirdButton() {
+    const actions = document.querySelector('.sell-preview-actions');
+
+    if (!actions) return;
+
+    let btn = document.getElementById('previewAppointmentBtn');
+
+    if (!btn) {
+      btn = document.createElement('span');
+      btn.id = 'previewAppointmentBtn';
+      btn.className = 'sell-preview-action-btn appointment';
+      actions.appendChild(btn);
+    }
+
+    btn.textContent = activeListingType === 'rent' ? 'Rent Request' : 'Appointment';
+  }
 
   function updatePreview() {
     if (previewTitle) {
@@ -78,9 +101,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const price = carPrice?.value.trim();
 
     if (previewPrice) {
-      previewPrice.textContent = price
-        ? parseInt(price).toLocaleString('en-EG') + ' EGP'
-        : 'Price not set';
+      if (price) {
+        previewPrice.textContent =
+          parseInt(price, 10).toLocaleString('en-EG') +
+          (activeListingType === 'rent' ? ' EGP / day' : ' EGP');
+      } else {
+        previewPrice.textContent =
+          activeListingType === 'rent' ? 'Daily rent not set' : 'Price not set';
+      }
     }
 
     if (previewCity) {
@@ -91,16 +119,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (previewKm) {
       previewKm.textContent = km
-        ? '🛣️ ' + parseInt(km).toLocaleString() + ' km'
+        ? '🛣️ ' + parseInt(km, 10).toLocaleString() + ' km'
         : '🛣️ — km';
     }
 
-    if (previewTransmission) previewTransmission.textContent = activeTransmission;
-    if (previewFuel) previewFuel.textContent = activeFuel;
-    if (previewFabrika) previewFabrika.style.display = activeFabrika === 'yes' ? 'inline-flex' : 'none';
+    if (previewTransmission) {
+      previewTransmission.textContent = activeTransmission;
+    }
+
+    if (previewFuel) {
+      previewFuel.textContent = activeFuel;
+    }
+
+    if (previewFabrika) {
+      previewFabrika.style.display = activeFabrika === 'yes' ? 'inline-flex' : 'none';
+    }
+
+    ensurePreviewThirdButton();
+  }
+
+  function updateListingTypeUI() {
+    const isRent = activeListingType === 'rent';
+
+    if (priceSectionTitle) {
+      priceSectionTitle.textContent = isRent ? 'Rent Price' : 'Sale Price';
+    }
+
+    if (priceLabel) {
+      priceLabel.textContent = isRent ? 'Daily Rent (EGP)' : 'Price (EGP)';
+    }
+
+    if (carPrice) {
+      carPrice.placeholder = isRent ? 'e.g., 1500' : 'e.g., 850000';
+    }
+
+    if (rentExtraFields) {
+      rentExtraFields.style.display = isRent ? '' : 'none';
+    }
+
+    updatePreview();
   }
 
   [carInfo, kmsDriven, carPrice, citySelect].forEach(el => {
+    el?.addEventListener('input', updatePreview);
+    el?.addEventListener('change', updatePreview);
+  });
+
+  [rentPricePerMonth, rentDeposit].forEach(el => {
     el?.addEventListener('input', updatePreview);
     el?.addEventListener('change', updatePreview);
   });
@@ -114,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chip.addEventListener('click', () => {
         container.querySelectorAll('.sell-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
+
         onSelect(chip.dataset.val);
         updatePreview();
       });
@@ -139,6 +205,19 @@ document.addEventListener('DOMContentLoaded', () => {
       conditionToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeCondition = btn.dataset.val;
+    });
+  });
+
+  const listingTypeToggle = document.getElementById('listingTypeToggle');
+
+  listingTypeToggle?.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      listingTypeToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      activeListingType = btn.dataset.val === 'rent' ? 'rent' : 'sale';
+
+      updateListingTypeUI();
     });
   });
 
@@ -208,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
 
-        images.splice(parseInt(btn.dataset.index), 1);
+        images.splice(parseInt(btn.dataset.index, 10), 1);
 
         if (carouselIndex >= images.length) {
           carouselIndex = Math.max(0, images.length - 1);
@@ -257,13 +336,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   carouselPrev?.addEventListener('click', () => {
     if (!images.length) return;
+
     carouselIndex = (carouselIndex - 1 + images.length) % images.length;
+
     renderCarousel();
   });
 
   carouselNext?.addEventListener('click', () => {
     if (!images.length) return;
+
     carouselIndex = (carouselIndex + 1) % images.length;
+
     renderCarousel();
   });
 
@@ -293,7 +376,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function validatePrice() {
     if (!RXValidation.validators.positiveNumber(carPrice?.value || '')) {
-      RXValidation.showError(carPrice, 'Enter a valid price in EGP');
+      RXValidation.showError(
+        carPrice,
+        activeListingType === 'rent'
+          ? 'Enter a valid daily rent in EGP'
+          : 'Enter a valid price in EGP'
+      );
+
       return false;
     }
 
@@ -374,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
   citySelect?.addEventListener('change', validateCity);
 
   phoneInput?.addEventListener('input', () => {
-    let digits = phoneInput.value.replace(/\D/g, '').slice(0, 11);
+    const digits = phoneInput.value.replace(/\D/g, '').slice(0, 11);
 
     phoneInput.value = digits;
     dirtyFields.add('phoneNumber');
@@ -423,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const carInfoVal = carInfo?.value.trim().split(/\s+/);
     const brand = (carInfoVal?.[0] || '').replace(/,/g, '');
     const model = (carInfoVal?.[1] || '').replace(/,/g, '');
-    const year = parseInt(carInfoVal?.[carInfoVal.length - 1]) || new Date().getFullYear();
+    const year = parseInt(carInfoVal?.[carInfoVal.length - 1], 10) || new Date().getFullYear();
 
     const selectedColor = document.querySelector('.sell-color-item.active')?.dataset.color || '';
 
@@ -432,8 +521,30 @@ document.addEventListener('DOMContentLoaded', () => {
     formData.append('brand', brand);
     formData.append('model', model);
     formData.append('year', year);
-    formData.append('price', parseInt(carPrice?.value));
-    formData.append('mileage', parseInt(kmsDriven?.value));
+
+    formData.append('price', parseInt(carPrice?.value, 10));
+    formData.append('listingType', activeListingType);
+
+    formData.append(
+      'rentPricePerDay',
+      activeListingType === 'rent' ? parseInt(carPrice?.value, 10) : ''
+    );
+
+    formData.append(
+      'rentPricePerMonth',
+      activeListingType === 'rent' && rentPricePerMonth?.value
+        ? parseInt(rentPricePerMonth.value, 10)
+        : ''
+    );
+
+    formData.append(
+      'rentDeposit',
+      activeListingType === 'rent' && rentDeposit?.value
+        ? parseInt(rentDeposit.value, 10)
+        : ''
+    );
+
+    formData.append('mileage', parseInt(kmsDriven?.value, 10));
     formData.append('city', citySelect?.value);
     formData.append('condition', activeCondition.toLowerCase());
     formData.append('transmission', activeTransmission.toLowerCase());
@@ -445,8 +556,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     formData.append('body', bodySelect?.value || 'Sedan');
     formData.append('drivetrain', drivetrainSelect?.value || 'FWD');
-    formData.append('doors', parseInt(doorsSelect?.value) || 4);
-    formData.append('seats', parseInt(seatsSelect?.value) || 5);
+    formData.append('doors', parseInt(doorsSelect?.value, 10) || 4);
+    formData.append('seats', parseInt(seatsSelect?.value, 10) || 5);
     formData.append('engine', engineInput?.value.trim() || 'Not specified');
     formData.append('owners', ownerSelect?.value || 'First Owner');
     formData.append('service', serviceSelect?.value || 'Full History');
@@ -492,7 +603,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       alert('Your ad has been posted! 🎉');
       window.location.href = '/dashboard.html?tab=ads';
-
     } catch (err) {
       console.error('Submit error:', err);
 
@@ -505,5 +615,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  updateListingTypeUI();
   updatePreview();
 });

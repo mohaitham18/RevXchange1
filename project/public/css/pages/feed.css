@@ -1,0 +1,2076 @@
+/* ═══════════════════════════════════════════════════════════
+   RevXChange — Feed Page
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Feed Hero ──────────────────────────────────────────────── */
+.feed-hero {
+  background: linear-gradient(135deg, #2b0710 0%, #4b0f1c 60%, #2f0911 100%);
+  padding: 100px 0 36px;
+  position: relative;
+  overflow: visible !important;
+}
+
+.feed-hero-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.feed-hero-text h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  font-family: 'Segoe UI', sans-serif;
+  margin-bottom: 6px;
+}
+
+.feed-hero-text p {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.65);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ── Sort tabs in hero ──────────────────────────────────────── */
+.feed-sort-tabs {
+  display: flex;
+  gap: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 5px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.feed-sort-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  font-family: 'Segoe UI', sans-serif;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.feed-sort-btn:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.10);
+}
+
+.feed-sort-btn.active {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+}
+
+/* ── Hero melt (reuse existing melt-wrap styles) ────────────── */
+.feed-hero .rx-melt-wrap {
+  position: absolute;
+  bottom: -71px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 72px;
+  z-index: 100;
+  pointer-events: none;
+  line-height: 0;
+}
+
+.feed-hero .rx-melt-wrap svg {
+  display: block;
+  width: 100%;
+  height: 72px;
+}
+
+/* ── Three-column layout ────────────────────────────────────── */
+.feed-layout-section {
+  padding: 88px 0 80px;
+}
+
+.feed-layout {
+  display: grid;
+  grid-template-columns: 22% 1fr 24%;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ── Sidebars ───────────────────────────────────────────────── */
+.feed-left,
+.feed-right {
+  position: sticky;
+  top: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: visible;
+}
+
+.feed-sidebar-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  overflow: visible;
+}
+
+.feed-sidebar-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-light);
+  margin-bottom: 14px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ── Your Communities in left sidebar ──────────────────────── */
+.feed-comm-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-decoration: none;
+  overflow: visible;
+}
+
+.feed-comm-item:hover {
+  background: rgba(90,15,28,0.05);
+}
+
+.feed-comm-item.active {
+  background: rgba(90,15,28,0.08);
+}
+
+.feed-comm-item.active .feed-comm-name {
+  color: var(--primary);
+}
+
+.feed-comm-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.10));
+}
+
+.feed-comm-name {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.feed-comm-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Central community item in sidebar */
+.feed-comm-item-central {
+  background: linear-gradient(135deg, #3e0a13, #5a0f1c);
+  margin-bottom: 6px;
+  border-radius: 10px;
+}
+
+.feed-comm-item-central:hover {
+  background: linear-gradient(135deg, #4a0d17, #6b1222);
+}
+
+.feed-comm-item-central .feed-comm-name {
+  color: #fff;
+}
+
+/* ── Explore button ─────────────────────────────────────────── */
+.feed-explore-btn {
+  display: block;
+  margin-top: 14px;
+  padding: 9px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--primary);
+  border: 1.5px dashed rgba(90,15,28,0.25);
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+.feed-explore-btn:hover {
+  background: rgba(90,15,28,0.05);
+  border-color: var(--primary);
+}
+
+/* ── Not logged in state (left sidebar) ─────────────────────── */
+.feed-login-prompt {
+  text-align: center;
+  padding: 12px 0;
+}
+
+.feed-login-prompt p {
+  font-size: 0.82rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.feed-login-btn {
+  display: block;
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.18s ease;
+}
+
+.feed-login-btn:hover { background: var(--primary-dark); }
+
+/* ── Suggested communities (right sidebar) ──────────────────── */
+.feed-suggested-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.feed-suggested-item:last-child { border-bottom: none; }
+
+.feed-suggested-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.feed-suggested-info { flex: 1; min-width: 0; }
+
+.feed-suggested-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feed-suggested-members {
+  font-size: 0.71rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-suggested-join {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.feed-suggested-join:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ── Suggest a community box ────────────────────────────────── */
+.feed-suggest-box {
+  text-align: center;
+  padding: 20px 16px;
+}
+
+.feed-suggest-icon {
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+}
+
+.feed-suggest-text {
+  font-size: 0.82rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.feed-suggest-btn {
+  display: block;
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #5a0f1c, #3e0a13);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  text-decoration: none;
+  text-align: center;
+  transition: opacity 0.18s ease;
+}
+
+.feed-suggest-btn:hover { opacity: 0.88; }
+
+/* ── Post cards ─────────────────────────────────────────────── */
+.feed-post {
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.feed-post:hover {
+  box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+/* Community tag at top of post */
+.feed-post-community {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  text-decoration: none;
+}
+
+.feed-post-comm-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.feed-post-comm-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  transition: color 0.15s ease;
+}
+
+.feed-post-community:hover .feed-post-comm-name {
+  color: var(--primary);
+}
+
+/* Variant tag */
+.feed-post-variant {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  background: rgba(90,15,28,0.08);
+  color: var(--primary);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Post header — author info */
+.feed-post-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.feed-post-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(90,15,28,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+  font-family: 'Segoe UI', sans-serif;
+  flex-shrink: 0;
+}
+
+.feed-post-author {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-post-time {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  margin-top: 1px;
+}
+
+/* Post title */
+.feed-post-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+/* Post body */
+.feed-post-body {
+  font-size: 0.9rem;
+  color: #444;
+  font-family: 'Segoe UI', sans-serif;
+  line-height: 1.7;
+  margin-bottom: 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Post actions bar */
+.feed-post-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.feed-post-vote {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: #f5f6f8;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.feed-vote-btn {
+  border: none;
+  background: transparent;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+  cursor: pointer;
+  font-family: 'Segoe UI', sans-serif;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.feed-vote-btn:hover { background: rgba(0,0,0,0.05); color: var(--text-dark); }
+.feed-vote-btn.upvoted { color: #16a34a; background: rgba(34,197,94,0.08); }
+.feed-vote-btn.downvoted { color: #dc2626; background: rgba(239,68,68,0.08); }
+
+.feed-vote-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(0,0,0,0.08);
+  flex-shrink: 0;
+}
+
+.feed-post-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f5f6f8;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-light);
+  cursor: pointer;
+  font-family: 'Segoe UI', sans-serif;
+  transition: all 0.15s ease;
+}
+
+.feed-post-action-btn:hover {
+  background: rgba(90,15,28,0.07);
+  color: var(--primary);
+}
+
+/* ── Empty / loading states ─────────────────────────────────── */
+.feed-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-empty-icon { font-size: 2.5rem; margin-bottom: 14px; }
+
+.feed-empty-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.feed-empty-sub { font-size: 0.88rem; line-height: 1.6; }
+
+@keyframes feedSkel {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.feed-skel {
+  background: linear-gradient(90deg, #e8eaed 25%, #f2f3f5 50%, #e8eaed 75%);
+  background-size: 200% 100%;
+  animation: feedSkel 1.3s infinite;
+  border-radius: 16px;
+  margin-bottom: 14px;
+}
+
+/* ── Pagination ─────────────────────────────────────────────── */
+.feed-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 0 0;
+}
+
+.feed-page-btn {
+  padding: 9px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.feed-page-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.feed-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.feed-page-info {
+  font-size: 13px;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ── Compose bar ────────────────────────────────────────────── */
+.feed-compose-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.feed-compose-bar:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border-color: rgba(90,15,28,0.15);
+}
+
+.feed-compose-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(90,15,28,0.08);
+  color: var(--primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feed-compose-input {
+  flex: 1;
+  font-size: 0.92rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  pointer-events: none;
+  user-select: none;
+}
+
+.feed-compose-btn {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.18s ease;
+}
+
+.feed-compose-btn:hover { background: var(--primary-dark); }
+
+/* ── Create post modal ──────────────────────────────────────── */
+.feed-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  background: rgba(20,12,16,0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.feed-modal-overlay.rx-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.feed-modal-card {
+  background: #fff;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 560px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  display: flex;
+  flex-direction: column;
+}
+
+.feed-modal-overlay.rx-open .feed-modal-card {
+  transform: translateY(0) scale(1);
+}
+
+.feed-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px 0;
+  flex-shrink: 0;
+}
+
+.feed-modal-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f5f6f8;
+  color: var(--text-dark);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s ease;
+}
+
+.feed-modal-close:hover { background: #e8eaed; }
+
+.feed-modal-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.feed-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feed-modal-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.feed-modal-required { color: var(--primary); }
+
+.feed-modal-select,
+.feed-modal-input {
+  padding: 11px 14px;
+  border: 1.5px solid rgba(0,0,0,0.10);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-dark);
+  background: #fafafa;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feed-modal-select:focus,
+.feed-modal-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(90,15,28,0.08);
+  background: #fff;
+}
+
+.feed-modal-textarea {
+  padding: 11px 14px;
+  border: 1.5px solid rgba(0,0,0,0.10);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-dark);
+  background: #fafafa;
+  outline: none;
+  resize: vertical;
+  min-height: 120px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  line-height: 1.6;
+}
+
+.feed-modal-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(90,15,28,0.08);
+  background: #fff;
+}
+
+.feed-modal-counter {
+  font-size: 0.72rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  text-align: right;
+}
+
+.feed-modal-counter.warn { color: #f59e0b; }
+.feed-modal-counter.danger { color: #dc2626; }
+
+.feed-modal-footer {
+  padding: 0 24px 22px;
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.feed-modal-cancel {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0,0,0,0.10);
+  background: transparent;
+  color: var(--text-dark);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.feed-modal-cancel:hover { background: #f5f6f8; }
+
+.feed-modal-submit {
+  flex: 2;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #5a0f1c, #3e0a13);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.18s ease;
+}
+
+.feed-modal-submit:hover:not(:disabled) { opacity: 0.88; }
+
+.feed-modal-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Pending post (grayed out while uploading) ──────────────── */
+.feed-post-pending {
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.feed-post-pending-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #5a0f1c, #c0392b, #5a0f1c);
+  background-size: 200% 100%;
+  animation: feedPendingBar 1.2s ease infinite,
+             feedPendingBarWidth 1.5s ease forwards;
+}
+
+@keyframes feedPendingBar {
+  0%   { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes feedPendingBarWidth {
+  0%   { width: 0%; }
+  60%  { width: 85%; }
+  100% { width: 100%; }
+}
+
+@keyframes feedSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Three-dot menu ─────────────────────────────────────────── */
+.feed-post {
+  position: relative;
+}
+
+.feed-post-menu-wrap {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.feed-post-menu-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-light);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.feed-post-menu-btn:hover {
+  background: rgba(0,0,0,0.06);
+  color: var(--text-dark);
+}
+
+.feed-post-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 180px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  padding: 6px;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px) scale(0.97);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.feed-post-dropdown.rx-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.feed-post-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: background 0.14s ease;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.feed-post-dropdown-item:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+.feed-post-dropdown-item.danger {
+  color: #dc2626;
+}
+
+.feed-post-dropdown-item.danger:hover {
+  background: rgba(239,68,68,0.07);
+}
+
+.feed-post-dropdown-divider {
+  height: 1px;
+  background: rgba(0,0,0,0.07);
+  margin: 4px 8px;
+}
+
+/* ── Your Communities sidebar three-dot menu ────────────────── */
+.feed-comm-item {
+  position: relative;
+}
+
+.feed-comm-menu-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.5);
+  font-size: 15px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.feed-comm-item:hover .feed-comm-menu-btn {
+  display: flex;
+}
+
+.feed-comm-item:not(.feed-comm-item-central) .feed-comm-menu-btn {
+  color: var(--text-light);
+}
+
+.feed-comm-menu-btn:hover {
+  background: rgba(0,0,0,0.08);
+  color: var(--text-dark);
+}
+
+.feed-comm-dropdown {
+  position: fixed;
+  width: 190px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  padding: 6px;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px) scale(0.97);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.feed-comm-dropdown.rx-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.feed-comm-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: background 0.14s ease;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.feed-comm-dropdown-item:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+.feed-comm-dropdown-item.danger {
+  color: #dc2626;
+}
+
+.feed-comm-dropdown-item.danger:hover {
+  background: rgba(239,68,68,0.07);
+}
+
+/* ── Deleted post tombstone ─────────────────────────────────── */
+.feed-post-tombstone {
+  opacity: 0.45;
+  pointer-events: none;
+  background: #f9fafb;
+  border-color: rgba(0,0,0,0.04);
+  box-shadow: none;
+  overflow: hidden;
+  transition: opacity 0.4s ease, max-height 0.4s ease,
+              padding 0.4s ease, margin 0.4s ease;
+}
+
+.feed-tombstone-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.feed-tombstone-author {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-tombstone-text {
+  font-size: 0.88rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  font-style: italic;
+}
+
+/* ── Edited tag ─────────────────────────────────────────────── */
+.feed-edited-tag {
+  font-size: 0.72rem;
+  color: var(--text-light);
+  font-weight: 400;
+  font-style: italic;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ── Comments ───────────────────────────────────────────────── */
+
+/* Smooth expand/collapse animation */
+.feed-comments-section {
+  border-top: 1px solid rgba(0,0,0,0.06);
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.38s cubic-bezier(0.22,1,0.36,1),
+              opacity 0.28s ease,
+              padding 0.28s ease;
+  padding: 0 0 0;
+}
+
+.feed-comments-section.rx-open {
+  max-height: 2000px;
+  opacity: 1;
+  padding: 14px 0 0;
+}
+
+/* Sort tabs */
+.feed-comments-sort {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.feed-comments-sort-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 999px;
+  transition: all 0.15s ease;
+}
+
+.feed-comments-sort-btn:hover {
+  background: rgba(90,15,28,0.06);
+  color: var(--primary);
+}
+
+.feed-comments-sort-btn.active {
+  background: rgba(90,15,28,0.08);
+  color: var(--primary);
+}
+
+/* ── Pill compose box ── */
+.feed-comment-compose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.feed-comment-compose-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(90,15,28,0.08);
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feed-comment-pill-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #f5f6f8;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 999px;
+  padding: 0 6px 0 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.feed-comment-pill-wrap:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(90,15,28,0.07);
+  background: #fff;
+}
+
+.feed-comment-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.85rem;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-dark);
+  padding: 9px 0;
+  min-width: 0;
+}
+
+.feed-comment-input::placeholder { color: var(--text-light); }
+
+.feed-comment-send-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  margin: 4px 0;
+}
+
+.feed-comment-send-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: scale(1.08);
+}
+
+.feed-comment-send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Comment thread */
+.feed-comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feed-comment {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.feed-comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(90,15,28,0.07);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feed-comment-content { flex: 1; min-width: 0; }
+
+.feed-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.feed-comment-author {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-comment-time {
+  font-size: 0.72rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-comment-edited {
+  font-size: 0.68rem;
+  color: var(--text-light);
+  font-style: italic;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-comment-body {
+  font-size: 0.875rem;
+  color: #333;
+  font-family: 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  word-break: break-word;
+  margin-bottom: 4px;
+}
+
+.feed-comment-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.feed-comment-action {
+  background: transparent;
+  border: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.feed-comment-action:hover { color: var(--primary); }
+
+.feed-comment-action.edit-comment-btn:hover { color: #2563eb; }
+.feed-comment-action.delete-comment-btn:hover { color: #dc2626; }
+
+/* Nested replies */
+.feed-comment-replies {
+  margin-left: 36px;
+  border-left: 2px solid rgba(0,0,0,0.06);
+  padding-left: 12px;
+  margin-top: 2px;
+}
+
+/* Inline reply pill */
+.feed-reply-compose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.feed-reply-pill-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #f5f6f8;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 999px;
+  padding: 0 6px 0 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.feed-reply-pill-wrap:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(90,15,28,0.07);
+  background: #fff;
+}
+
+.feed-reply-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.82rem;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-dark);
+  padding: 8px 0;
+  min-width: 0;
+}
+
+.feed-reply-input::placeholder { color: var(--text-light); }
+
+.feed-reply-send-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  margin: 3px 0;
+}
+
+.feed-reply-send-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: scale(1.08);
+}
+
+.feed-reply-send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Comment skeleton */
+.feed-comment-skel {
+  height: 44px;
+  background: linear-gradient(90deg, #e8eaed 25%, #f2f3f5 50%, #e8eaed 75%);
+  background-size: 200% 100%;
+  animation: feedSkel 1.3s infinite;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+/* Login prompt inside comments */
+.feed-comments-login {
+  text-align: center;
+  padding: 12px;
+  font-size: 0.82rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-comments-login a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ── Unjoined community sidebar prompt ──────────────────────── */
+.feed-comm-unjoined-prompt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--primary);
+  margin-bottom: 6px;
+  background: rgba(90,15,28,0.03);
+  animation: feedUnjoinedIn 0.3s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+
+.feed-comm-unjoined-prompt.removing {
+  animation: feedUnjoinedOut 0.28s ease forwards;
+}
+
+@keyframes feedUnjoinedIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes feedUnjoinedOut {
+  from { opacity: 1; transform: translateY(0); max-height: 60px; }
+  to   { opacity: 0; transform: translateY(-6px); max-height: 0; padding: 0; margin: 0; }
+}
+
+.feed-comm-unjoined-name {
+  flex: 1;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--primary);
+  font-family: 'Segoe UI', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feed-comm-unjoined-join-btn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.feed-comm-unjoined-join-btn:hover:not(:disabled) { opacity: 0.85; }
+.feed-comm-unjoined-join-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Showcase divider */
+.feed-showcase-divider {
+  text-align: center;
+  padding: 18px 0;
+  margin: 8px 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  letter-spacing: 0.5px;
+  position: relative;
+}
+
+.feed-showcase-divider::before,
+.feed-showcase-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 28%;
+  height: 1px;
+  background: rgba(0,0,0,0.08);
+}
+
+.feed-showcase-divider::before { left: 0; }
+.feed-showcase-divider::after  { right: 0; }
+
+.feed-showcase-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  margin-bottom: 12px;
+  padding-top: 4px;
+}
+
+/* ── Post image upload (modal) ──────────────────────────────── */
+.feed-modal-image-section {
+  padding-top: 4px;
+}
+
+.feed-image-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 4px;
+}
+
+.feed-image-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.10);
+  background: #f5f6f8;
+  color: var(--text-dark);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.feed-image-add-btn:hover {
+  background: rgba(90,15,28,0.06);
+  border-color: rgba(90,15,28,0.20);
+  color: var(--primary);
+}
+
+.feed-image-count-label {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-image-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.feed-image-preview-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  flex-shrink: 0;
+  animation: feedPreviewIn 0.2s ease;
+}
+
+@keyframes feedPreviewIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.feed-image-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.feed-image-preview-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s ease;
+}
+
+.feed-image-preview-remove:hover { background: rgba(220,38,38,0.88); }
+
+/* ── Post card image grid ────────────────────────────────────── */
+.feed-post-images {
+  margin: 10px 0 6px;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #f0f1f3;
+}
+
+.feed-post-img-item {
+  overflow: hidden;
+  position: relative;
+}
+
+.feed-post-img-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.22s ease;
+}
+
+.feed-post-img-item:hover img { transform: scale(1.04); }
+
+/* 1 image */
+.feed-post-images.img-count-1 .feed-post-img-item {
+  max-height: 420px;
+}
+.feed-post-images.img-count-1 img {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+}
+
+/* 2 images */
+.feed-post-images.img-count-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  height: 260px;
+}
+
+/* 3 images */
+.feed-post-images.img-count-3 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  height: 300px;
+}
+.feed-post-images.img-count-3 .feed-post-img-item:first-child {
+  grid-row: 1 / 3;
+}
+
+/* 4 images */
+.feed-post-images.img-count-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  height: 300px;
+}
+
+/* 5+ images */
+.feed-post-images.img-count-5 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  height: 300px;
+}
+
+.feed-post-img-more-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-family: 'Segoe UI', sans-serif;
+  letter-spacing: -1px;
+}
+
+/* ── Image lightbox ─────────────────────────────────────────── */
+.feed-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.93);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: feedLightboxIn 0.18s ease;
+  cursor: zoom-out;
+}
+
+@keyframes feedLightboxIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.feed-lightbox-img {
+  max-width: 92vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  cursor: default;
+  animation: feedLightboxImgIn 0.2s cubic-bezier(0.22,1,0.36,1);
+}
+
+@keyframes feedLightboxImgIn {
+  from { transform: scale(0.94); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+.feed-lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.feed-lightbox-close:hover { background: rgba(255,255,255,0.22); }
+
+.feed-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  font-size: 26px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.feed-lightbox-nav:hover { background: rgba(255,255,255,0.22); }
+.feed-lightbox-prev { left: 18px; }
+.feed-lightbox-next { right: 18px; }
+
+.feed-lightbox-counter {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.7);
+  font-size: 0.82rem;
+  font-family: 'Segoe UI', sans-serif;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+/* ── Comment image upload (pill) ────────────────────────────── */
+.feed-comment-camera-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+  margin: 3px 2px;
+}
+
+.feed-comment-camera-btn:hover {
+  color: var(--primary);
+  background: rgba(90,15,28,0.07);
+}
+
+.feed-comment-img-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.feed-comment-img-preview {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  flex-shrink: 0;
+  animation: feedPreviewIn 0.18s ease;
+}
+
+.feed-comment-img-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.feed-comment-img-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  border: none;
+  font-size: 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.feed-comment-img-remove:hover { background: rgba(220,38,38,0.85); }
+
+/* Comment images display */
+.feed-comment-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.feed-comment-images img {
+  width: 110px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.06);
+  transition: transform 0.15s ease;
+}
+
+.feed-comment-images img:hover { transform: scale(1.03); }
+
+/* ── Video upload (modal) ───────────────────────────────────── */
+.feed-video-preview-wrap {
+  position: relative;
+  margin-top: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+.feed-video-preview {
+  width: 100%;
+  max-height: 280px;
+  display: block;
+  border-radius: 12px;
+}
+
+.feed-video-remove-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.feed-video-remove-btn:hover { background: rgba(220,38,38,0.85); }
+
+.feed-video-size-label {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.75);
+  font-family: 'Segoe UI', sans-serif;
+  background: rgba(0,0,0,0.45);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+/* ── Video on post card ─────────────────────────────────────── */
+.feed-post-video-wrap {
+  margin: 10px 0 6px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+}
+
+.feed-post-video {
+  width: 100%;
+  max-height: 420px;
+  display: block;
+  border-radius: 14px;
+}
+
+.feed-post-video-expiry {
+  font-size: 0.7rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  padding: 4px 0 2px;
+  text-align: right;
+}
+
+/* ── Share embed (post card) ────────────────────────────────── */
+.feed-post-share-commentary {
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.feed-share-embed {
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: #f9fafb;
+  margin: 4px 0 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  text-decoration: none;
+  display: block;
+}
+
+.feed-share-embed:hover {
+  border-color: rgba(90,15,28,0.18);
+  background: #f5f6f8;
+}
+
+.feed-share-embed-deleted {
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.85rem;
+  font-family: 'Segoe UI', sans-serif;
+  font-style: italic;
+  padding: 18px;
+  cursor: default;
+}
+
+.feed-share-embed-deleted:hover {
+  border-color: rgba(0,0,0,0.08);
+  background: #f9fafb;
+}
+
+.feed-share-embed-comm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.feed-share-embed-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.feed-share-embed-comm-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.feed-share-embed-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  line-height: 1.4;
+  margin-bottom: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.feed-share-embed-body {
+  font-size: 0.82rem;
+  color: #555;
+  font-family: 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.feed-share-embed-thumb {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.feed-share-embed-author {
+  font-size: 0.72rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ── RTL / Arabic text support ──────────────────────────────── */
+.feed-post-title[dir="rtl"],
+.feed-post-body[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+  font-size: 1.0rem;
+  line-height: 1.8;
+}
+
+.feed-comment-body[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+  line-height: 1.8;
+}
+
+.feed-post-share-commentary[dir="rtl"],
+.feed-share-embed-title[dir="rtl"],
+.feed-share-embed-body[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+}
+
+.feed-comment-input[dir="rtl"],
+.feed-reply-input[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+}
+
+.feed-modal-textarea[dir="rtl"],
+#feedPostTitle[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+}

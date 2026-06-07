@@ -32,6 +32,9 @@
   let isFullscreen = false;
 
   const formatPrice = value => Number(value || 0).toLocaleString() + ' EGP';
+  const displayPrice = car => car.listingType === 'rent'
+    ? Number(car.rentPricePerDay || car.price || 0).toLocaleString() + ' EGP / day'
+    : formatPrice(car.price);
   const formatKm = value => Number(value || 0).toLocaleString() + ' km';
 
   function token() {
@@ -149,6 +152,10 @@
       model: car.model || 'Car',
       year: Number(car.year || new Date().getFullYear()),
       price: Number(car.price || 0),
+      listingType: car.listingType || 'sale',
+      rentPricePerDay: car.rentPricePerDay || null,
+      rentPricePerMonth: car.rentPricePerMonth || null,
+      rentDeposit: car.rentDeposit || null,
       mileage: Number(car.mileage || 0),
       city: car.city || 'Not specified',
       transmission: niceText(car.transmission || 'automatic'),
@@ -268,7 +275,7 @@
 
         <div class="rx-info">
           <div class="rx-info-title">${car.brand} ${car.model} ${car.year}</div>
-          <div class="rx-info-price">${formatPrice(car.price)}</div>
+          <div class="rx-info-price">${displayPrice(car)}</div>
 
           <div class="rx-info-pills">
             <span class="rx-pill">📅 ${car.year}</span>
@@ -402,7 +409,16 @@
     card.classList.toggle('rx-fullscreen', on);
 
     const navbar = document.querySelector('.navbar');
-    if (navbar) navbar.classList.toggle('rx-above-card', on);
+    if (navbar) {
+      navbar.classList.toggle('rx-above-card', on);
+      if (on) {
+        navbar.classList.add('scrolled');
+      } else {
+        if (window.scrollY <= 80) {
+          navbar.classList.remove('scrolled');
+        }
+      }
+    }
 
     applyTarget(targetRect());
 
@@ -443,6 +459,23 @@
     if (!car) {
       alert('Car details could not be loaded.');
       return;
+    }
+
+    // Increment view count — server deduplicates for logged-in users, localStorage for guests
+    const viewedKey = 'rxViewed_' + id;
+    const token = localStorage.getItem('rxToken');
+
+    if (token) {
+      // Logged-in: server handles deduplication via viewedCars array
+      fetch('/api/cars/' + encodeURIComponent(id) + '/view', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).catch(() => {});
+    } else if (!localStorage.getItem(viewedKey)) {
+      // Guest: use localStorage to deduplicate
+      fetch('/api/cars/' + encodeURIComponent(id) + '/view', { method: 'POST' })
+        .then(() => localStorage.setItem(viewedKey, '1'))
+        .catch(() => {});
     }
 
     await loadSavedIds();

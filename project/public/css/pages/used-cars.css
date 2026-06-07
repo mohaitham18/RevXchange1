@@ -1,336 +1,344 @@
 .used-page-hero {
-  padding: 150px 0 44px;
-  background: linear-gradient(135deg, #2b0710 0%, #4b0f1c 40%, #6d1528 72%, #2f0911 100%);
-  position: relative;
-  overflow: hidden;
+    padding: 150px 0 44px;
+    background: linear-gradient(135deg, #2b0710 0%, #4b0f1c 40%, #6d1528 72%, #2f0911 100%);
+    position: relative;
+    overflow: hidden;
 }
 
 .used-page-hero::before,
 .used-page-hero::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .used-page-hero::before {
-  width: 760px;
-  height: 760px;
-  left: -250px;
-  top: -220px;
-  background: rgba(255,255,255,0.04);
+    width: 760px;
+    height: 760px;
+    left: -250px;
+    top: -220px;
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .used-page-hero::after {
-  width: 540px;
-  height: 540px;
-  right: -140px;
-  top: 20px;
-  background: rgba(255,255,255,0.05);
+    width: 540px;
+    height: 540px;
+    right: -140px;
+    top: 20px;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .used-page-hero-content {
-  position: relative;
-  z-index: 2;
-  color: var(--white);
-  max-width: 640px;
+    position: relative;
+    z-index: 2;
+    color: var(--white);
+    max-width: 640px;
 }
 
 .used-page-tag {
-  display: inline-block;
-  margin-bottom: 14px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.10);
-  font-size: 0.9rem;
-  font-weight: 600;
+    display: inline-block;
+    margin-bottom: 14px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.10);
+    font-size: 0.9rem;
+    font-weight: 600;
 }
 
 .used-page-hero-content h1 {
-  font-size: 3rem;
-  font-weight: 800;
-  margin-bottom: 14px;
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 14px;
 }
 
 .used-page-hero-content p {
-  color: rgba(255,255,255,0.82);
-  line-height: 1.7;
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.7;
 }
 
 .used-page-content {
-  background: #f5f6f8;
-  padding: 30px 0 60px;
+    background: #f5f6f8;
+    padding: 30px 0 60px;
+    max-width: 100%;
 }
 
 .used-page-layout {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 24px;
-  align-items: start;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 24px;
+    align-items: start;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 .used-filter-box,
 .used-results-bar {
-  background: var(--white);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
+    background: var(--white);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
 }
 
 .used-filter-box {
-  padding: 22px;
-  position: sticky;
-  top: 90px;
+    padding: 22px;
+    position: sticky;
+    top: 90px;
 }
 
 .used-filter-box h3 {
-  margin-bottom: 18px;
-  font-size: 1.15rem;
-  color: var(--text-dark);
+    margin-bottom: 18px;
+    font-size: 1.15rem;
+    color: var(--text-dark);
 }
 
 .filter-group {
-  margin-bottom: 16px;
+    margin-bottom: 16px;
 }
 
 .filter-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--text-dark);
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-dark);
 }
 
 .filter-group select,
 .filter-group input {
-  width: 100%;
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 12px;
-  padding: 11px 12px;
-  background: #fafafb;
-  outline: none;
-  font-family: 'Segoe UI', sans-serif;
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    padding: 11px 12px;
+    background: #fafafb;
+    outline: none;
+    font-family: 'Segoe UI', sans-serif;
 }
 
 .check-filter label {
-  display: flex !important;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 0;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
 }
 
 .check-filter input[type="checkbox"] {
-  width: auto;
-  flex-shrink: 0;
-  cursor: pointer;
-  accent-color: var(--primary);
-  width: 16px;
-  height: 16px;
+    width: auto;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: var(--primary);
+    width: 16px;
+    height: 16px;
 }
 
 .filter-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 18px;
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
 }
 
 .filter-btn-primary,
 .filter-btn-secondary {
-  flex: 1;
-  border: none;
-  border-radius: 12px;
-  padding: 11px 12px;
-  cursor: pointer;
-  font-weight: 700;
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 11px 12px;
+    cursor: pointer;
+    font-weight: 700;
 }
 
 .filter-btn-primary {
-  background: var(--primary);
-  color: var(--white);
+    background: var(--primary);
+    color: var(--white);
 }
 
 .filter-btn-secondary {
-  background: #eef0f3;
-  color: var(--text-dark);
+    background: #eef0f3;
+    color: var(--text-dark);
 }
 
 .used-results-bar {
-  padding: 20px 22px;
-  margin-bottom: 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
 }
 
 .used-results-bar h2 {
-  font-size: 1.5rem;
-  margin-bottom: 4px;
-  color: var(--text-dark);
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+    color: var(--text-dark);
 }
 
 .used-results-bar p {
-  color: var(--text-light);
+    color: var(--text-light);
 }
 
 .sort-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .sort-wrap label {
-  font-weight: 600;
-  color: var(--text-dark);
+    font-weight: 600;
+    color: var(--text-dark);
 }
 
 .sort-wrap select {
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 12px;
-  padding: 10px 12px;
-  background: var(--white);
-  font-family: 'Segoe UI', sans-serif;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: var(--white);
+    font-family: 'Segoe UI', sans-serif;
 }
 
 #usedCarsGrid {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
 }
 
 .no-results {
-  background: var(--white);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-  padding: 40px 20px;
-  text-align: center;
-  color: var(--text-light);
-  font-size: 14px;
+    background: var(--white);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-light);
+    font-size: 14px;
 }
 
 .no-results span {
-  display: block;
-  font-size: 2rem;
-  margin-bottom: 12px;
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 12px;
 }
+
 .used-page-top-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
 }
 
 .back-home-btn,
 .go-home-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.10);
-  color: var(--white);
-  padding: 10px 16px;
-  border-radius: 999px;
-  font-weight: 600;
-  transition: 0.2s ease;
-  cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.10);
+    color: var(--white);
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-weight: 600;
+    transition: 0.2s ease;
+    cursor: pointer;
 }
 
 .back-home-btn:hover {
-  background: rgba(255,255,255,0.18);
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .used-hero-search {
-  display: flex;
-  gap: 12px;
-  margin-top: 26px;
-  max-width: 620px;
-  flex-wrap: wrap;
+    display: flex;
+    gap: 12px;
+    margin-top: 26px;
+    max-width: 620px;
+    flex-wrap: wrap;
 }
 
 .used-hero-search input {
-  flex: 1;
-  min-width: 240px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.12);
-  color: var(--white);
-  padding: 14px 16px;
-  border-radius: 14px;
-  outline: none;
-  font-family: 'Segoe UI', sans-serif;
+    flex: 1;
+    min-width: 240px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--white);
+    padding: 14px 16px;
+    border-radius: 14px;
+    outline: none;
+    font-family: 'Segoe UI', sans-serif;
 }
 
 .used-hero-search input::placeholder {
-  color: rgba(255,255,255,0.68);
+    color: rgba(255, 255, 255, 0.68);
 }
 
 .hero-search-btn {
-  border: none;
-  background: #f2c230;
-  color: #1a1a1a;
-  padding: 14px 22px;
-  border-radius: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s ease;
+    border: none;
+    background: #f2c230;
+    color: #1a1a1a;
+    padding: 14px 22px;
+    border-radius: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
 }
 
 .hero-search-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.16);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
 }
 
 .results-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
 }
 
 .no-results {
-  grid-column: 1 / -1;
+    grid-column: 1 / -1;
 }
 
+
 /* Saved car button */
+
 .car-card-placeholder {
-  position: relative;
-  overflow: hidden;
+    position: relative;
+    overflow: hidden;
 }
 
 .save-car-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 999;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.95);
-  color: #5a0f1c;
-  padding: 7px 12px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
-  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 999;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.95);
+    color: #5a0f1c;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .save-car-btn:hover {
-  transform: translateY(-2px);
+    transform: translateY(-2px);
 }
 
 .save-car-btn.saved {
-  background: #5a0f1c;
-  color: white;
-  border-color: #5a0f1c;
+    background: #5a0f1c;
+    color: white;
+    border-color: #5a0f1c;
 }
 
 .save-car-btn:disabled {
-  opacity: 0.6;
-  cursor: wait;
+    opacity: 0.6;
+    cursor: wait;
 }
 
+
 /* ── Pagination ──────────────────────────────────────────────── */
+
 .rx-pagination {
     display: flex;
     align-items: center;
@@ -375,4 +383,26 @@
     color: var(--text-light);
     font-size: 0.88rem;
     padding: 0 4px;
+}
+
+
+/* ── Search clear button ─────────────────────────────────────── */
+
+.uc-clear-btn {
+    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: 'Segoe UI', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+}
+
+.uc-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
 }
