@@ -261,6 +261,23 @@
         alert('Membership management coming soon!');
       });
     });
+
+    // Wire central card click → feed
+    list.querySelectorAll('.comm-yours-card-central').forEach(card => {
+      card.addEventListener('click', () => {
+        window.location.href = '/feed.html';
+      });
+    });
+
+    // Wire non-central card clicks → feed filtered by community
+    list.querySelectorAll('.comm-yours-card:not(.comm-yours-card-central)').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.comm-yours-manage-btn, .comm-yours-leave-btn')) return;
+        const comm = allCommunities.find(c => c._id === card.dataset.id);
+        if (comm?.slug) window.location.href = `/feed.html?community=${comm.slug}`;
+        else window.location.href = '/feed.html';
+      });
+    });
   }
 
   // ── Central card HTML ────────────────────────────────────
@@ -297,7 +314,8 @@
     const joinClass = c.joined ? 'comm-card-join joined' : 'comm-card-join';
 
     return `
-      <div class="comm-card" data-id="${c._id}">
+      <div class="comm-card" data-id="${c._id}" data-slug="${c.slug}"
+           style="cursor:pointer;">
         <div class="comm-card-logo-wrap">
           <div class="comm-card-glow" style="background:${glow}"></div>
           <img class="comm-card-logo"
@@ -318,7 +336,17 @@
 
   // ── Join / Leave logic ───────────────────────────────────
   function attachJoinListeners() {
-    document.querySelectorAll('[data-id]').forEach(el => {
+    // Wire card clicks → redirect to feed with community pre-selected
+    document.querySelectorAll('.comm-card[data-slug]').forEach(card => {
+      card.addEventListener('click', (e) => {
+        // Don't redirect if clicking the join/leave button itself
+        if (e.target.closest('.comm-card-join')) return;
+        const slug = card.dataset.slug;
+        if (slug) window.location.href = `/feed.html?community=${slug}`;
+      });
+    });
+
+    document.querySelectorAll('.comm-card[data-id], .comm-card-central[data-id]').forEach(el => {
       const btn = el.querySelector('.comm-card-join, .comm-card-central-join');
       if (!btn) return;
 
