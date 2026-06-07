@@ -1,41 +1,72 @@
-/* ============================================================
-   request.js  —  Buy / Rent Request Modal
-   ============================================================ */
-
 let reqContact = 'call';
+
+function getToken() {
+  return localStorage.getItem('rxToken') || localStorage.getItem('token');
+}
+
+function getLoggedUser() {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user;
+  } catch {
+    return {};
+  }
+}
 
 function openRequestModal(carId, type, carTitle, carPrice) {
   const overlay = document.getElementById('reqOverlay');
   if (!overlay) return;
 
-  // Set hidden values
   document.getElementById('reqCarId').value = carId;
-  document.getElementById('reqType').value  = type;
+  document.getElementById('reqType').value = type;
 
-  // Title & subtitle
-  document.getElementById('reqTitle').textContent =
-    type === 'buy' ? 'Request to Buy' : 'Request to Rent';
-  document.getElementById('reqSubtitle').textContent =
-    carTitle + (carPrice ? `  —  ${Number(carPrice).toLocaleString()} EGP` : '');
+  const reqTitle = document.getElementById('reqTitle');
+  if (reqTitle) {
+    if (type === 'rent') reqTitle.textContent = 'Request to Rent';
+    else if (type === 'appointment') reqTitle.textContent = 'Book Appointment';
+    else reqTitle.textContent = 'Request to Buy';
+  }
 
-  // Show/hide buy vs rent fields
-  document.getElementById('reqOfferGroup').style.display  = type === 'buy'  ? '' : 'none';
-  document.getElementById('reqDatesGroup').style.display  = type === 'rent' ? '' : 'none';
+  const reqSubtitle = document.getElementById('reqSubtitle');
+  if (reqSubtitle) {
+    reqSubtitle.textContent = carTitle + (carPrice ? ` — ${Number(carPrice).toLocaleString()} EGP` : '');
+  }
 
-  // Pre-fill name & phone from logged-in user
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  if (user.name)  document.getElementById('reqName').value  = user.name;
-  if (user.phone) document.getElementById('reqPhone').value = user.phone;
+  // Show/hide sections
+  const reqOfferGroup = document.getElementById('reqOfferGroup');
+  const reqDatesGroup = document.getElementById('reqDatesGroup');
 
-  // Reset chips
+  if (reqOfferGroup) reqOfferGroup.style.display = type === 'buy' ? 'block' : 'none';
+  if (reqDatesGroup) reqDatesGroup.style.display = (type === 'rent' || type === 'appointment') ? 'block' : 'none';
+
+  // Auto-fill user info
+  const user = getLoggedUser();
+  const rxUser = localStorage.getItem('rxUser');
+  const rxEmail = localStorage.getItem('rxEmail');
+
+  const reqName = document.getElementById('reqName');
+  const reqPhone = document.getElementById('reqPhone');
+
+  if (reqName && !reqName.value) {
+    reqName.value = user.name || rxUser || '';
+  }
+  if (reqPhone && !reqPhone.value) {
+    reqPhone.value = user.phone || '';
+  }
+
+  // Reset contact chips
   reqContact = 'call';
-  document.querySelectorAll('#reqContactChips .req-chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.val === 'call');
+  document.querySelectorAll('#reqContactChips .req-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.val === 'call');
   });
 
-  // Reset error
-  hideReqError();
+  // Reset dates
+  const reqRentFrom = document.getElementById('reqRentFrom');
+  const reqRentTo = document.getElementById('reqRentTo');
+  if (reqRentFrom) reqRentFrom.value = '';
+  if (reqRentTo) reqRentTo.value = '';
 
+  hideReqError();
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -46,123 +77,132 @@ function closeRequestModal() {
   document.body.style.overflow = '';
 }
 
-function showReqError(msg) {
-  const el = document.getElementById('reqError');
-  el.textContent = msg;
-  el.style.display = 'block';
+function showReqError(message) {
+  const errorBox = document.getElementById('reqError');
+  if (!errorBox) { alert(message); return; }
+  errorBox.textContent = message;
+  errorBox.style.display = 'block';
 }
 
 function hideReqError() {
-  const el = document.getElementById('reqError');
-  if (el) el.style.display = 'none';
+  const errorBox = document.getElementById('reqError');
+  if (errorBox) { errorBox.textContent = ''; errorBox.style.display = 'none'; }
 }
 
 async function submitRequest() {
   const btn = document.getElementById('reqSubmitBtn');
   const type = document.getElementById('reqType').value;
+  const carId = document.getElementById('reqCarId').value;
+  const name = document.getElementById('reqName').value.trim();
+  const phoneRaw = document.getElementById('reqPhone').value.trim();
+  const message = document.getElementById('reqMessage').value.trim();
 
-  const payload = {
-    type,
-    carId:   document.getElementById('reqCarId').value,
-    name:    document.getElementById('reqName').value.trim(),
-    phone:   document.getElementById('reqPhone').value.trim(),
-    contact: reqContact,
-    message: document.getElementById('reqMessage').value.trim()
-  };
+  if (!type) return showReqError('Request type is missing.');
+  if (!carId) return showReqError('Car ID is missing.');
+  if (!name) return showReqError('Please enter your name.');
+  if (!phoneRaw) return showReqError('Please enter your phone number.');
 
-  // Validation
-   if (!payload.name)  return showReqError('Please enter your name.');
-   if (!payload.phone) return showReqError('Please enter your phone number.');
+  const phoneDigits = phoneRaw.replace(/\D/g, '');
+  if (phoneDigits.length !== 11 || !phoneDigits.startsWith('01')) {
+    return showReqError('Enter a valid Egyptian phone number, like 01012345678.');
+  }
 
-// Egyptian phone: must be 11 digits starting with 01
-    const phoneDigits = payload.phone.replace(/\D/g, '');
-   if (phoneDigits.length !== 11 || !phoneDigits.startsWith('01')) {
-   return showReqError('Enter a valid Egyptian phone number (e.g. 01012345678).');
-   }
-    payload.phone = phoneDigits; // store clean digits only
-    if (type === 'buy') {
+  const payload = { type, carId, name, phone: phoneDigits, contact: reqContact, message };
+
+  if (type === 'buy') {
     const offer = document.getElementById('reqOfferPrice').value;
     if (offer) payload.offerPrice = Number(offer);
   }
 
-  if (type === 'rent') {
-    payload.rentFrom = document.getElementById('reqRentFrom').value;
-    payload.rentTo   = document.getElementById('reqRentTo').value;
-    if (!payload.rentFrom || !payload.rentTo) {
+  if (type === 'rent' || type === 'appointment') {
+    const rentFrom = document.getElementById('reqRentFrom').value;
+    const rentTo = document.getElementById('reqRentTo').value;
+
+    console.log('rentFrom:', rentFrom, 'rentTo:', rentTo);
+
+    if (!rentFrom || !rentTo) {
       return showReqError('Please select pickup and return dates.');
     }
-    if (new Date(payload.rentFrom) >= new Date(payload.rentTo)) {
+    if (new Date(rentFrom) >= new Date(rentTo)) {
       return showReqError('Return date must be after pickup date.');
     }
+    payload.rentFrom = rentFrom;
+    payload.rentTo = rentTo;
   }
 
-  btn.disabled    = true;
-  btn.textContent = 'Sending…';
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
   hideReqError();
 
   try {
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
     const res = await fetch('/api/requests', {
-      method:  'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(localStorage.getItem('rxToken') || localStorage.getItem('token')
-          ? { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          : {})
-      },
+      method: 'POST',
+      headers,
       body: JSON.stringify(payload)
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      btn.disabled    = false;
-      btn.textContent = 'Send Request';
+      if (btn) { btn.disabled = false; btn.textContent = 'Send Request'; }
       return showReqError(data.message || 'Something went wrong.');
     }
 
-    // Success
-    btn.textContent = '✓ Request Sent!';
-    btn.style.background = 'rgba(39,174,96,.2)';
-    btn.style.color      = '#27ae60';
+    if (btn) {
+      btn.textContent = '✓ Request Sent!';
+      btn.style.background = 'rgba(39,174,96,.2)';
+      btn.style.color = '#27ae60';
+    }
 
     setTimeout(() => {
       closeRequestModal();
-      btn.disabled         = false;
-      btn.textContent      = 'Send Request';
-      btn.style.background = '';
-      btn.style.color      = '';
-    }, 1800);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Send Request';
+        btn.style.background = '';
+        btn.style.color = '';
+      }
+      document.getElementById('reqOfferPrice').value = '';
+      document.getElementById('reqMessage').value = '';
+      document.getElementById('reqRentFrom').value = '';
+      document.getElementById('reqRentTo').value = '';
+    }, 1500);
 
   } catch (err) {
-    btn.disabled    = false;
-    btn.textContent = 'Send Request';
+    console.error('REQUEST SUBMIT ERROR:', err);
+    if (btn) { btn.disabled = false; btn.textContent = 'Send Request'; }
     showReqError('Network error. Please try again.');
   }
 }
 
-// ── Event Listeners ───────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  // Close button
-  document.getElementById('reqClose')?.addEventListener('click', closeRequestModal);
+document.addEventListener('DOMContentLoaded', function() {
+  const reqClose = document.getElementById('reqClose');
+  if (reqClose) reqClose.addEventListener('click', closeRequestModal);
 
-  // Click outside modal to close
-  document.getElementById('reqOverlay')?.addEventListener('click', function (e) {
-    if (e.target === this) closeRequestModal();
-  });
+  const reqOverlay = document.getElementById('reqOverlay');
+  if (reqOverlay) {
+    reqOverlay.addEventListener('click', function(e) {
+      if (e.target === this) closeRequestModal();
+    });
+  }
 
-  // Contact chips
-  document.getElementById('reqContactChips')?.addEventListener('click', function (e) {
-    const chip = e.target.closest('.req-chip');
-    if (!chip) return;
-    reqContact = chip.dataset.val;
-    this.querySelectorAll('.req-chip').forEach(c =>
-      c.classList.toggle('active', c === chip)
-    );
-  });
+  const reqContactChips = document.getElementById('reqContactChips');
+  if (reqContactChips) {
+    reqContactChips.addEventListener('click', function(e) {
+      const chip = e.target.closest('.req-chip');
+      if (!chip) return;
+      reqContact = chip.dataset.val;
+      this.querySelectorAll('.req-chip').forEach(c => {
+        c.classList.toggle('active', c === chip);
+      });
+    });
+  }
 
-  // Submit
-  document.getElementById('reqSubmitBtn')?.addEventListener('click', submitRequest);
+  const reqSubmitBtn = document.getElementById('reqSubmitBtn');
+  if (reqSubmitBtn) reqSubmitBtn.addEventListener('click', submitRequest);
 
-  // Expose globally so car cards can call it
   window.openRequestModal = openRequestModal;
 });

@@ -440,58 +440,207 @@ async function renderDiscover() {
       </div>`;
 }
 
-/*Community Preview Data*/
-const communityPreviewPosts = [
-    {
-        community: 'Toyota Corolla',
-        img: '/images/toyota.png',
-        author: 'Ahmed Hassan',
-        time: '2h ago',
-        text: 'Anyone know a reliable mechanic in Cairo for a Corolla 2019? AC compressor is making a grinding noise and I need someone I can actually trust.',
-        likes: 24, comments: 8,
-    },
-    {
-        community: 'BMW 320i',
-        img: '/images/bmw.png',
-        author: 'Karim Mostafa',
-        time: '5h ago',
-        text: 'Just hit 100,000 km on my 2018 320i. Planning a full service — timing chain, spark plugs, or cooling system first? Looking for a specialist in Maadi.',
-        likes: 41, comments: 15,
-    },
-    {
-        community: 'Kia Sportage',
-        img: '/images/kia.png',
-        author: 'Sara Nabil',
-        time: '1d ago',
-        text: 'Comparing the 2023 Sportage vs MG RX5 for a family car. Which holds better resale value in the Egyptian market long term? Both are similar price right now.',
-        likes: 67, comments: 29,
-    },
-];
+// ── Communities Preview (live) ────────────────────────────────
 
-/*Render: Community Preview*/
-function renderCommunityPreview() {
+function hcFormatTime(dateStr) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return 'just now';
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ago';
+    const d = Math.floor(h / 24);
+    if (d < 7)  return d + 'd ago';
+    return new Date(dateStr).toLocaleDateString();
+}
+
+function hcFormatNum(n) {
+    if (!n && n !== 0) return '0';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace('.0','') + 'K';
+    return n.toString();
+}
+
+function hcFormatMembers(n) {
+    if (!n) return '0';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace('.0','') + 'K';
+    return n.toString();
+}
+
+function hcGetToken() {
+    return localStorage.getItem('rxToken') || null;
+}
+
+async function renderCommunityPreview() {
     const el = document.getElementById('communityPreview');
     if (!el) return;
 
-    el.innerHTML = communityPreviewPosts.map(post => `
-        <a href="/communities.html" class="community-preview-card">
-            <div class="comm-card-label">
-                <img src="${post.img}" alt="${post.community}" onerror="this.style.display='none'">
-                ${post.community}
+    // Skeleton while loading
+    el.innerHTML = `
+        <div class="hc-layout">
+            <div class="hc-posts-col">
+                <div class="hc-skel"></div>
+                <div class="hc-skel"></div>
+                <div class="hc-skel"></div>
             </div>
-            <p class="comm-card-text">${post.text}</p>
-            <div class="comm-card-footer">
-                <div class="comm-card-author">
-                    <div class="comm-card-avatar">👤</div>
-                    <span>${post.author} · ${post.time}</span>
+            <div class="hc-comms-col" style="min-height:200px;"></div>
+        </div>`;
+
+    try {
+        const token = hcGetToken();
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+        // Fetch posts and communities in parallel
+        const [postsRes, commsRes] = await Promise.all([
+            fetch('/api/feed?sort=hot&page=1', { headers }),
+            fetch('/api/communities', { headers })
+        ]);
+
+        const postsData = postsRes.ok ? await postsRes.json() : { posts: [] };
+        const commsData = commsRes.ok ? await commsRes.json() : { communities: [] };
+
+        const posts       = (postsData.posts || []).slice(0, 3);
+        const communities = (commsData.communities || [])
+            .filter(c => !c.isCentral)
+            .sort((a, b) => b.memberCount - a.memberCount)
+            .slice(0, 4);
+
+        // ── Left: posts ──
+        const postsHtml = posts.length === 0
+            ? `<div style="background:#fff;border-radius:14px;padding:40px;text-align:center;color:var(--text-light);font-family:'Segoe UI',sans-serif;">No posts yet. Be the first!</div>`
+            : posts.map(post => {
+                const community  = post.community;
+                const author     = post.author;
+                const commName   = community
+                    ? (community.isCentral ? 'RevXChange Central' : (community.brand?.name || '') + ' ' + community.name)
+                    : '';
+                const commLogo   = community?.brand?.logoUrl || '';
+                const authorName = author?.name || 'Anonymous';
+                const initial    = authorName.charAt(0).toUpperCase();
+                return `
+                    <a href="/feed.html" class="hc-post-card">
+                        <div class="hc-post-comm-tag">
+                            <img class="hc-post-comm-logo"
+                                 src="${commLogo}" alt="${commName}"
+                                 onerror="this.style.opacity='0'">
+                            <span class="hc-post-comm-name">${commName}</span>
+                        </div>
+                        <div class="hc-post-title">${post.title || ''}</div>
+                        <div class="hc-post-footer">
+                            <div class="hc-post-author">
+                                <div class="hc-post-avatar">${initial}</div>
+                                <div>
+                                    <div class="hc-post-author-name">${authorName}</div>
+                                    <div class="hc-post-time">${hcFormatTime(post.createdAt)}</div>
+                                </div>
+                            </div>
+                            <div class="hc-post-stats">
+                                <span>▲ ${hcFormatNum(post.upvotes)}</span>
+                                <span>💬 ${hcFormatNum(post.commentCount)}</span>
+                            </div>
+                        </div>
+                    </a>`;
+            }).join('');
+
+        // ── Right: communities ──
+        const commsHtml = communities.map(c => {
+            const name     = (c.brandId?.name || '') + ' ' + c.name;
+            const logo     = c.brandId?.logoUrl || '';
+            const glow     = c.brandId?.glowColor || '#ccc';
+            const members  = hcFormatMembers(c.memberCount);
+            const isJoined = c.joined;
+            return `
+                <div class="hc-comm-row">
+                    <div class="hc-comm-logo-wrap">
+                        <img class="hc-comm-logo"
+                             src="${logo}" alt="${name}"
+                             onerror="this.style.opacity='0'">
+                        <span class="hc-comm-glow-dot"
+                              style="background:${glow};"></span>
+                    </div>
+                    <div class="hc-comm-info">
+                        <div class="hc-comm-name">${name}</div>
+                        <div class="hc-comm-members">${members} members</div>
+                    </div>
+                    <button class="hc-comm-join-btn ${isJoined ? 'joined' : ''}"
+                            data-id="${c._id}"
+                            data-joined="${isJoined ? '1' : '0'}">
+                        ${isJoined ? '✓ Joined' : 'Join'}
+                    </button>
+                </div>`;
+        }).join('');
+
+        el.innerHTML = `
+            <div class="hc-layout">
+                <div class="hc-posts-col">${postsHtml}</div>
+                <div class="hc-comms-col">
+                    <div class="hc-comms-header">Popular Communities</div>
+                    ${commsHtml}
+                    <div class="hc-comms-footer">
+                        <a href="/communities.html" class="hc-comms-explore-btn">
+                            + Explore All Communities
+                        </a>
+                    </div>
                 </div>
-                <div class="comm-card-stats">
-                    <span>▲ ${post.likes}</span>
-                    <span>💬 ${post.comments}</span>
-                </div>
-            </div>
-        </a>
-    `).join('');
+            </div>`;
+
+        // ── Wire join buttons ──
+        el.querySelectorAll('.hc-comm-join-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (btn.dataset.joined === '1') return;
+
+                const token = hcGetToken();
+                if (!token) {
+                    window.location.href = '/login.html?returnTo=%2F';
+                    return;
+                }
+
+                const commId = btn.dataset.id;
+                btn.disabled = true;
+                btn.textContent = '...';
+
+                try {
+                    const res = await fetch(`/api/communities/${commId}/join`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        }
+                    });
+
+                    if (res.ok) {
+                        btn.textContent = '✓ Joined';
+                        btn.classList.add('joined');
+                        btn.dataset.joined = '1';
+
+                        // Update member count display
+                        const row = btn.closest('.hc-comm-row');
+                        const membersEl = row?.querySelector('.hc-comm-members');
+                        if (membersEl) {
+                            const current = parseInt(membersEl.textContent) || 0;
+                            membersEl.textContent = hcFormatMembers(current + 1) + ' members';
+                        }
+                    } else if (res.status === 409) {
+                        // Already a member
+                        btn.textContent = '✓ Joined';
+                        btn.classList.add('joined');
+                        btn.dataset.joined = '1';
+                    } else {
+                        btn.textContent = 'Join';
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    console.error('Join error:', e);
+                    btn.textContent = 'Join';
+                    btn.disabled = false;
+                }
+            });
+        });
+
+    } catch (e) {
+        console.error('Community preview failed:', e);
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-light);font-family:\'Segoe UI\',sans-serif;">Failed to load communities.</div>';
+    }
 }
 
 // FAQ Accordion Logic
@@ -522,4 +671,4 @@ document.querySelectorAll('.faq-question').forEach(button => {
 // ─── Init ─────────────────────────────────────────────────────
 loadCarStats();
 renderDiscover();
-renderCommunityPreview();
+renderCommunityPreview();  // async — fires and forgets intentionally

@@ -40,7 +40,11 @@ const addCar = async (req, res) => {
       seats,
       engine,
       owners,
-      service
+      service,
+      listingType,
+      rentPricePerDay,
+      rentPricePerMonth,
+      rentDeposit
     } = req.body;
 
     const images = req.files
@@ -72,6 +76,11 @@ const addCar = async (req, res) => {
       engine,
       owners,
       service,
+
+      listingType: listingType === 'rent' ? 'rent' : 'sale',
+      rentPricePerDay: rentPricePerDay ? Number(rentPricePerDay) : null,
+      rentPricePerMonth: rentPricePerMonth ? Number(rentPricePerMonth) : null,
+      rentDeposit: rentDeposit ? Number(rentDeposit) : null,
 
       images
     });
@@ -106,16 +115,31 @@ const getAllCars = async (req, res) => {
   try {
     const {
       search, brand, city, transmission, fuel,
-      minPrice, maxPrice, fabrika,
+      minPrice, maxPrice, fabrika, listingType,
       sort = 'newest', page = 1, limit = 12
     } = req.query;
 
     const query = { status: 'active' };
+    const andFilters = [];
+
+    if (listingType === 'rent') {
+      andFilters.push({ listingType: 'rent' });
+    } else if (listingType === 'sale') {
+      andFilters.push({
+        $or: [
+          { listingType: 'sale' },
+          { listingType: { $exists: false } },
+          { listingType: null }
+        ]
+      });
+    }
 
     // Text search across brand, model, city
     if (search) {
       const regex = new RegExp(search, 'i');
-      query.$or = [{ brand: regex }, { model: regex }, { city: regex }];
+      andFilters.push({
+        $or: [{ brand: regex }, { model: regex }, { city: regex }]
+      });
     }
 
     if (brand)        query.brand        = new RegExp(`^${brand}$`, 'i');
@@ -123,6 +147,10 @@ const getAllCars = async (req, res) => {
     if (transmission) query.transmission = new RegExp(`^${transmission}$`, 'i');
     if (fuel)         query.fuel         = new RegExp(`^${fuel}$`, 'i');
     if (fabrika === 'true') query.fabrika = true;
+
+    if (andFilters.length) {
+      query.$and = andFilters;
+    }
 
     if (minPrice || maxPrice) {
       query.price = {};
@@ -270,7 +298,11 @@ const updateCar = async (req, res) => {
       'seats',
       'engine',
       'owners',
-      'service'
+      'service',
+      'listingType',
+      'rentPricePerDay',
+      'rentPricePerMonth',
+      'rentDeposit'
     ];
 
     allowedFields.forEach(field => {

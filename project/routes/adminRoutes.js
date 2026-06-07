@@ -5,7 +5,6 @@ const router  = express.Router();
 const protect = require('../middleware/auth');   
 const admin   = require('../middleware/admin');  
 
-// ── Controller Imports ─────────────────────────────────────────
 const {
   getDashboardStats,
   getAllUsers,

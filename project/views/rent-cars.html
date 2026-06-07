@@ -3,16 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New Cars - RevXChange</title>
+  <title>Rent Cars - RevXChange</title>
 
   <link rel="stylesheet" href="/css/base/reset.css" />
   <link rel="stylesheet" href="/css/base/variables.css" />
   <link rel="stylesheet" href="/css/base/typography.css" />
   <link rel="stylesheet" href="/css/base/style.css" />
   <link rel="stylesheet" href="/css/components/navbar.css" />
+  <link rel="stylesheet" href="/css/components/cards.css" />
   <link rel="stylesheet" href="/css/components/cara.css" />
-  <link rel="stylesheet" href="/css/pages/buy-cars.css" />
+  <link rel="stylesheet" href="/css/pages/used-cars.css" />
+  <link rel="stylesheet" href="/css/components/car-expand.css" />
   <link rel="stylesheet" href="/css/base/ambient.css">
+  <link rel="stylesheet" href="/css/components/request-modal.css" />
 </head>
 <body>
 
@@ -92,16 +95,14 @@
     </div>
   </nav>
 
-  <!-- ── Hero ──────────────────────────────────────────────── -->
-  <section class="bc-hero">
+  <section class="used-page-hero">
     <div class="container">
-      <div class="bc-hero-content">
-        <span class="bc-tag">Brand New Vehicles</span>
-        <h1>Browse New Cars</h1>
-        <p>Explore the latest models from top brands, with official prices and full specs.</p>
-        <div class="bc-search-bar">
-          <input type="text" id="bcSearchInput" placeholder="Search by brand, model, or year…">
-          <button id="bcSearchBtn">Search</button>
+      <div class="used-page-hero-content">
+        <h1>Browse Rent Cars</h1>
+        <p>Find cars available for rent in Egypt with clear daily pricing and direct contact.</p>
+        <div class="used-hero-search">
+          <input type="text" id="searchInput" placeholder="Search rent cars by brand, model, or city..." />
+          <button id="searchBtn" class="hero-search-btn">Search</button>
         </div>
       </div>
 
@@ -109,18 +110,18 @@
     <div class="rx-melt-wrap">
       <svg viewBox="0 0 1440 74" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <linearGradient id="meltMainBC" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="meltMain" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stop-color="#5a0f1c" stop-opacity="1"/>
             <stop offset="55%"  stop-color="#6b1222" stop-opacity="0.80"/>
             <stop offset="100%" stop-color="#3e0a13" stop-opacity="0"/>
           </linearGradient>
-          <linearGradient id="meltBloomBC" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="meltBloom" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stop-color="#8b1a2a" stop-opacity="0.45"/>
             <stop offset="70%"  stop-color="#5a0f1c" stop-opacity="0.15"/>
             <stop offset="100%" stop-color="#5a0f1c" stop-opacity="0"/>
           </linearGradient>
         </defs>
-        <path fill="url(#meltBloomBC)">
+        <path fill="url(#meltBloom)">
           <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
             keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
             values="
@@ -130,7 +131,7 @@
               M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z
             "/>
         </path>
-        <path fill="url(#meltMainBC)">
+        <path fill="url(#meltMain)">
           <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
             keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
             values="
@@ -144,68 +145,129 @@
     </div>
   </section>
 
-  <!-- ── Top Brands ─────────────────────────────────────────── -->
-  <section class="bc-section">
+  <section class="used-page-content">
     <div class="container">
-      <div class="bc-brands-box">
-        <div class="bc-brands-header">
-          <h2 class="bc-section-title">Top Brands</h2>
-        </div>
-        <div class="bc-brands-grid" id="bcBrandsGrid"></div>
-      </div>
-    </div>
-  </section>
+      <div class="used-page-layout">
 
-  <!-- ── Listings ───────────────────────────────────────────── -->
-  <section class="bc-section">
-    <div class="container">
-      <div class="bc-listings-header">
-        <h2 class="bc-section-title">Top Searched New Cars</h2>
-        <span class="bc-count" id="bcCount"></span>
-      </div>
-      <div class="bc-grid" id="bcGrid"></div>
-    </div>
-  </section>
-
-  <!-- ── Modal ─────────────────────────────────────────────── -->
-  <div class="bc-overlay bc-hidden" id="bcOverlay">
-    <div class="bc-modal">
-      <button class="bc-modal-close" id="bcModalClose">✕</button>
-      <div class="bc-modal-top">
-        <div class="bc-modal-img-wrap">
-          <img id="bcModalImg" src="" alt="">
-        </div>
-        <div class="bc-modal-info">
-          <p class="bc-modal-breadcrumb">New Car</p>
-          <h2 id="bcModalTitle"></h2>
-          <div class="bc-modal-prices">
-            <div>
-              <span class="bc-price-label">Official Price</span>
-              <span class="bc-price-val" id="bcModalOfficial"></span>
+        <aside class="used-filters">
+          <div class="used-filter-box">
+            <h3>Filters</h3>
+            <div class="filter-group">
+              <label for="brandFilter">Brand</label>
+              <select id="brandFilter">
+                <option value="">All Brands</option>
+              </select>
             </div>
-            <div>
-              <span class="bc-price-label">Market Price</span>
-              <span class="bc-price-val" id="bcModalMarket"></span>
+            <div class="filter-group">
+              <label for="cityFilter">City</label>
+              <select id="cityFilter">
+                <option value="">All Cities</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="transmissionFilter">Transmission</label>
+              <select id="transmissionFilter">
+                <option value="">All</option>
+                <option value="Automatic">Automatic</option>
+                <option value="Manual">Manual</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="maxPriceFilter">Max Price</label>
+              <input type="number" id="maxPriceFilter" placeholder="Enter max price">
+            </div>
+            <div class="filter-group check-filter">
+              <label>
+                <input type="checkbox" id="fabrikaFilter">
+                Fabrika only
+              </label>
+            </div>
+            <div class="filter-actions">
+              <button id="applyFiltersBtn" class="filter-btn-primary">Apply</button>
+              <button id="resetFiltersBtn" class="filter-btn-secondary">Reset</button>
             </div>
           </div>
-          <p class="bc-modal-warranty" id="bcModalWarranty"></p>
-        </div>
-      </div>
-      <div class="bc-table">
-        <div class="bc-table-head">
-          <span>Classes</span>
-          <span>Official Price</span>
-          <span>Market Price</span>
-        </div>
-        <div id="bcTableBody"></div>
+        </aside>
+
+        <main class="used-results">
+          <div class="used-results-bar">
+            <div>
+              <h2 id="resultsCount">0 Cars Found</h2>
+              <p>Explore available used cars across Egypt.</p>
+            </div>
+            <div class="results-actions">
+              <div class="sort-wrap">
+                <label for="sortSelect">Sort by</label>
+                <select id="sortSelect">
+                  <option value="default">Default</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="year-new">Year: Newest</option>
+                  <option value="mileage-low">Mileage: Low to High</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div id="usedCarsGrid" class="car-cards-grid"></div>
+        </main>
+
       </div>
     </div>
+  </section>
+<!-- ── Buy / Rent Request Modal ──────────────────────────── -->
+<div class="req-overlay" id="reqOverlay" style="display:none">
+  <div class="req-modal">
+    <button class="req-close" id="reqClose">✕</button>
+    <h2 id="reqTitle">Request to Rent</h2>
+    <p id="reqSubtitle" class="req-sub"></p>
+    <input type="hidden" id="reqCarId">
+    <input type="hidden" id="reqType">
+    <div class="req-form-group">
+      <label>Your Name</label>
+      <input type="text" id="reqName" placeholder="Full name">
+    </div>
+    <div class="req-form-group">
+      <label>Phone Number</label>
+      <input type="tel" id="reqPhone" placeholder="01012345678" maxlength="11">
+    </div>
+    <div class="req-form-group">
+      <label>Preferred Contact</label>
+      <div class="req-chips" id="reqContactChips">
+        <button type="button" class="req-chip active" data-val="call">📞 Call</button>
+        <button type="button" class="req-chip" data-val="whatsapp">💬 WhatsApp</button>
+      </div>
+    </div>
+    <div class="req-form-group" id="reqOfferGroup" style="display:none">
+      <label>Your Offer Price (EGP) <span style="opacity:.5;font-size:.8rem">optional</span></label>
+      <input type="number" id="reqOfferPrice" placeholder="e.g. 850000">
+    </div>
+    <div id="reqDatesGroup" style="display:none">
+      <div class="req-form-row">
+        <div class="req-form-group">
+          <label>Pickup Date</label>
+          <input type="date" id="reqRentFrom">
+        </div>
+        <div class="req-form-group">
+          <label>Return Date</label>
+          <input type="date" id="reqRentTo">
+        </div>
+      </div>
+    </div>
+    <div class="req-form-group">
+      <label>Message <span style="opacity:.5;font-size:.8rem">optional</span></label>
+      <textarea id="reqMessage" rows="3" placeholder="Any extra details..."></textarea>
+    </div>
+    <div id="reqError" class="req-error" style="display:none"></div>
+    <button class="req-submit-btn" id="reqSubmitBtn">Send Request</button>
   </div>
+</div>
 
   <script src="/js/ambient.js"></script>
   <script src="/js/cars.js"></script>
-  <script src="/js/buy-cars.js"></script>
+  <script src="/js/rent-cars.js"></script>
+  <script src="/js/car-expand.js"></script>
   <script src="/js/navbar.js"></script>
   <script src="/js/cara.js"></script>
+  <script src="/js/request.js"></script>
 </body>
 </html>
