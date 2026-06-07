@@ -110,6 +110,10 @@
             <div class="dash-tabs">
                 <button class="dash-tab active" data-tab="ads">My Ads</button>
                 <button class="dash-tab" data-tab="saved">Saved Ads</button>
+                <button class="dash-tab" data-tab="requests">
+                    Requests
+                    <span class="dash-tab-badge" id="requestsBadge" style="display:none"></span>
+                </button>
                 <button class="dash-tab" data-tab="posts">My Posts</button>
                 <button class="dash-tab" data-tab="settings">Settings</button>
             </div>
@@ -129,6 +133,15 @@
                     <h2>Saved Ads</h2>
                 </div>
                 <div class="dash-ads-grid" id="savedAdsGrid"></div>
+            </div>
+            
+            <!-- ── Tab: Requests ─────────────────────────────────── -->
+            <div class="dash-panel" id="tab-requests">
+                <div class="dash-panel-header">
+                    <h2>Incoming Requests</h2>
+                    <p style="color:#777;font-size:.9rem">Requests from buyers and renters on your listings</p>
+                </div>
+                <div id="incomingRequestsList"></div>
             </div>
 
             <!-- ── Tab: My Posts ─────────────────────────────────── -->

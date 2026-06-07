@@ -885,7 +885,108 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  loadMyAds();
-  loadSavedAds();
-  renderMyPosts();
+// ── Load Incoming Requests ─────────────────────────────────
+    async function loadIncomingRequests() {
+        const list = document.getElementById('incomingRequestsList');
+        if (!list) return;
+
+        try {
+            const res = await fetch('/api/requests/incoming', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const requests = data.requests || [];
+
+            if (requests.length === 0) {
+                list.innerHTML = `<div class="dash-empty">
+                    <span>📬</span>
+                    <p>No incoming requests yet.</p>
+                </div>`;
+                return;
+            }
+
+            // Update badge
+            const pending = requests.filter(r => r.status === 'pending').length;
+            const badge = document.getElementById('requestsBadge');
+            if (badge && pending > 0) {
+                badge.textContent = pending;
+                badge.style.display = 'inline-flex';
+            }
+
+            list.innerHTML = requests.map(req => `
+                <div class="dash-request-card" data-id="${req._id}">
+                    <div class="dash-request-top">
+                        <div>
+                            <div class="dash-request-car">${req.car ? req.car.brand + ' ' + req.car.model + ' ' + req.car.year : 'Unknown Car'}</div>
+                            <div class="dash-request-type">${req.type === 'rent' ? '🔑 Rent Request' : '🛒 Buy Request'}</div>
+                        </div>
+                        <span class="dash-request-status ${req.status}">${req.status.charAt(0).toUpperCase() + req.status.slice(1)}</span>
+                    </div>
+                    <div class="dash-request-info">
+                        <span>👤 ${req.name}</span>
+                        <span>📞 ${req.phone}</span>
+                        <span>📱 ${req.contact === 'whatsapp' ? 'WhatsApp' : 'Call'}</span>
+                        ${req.rentFrom ? `<span>📅 ${new Date(req.rentFrom).toLocaleDateString()} → ${new Date(req.rentTo).toLocaleDateString()}</span>` : ''}
+                        ${req.offerPrice ? `<span>💰 ${req.offerPrice.toLocaleString()} EGP</span>` : ''}
+                    </div>
+                    ${req.message ? `<div class="dash-request-message">"${req.message}"</div>` : ''}
+                    ${req.status === 'pending' ? `
+                    <div class="dash-request-actions">
+                        <button class="dash-req-btn accept" data-id="${req._id}">✓ Accept</button>
+                        <button class="dash-req-btn reject" data-id="${req._id}">✕ Reject</button>
+                    </div>` : ''}
+                </div>
+            `).join('');
+
+            // Accept / Reject buttons
+            list.querySelectorAll('.dash-req-btn.accept').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    await updateRequestStatus(btn.dataset.id, 'accepted');
+                    loadIncomingRequests();
+                });
+            });
+
+            list.querySelectorAll('.dash-req-btn.reject').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    await updateRequestStatus(btn.dataset.id, 'rejected');
+                    loadIncomingRequests();
+                });
+            });
+
+        } catch (err) {
+            console.error('Load incoming requests error:', err);
+        }
+    }
+
+    async function updateRequestStatus(id, status) {
+        try {
+            await fetch(`/api/requests/${id}/owner-status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status })
+            });
+        } catch (err) {
+            console.error('Update request status error:', err);
+        }
+    }
+
+// ── Render: Saved Ads (placeholder) ───────────────────────
+    function renderSavedAds() {
+        const grid = document.getElementById('savedAdsGrid');
+        if (!grid) return;
+        grid.innerHTML = `<div class="dash-empty">
+            <span>🔖</span>
+            <p>You haven't saved any cars yet.</p>
+            <a href="/used-cars.html">Browse Cars</a>
+        </div>`;
+    }
+
+    // ── Init ───────────────────────────────────────────────────
+    loadMyAds();
+    renderSavedAds();
+    renderMyPosts();
+    loadIncomingRequests();
 });
