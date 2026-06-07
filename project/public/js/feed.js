@@ -22,15 +22,36 @@
   }
 
   // ── State ────────────────────────────────────────────────
-  let currentSort   = 'top';
-  let currentPage   = 1;
-  let currentCommId = null; // null = unified feed
-  let communities   = [];
+  let currentSort        = 'top';
+  let currentPage        = 1;
+  let currentCommId      = null; // null = unified feed
+  let communities        = [];
+  let selectedPostImages = []; // files staged for post modal
+  let selectedPostVideo  = null; // single video staged for post modal
 
   // ── Init ─────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
     updateHero();
     await loadSidebars();
+
+    // Check for ?community=slug param from communities page redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const communitySlug = urlParams.get('community');
+    if (communitySlug) {
+      const match = communities.find(c => c.slug === communitySlug);
+      if (match && match.joined) {
+        // Community is joined — select it normally
+        currentCommId = match._id;
+        renderLeftSidebar();
+      } else {
+        // Not joined or not found — show showcase
+        currentCommId = null;
+        window._unjoined_community_slug = communitySlug;
+      }
+      // Clean URL without reload
+      window.history.replaceState({}, '', '/feed.html');
+    }
+
     await loadFeed();
     bindSortTabs();
   });
@@ -128,6 +149,8 @@
         const id = item.dataset.commid;
         currentCommId = id === 'null' ? null : id;
         currentPage   = 1;
+        // Remove unjoined prompt smoothly when switching communities
+        removeUnjoinedPrompt();
         renderLeftSidebar();
         loadFeed();
       });
@@ -179,6 +202,14 @@
       '<div class="feed-skel" style="height:160px;"></div>'
     ).join('');
 
+    // Handle unjoined community showcase (from communities page redirect)
+    const unjoinedSlug = window._unjoined_community_slug;
+    if (unjoinedSlug) {
+      delete window._unjoined_community_slug;
+      await loadUnjoinedCommunityShowcase(unjoinedSlug, container);
+      return;
+    }
+
     try {
       const headers = {};
       if (getToken()) headers['Authorization'] = 'Bearer ' + getToken();
@@ -217,6 +248,169 @@
     }
   }
 
+  // ── Unjoined community showcase ───────────────────────────
+  async function loadUnjoinedCommunityShowcase(slug, container) {
+    try {
+      const headers = {};
+      if (getToken()) headers['Authorization'] = 'Bearer ' + getToken();
+
+      // Find community info
+      const comm = communities.find(c => c.slug === slug);
+      const commName = comm
+        ? ((comm.brandId?.name || '') + ' ' + comm.name).trim()
+        : slug;
+
+      // Fetch top posts from this community (limit 10)
+      const res  = await fetch(
+        `/api/communities/${slug}/posts?sort=top&page=1`,
+        { headers }
+      );
+      const data = res.ok ? await res.json() : { posts: [], total: 0 };
+      const allCommPosts = data.posts || [];
+      const total        = data.total || allCommPosts.length;
+      const posts        = allCommPosts.slice(0, 10);
+      const isExhausted  = total <= 10; // all posts fit in one showcase
+
+      // Fetch regular feed in parallel
+      const feedRes   = await fetch(`/api/feed?sort=hot&page=1`, { headers });
+      const feedData  = feedRes.ok ? await feedRes.json() : { posts: [] };
+      const feedPosts = feedData.posts || [];
+
+      let html = '';
+
+      // Showcase posts
+      if (posts.length > 0) {
+        html += posts.map(renderPostCard).join('');
+      } else {
+        html += `
+          <div class="feed-empty">
+            <div class="feed-empty-icon">📭</div>
+            <div class="feed-empty-title">No posts yet</div>
+            <div class="feed-empty-sub">Be the first to post in ${commName}.</div>
+          </div>`;
+      }
+
+      // Divider — wording depends on whether all posts were shown
+      const dividerText = isExhausted
+        ? `You've seen all posts in ${commName}`
+        : `End of ${commName} showcase`;
+
+      html += `<div class="feed-showcase-divider">${dividerText}</div>`;
+
+      // Regular feed below divider
+      if (feedPosts.length > 0) {
+        html += `<div class="feed-showcase-section-label">Trending across communities</div>`;
+        html += feedPosts.map(renderPostCard).join('');
+      }
+
+      container.innerHTML = html;
+
+      // Build menus for all rendered posts
+      [...posts, ...feedPosts].forEach(p => buildPostMenu(
+        p._id,
+        (p.author?._id || p.authorId?._id || '').toString()
+      ));
+
+      // Show sidebar prompt for unjoined community
+      if (comm && !comm.joined) {
+        showUnjoinedPromptInSidebar(comm);
+      }
+
+    } catch (e) {
+      console.error('Showcase load failed:', e);
+      container.innerHTML = `
+        <div class="feed-empty">
+          <div class="feed-empty-icon">⚠️</div>
+          <div class="feed-empty-title">Failed to load posts</div>
+          <div class="feed-empty-sub">Please refresh the page.</div>
+        </div>`;
+    }
+  }
+
+  // ── Show unjoined community in left sidebar with join prompt ─
+  function removeUnjoinedPrompt(callback) {
+    const existing = document.getElementById('feedUnjoinedPrompt');
+    if (!existing) { if (callback) callback(); return; }
+    existing.classList.add('removing');
+    setTimeout(() => {
+      existing.remove();
+      if (callback) callback();
+    }, 280);
+  }
+
+  function showUnjoinedPromptInSidebar(comm) {
+    // Wait for renderLeftSidebar to finish painting the DOM
+    setTimeout(() => {
+      const el = document.getElementById('feedYourComms');
+      if (!el) return;
+
+      // Remove any existing prompt first
+      removeUnjoinedPrompt(() => {
+        const name = ((comm.brandId?.name || '') + ' ' + comm.name).trim();
+        const logo = comm.brandId?.logoUrl || '';
+
+        const prompt = document.createElement('div');
+        prompt.id = 'feedUnjoinedPrompt';
+        prompt.className = 'feed-comm-unjoined-prompt';
+        prompt.innerHTML = `
+          <img class="feed-comm-logo"
+               src="${logo}" alt="${name}"
+               onerror="this.style.opacity='0'">
+          <span class="feed-comm-unjoined-name">${name}</span>
+          <button class="feed-comm-unjoined-join-btn"
+                  id="sidebarUnjoinedJoinBtn">Join</button>`;
+
+        // Insert after "All Communities" item
+        const allItem = el.querySelector('[data-commid="null"]');
+        if (allItem) {
+          allItem.after(prompt);
+        } else {
+          el.insertBefore(prompt, el.firstChild);
+        }
+
+        // Wire join button
+        document.getElementById('sidebarUnjoinedJoinBtn')
+          ?.addEventListener('click', async () => {
+            if (!isLoggedIn()) {
+              window.location.href = '/login.html?returnTo=%2Ffeed.html';
+              return;
+            }
+            const btn = document.getElementById('sidebarUnjoinedJoinBtn');
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            try {
+              const res = await fetch(`/api/communities/${comm._id}/join`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer ' + getToken()
+                }
+              });
+              if (res.ok || res.status === 409) {
+                comm.joined = true;
+                comm.memberCount++;
+                // Update communities array so sidebar renders correctly
+                const existing = communities.find(c => c._id === comm._id);
+                if (existing) { existing.joined = true; existing.memberCount = comm.memberCount; }
+                else communities.push(comm);
+                removeUnjoinedPrompt();
+                currentCommId = comm._id;
+                renderLeftSidebar();
+                loadFeed();
+              } else {
+                btn.disabled = false;
+                btn.textContent = 'Join';
+              }
+            } catch (e) {
+              btn.disabled = false;
+              btn.textContent = 'Join';
+            }
+          });
+      });
+    }, 80);
+  }
+
   // ── Render posts ─────────────────────────────────────────
   function renderPosts(posts, container) {
     if (posts.length === 0) {
@@ -242,6 +436,43 @@
       p._id,
       (p.author?._id || p.authorId?._id || '').toString()
     ));
+  }
+
+  // ── Share embed renderer ──────────────────────────────────
+  function renderShareEmbed(post) {
+    const shared = post.sharedPost;
+
+    if (!shared || shared.isDeleted) {
+      return `<div class="feed-share-embed feed-share-embed-deleted">
+        [Original post deleted]
+      </div>`;
+    }
+
+    const commName = shared.community
+      ? ((shared.community.brand?.name || '') + ' ' + shared.community.name).trim()
+      : '';
+    const commLogo    = shared.community?.brand?.logoUrl || '';
+    const bodyPreview = shared.body ? shared.body.slice(0, 200) : '';
+    const thumbUrl    = shared.imageUrls?.[0] || null;
+
+    return `
+      <div class="feed-share-embed">
+        <div class="feed-share-embed-comm">
+          <img class="feed-share-embed-logo"
+               src="${commLogo}" alt="${commName}"
+               onerror="this.style.opacity='0'">
+          <span class="feed-share-embed-comm-name">${commName}</span>
+        </div>
+        <div class="feed-share-embed-title"${isRTL(shared.title) ? ' dir="rtl"' : ''}>${shared.title || ''}</div>
+        ${bodyPreview
+          ? `<div class="feed-share-embed-body"${isRTL(bodyPreview) ? ' dir="rtl"' : ''}>${bodyPreview}</div>`
+          : ''}
+        ${thumbUrl
+          ? `<img class="feed-share-embed-thumb"
+                  src="${thumbUrl}" alt="Post image" loading="lazy">`
+          : ''}
+        <div class="feed-share-embed-author">by ${shared.author?.name || 'Anonymous'}</div>
+      </div>`;
   }
 
   // ── Single post card ─────────────────────────────────────
@@ -285,8 +516,28 @@
           </div>
         </div>
 
-        ${post.title ? `<div class="feed-post-title">${post.title}</div>` : ''}
-        ${bodyPreview ? `<div class="feed-post-body">${bodyPreview}</div>` : ''}
+        ${post.isShare
+          ? `${post.shareCommentary
+              ? `<div class="feed-post-share-commentary"${isRTL(post.shareCommentary) ? ' dir="rtl"' : ''}>${post.shareCommentary}</div>`
+              : ''}
+             ${renderShareEmbed(post)}`
+          : `${post.title ? `<div class="feed-post-title"${isRTL(post.title) ? ' dir="rtl"' : ''}>${post.title}</div>` : ''}
+             ${bodyPreview ? `<div class="feed-post-body"${isRTL(bodyPreview) ? ' dir="rtl"' : ''}>${bodyPreview}</div>` : ''}
+             ${renderPostImages(post.imageUrls)}
+             ${post.videoUrl ? `
+               <div class="feed-post-video-wrap">
+                 <video class="feed-post-video"
+                        src="${post.videoUrl}"
+                        controls
+                        preload="metadata"
+                        playsinline>
+                   Your browser does not support video.
+                 </video>
+                 ${post.videoExpiresAt ? `
+                   <div class="feed-post-video-expiry">
+                     🕐 Video expires ${formatTime(post.videoExpiresAt)}
+                   </div>` : ''}
+               </div>` : ''}`}
 
         <div class="feed-post-menu-wrap">
           <button class="feed-post-menu-btn"
@@ -317,9 +568,18 @@
           <button class="feed-post-action-btn">
             💬 ${formatNum(post.commentCount)}
           </button>
-          <button class="feed-post-action-btn">
-            ↗ Share
-          </button>
+          ${!post.isShare
+            ? `<button class="feed-post-action-btn feed-share-btn"
+                       data-postid="${post._id}"
+                       data-communityid="${post.community?._id || ''}">
+                 ↗ Share
+               </button>`
+            : `<button class="feed-post-action-btn"
+                       disabled
+                       style="opacity:0.4;cursor:not-allowed;"
+                       title="Cannot re-share a shared post">
+                 ↗ Share
+               </button>`}
         </div>
 
       </div>`;
@@ -442,6 +702,15 @@
     return n.toString();
   }
 
+  // ── RTL / Arabic text detection ──────────────────────────
+  function isRTL(text) {
+    if (!text || !text.trim()) return false;
+    const arabicPattern = /[؀-ۿݐ-ݿࢠ-ࣿ]/;
+    if (arabicPattern.test(text.trim()[0])) return true;
+    const arabicCount = (text.match(/[؀-ۿ]/g) || []).length;
+    return arabicCount > text.length * 0.25;
+  }
+
   function formatTime(dateStr) {
     if (!dateStr) return '';
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -453,6 +722,111 @@
     const d = Math.floor(h / 24);
     if (d < 7)  return d + 'd ago';
     return new Date(dateStr).toLocaleDateString();
+  }
+
+  // ── Post image grid renderer ──────────────────────────────
+  function renderPostImages(imageUrls) {
+    if (!imageUrls || imageUrls.length === 0) return '';
+    const count    = imageUrls.length;
+    const gridClass = `img-count-${Math.min(count, 5)}`;
+    const show      = imageUrls.slice(0, 4);
+    const extra     = count - 4;
+
+    const items = show.map((url, i) => {
+      const isLast = i === 3 && extra > 0;
+      return `
+        <div class="feed-post-img-item" data-src="${url}" data-index="${i}">
+          <img src="${url}" alt="Post image" loading="lazy">
+          ${isLast ? `<div class="feed-post-img-more-overlay">+${extra + 1}</div>` : ''}
+        </div>`;
+    });
+
+    return `
+      <div class="feed-post-images ${gridClass}"
+           data-images='${JSON.stringify(imageUrls)}'>
+        ${items.join('')}
+      </div>`;
+  }
+
+  // ── Modal image preview renderer ──────────────────────────
+  function renderModalPreviews() {
+    const el    = document.getElementById('feedImagePreviews');
+    const label = document.getElementById('feedImageCountLabel');
+    if (!el) return;
+
+    if (selectedPostImages.length === 0) {
+      el.innerHTML = '';
+      if (label) label.textContent = '';
+      return;
+    }
+
+    if (label) {
+      label.textContent = `${selectedPostImages.length} / 5 photo${selectedPostImages.length > 1 ? 's' : ''}`;
+    }
+
+    el.innerHTML = selectedPostImages.map((file, i) => {
+      const url = URL.createObjectURL(file);
+      return `
+        <div class="feed-image-preview-item">
+          <img src="${url}" alt="Preview">
+          <button class="feed-image-preview-remove" data-index="${i}">✕</button>
+        </div>`;
+    }).join('');
+
+    // Wire remove buttons
+    el.querySelectorAll('.feed-image-preview-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.index);
+        selectedPostImages.splice(idx, 1);
+        renderModalPreviews();
+      });
+    });
+  }
+
+  // ── Video preview renderer ────────────────────────────────
+  function renderVideoPreview() {
+    const el    = document.getElementById('feedVideoPreview');
+    const label = document.getElementById('feedImageCountLabel');
+    const addPhotoBtn = document.getElementById('feedImageAddBtn');
+    const addVideoBtn = document.getElementById('feedVideoAddBtn');
+    if (!el) return;
+
+    if (!selectedPostVideo) {
+      el.innerHTML = '';
+      // Show both buttons when nothing selected
+      if (addPhotoBtn) addPhotoBtn.style.display = '';
+      if (addVideoBtn) addVideoBtn.style.display = '';
+      if (label) label.textContent = '';
+      return;
+    }
+
+    // Video selected — hide photo button, show remove option
+    if (addPhotoBtn) addPhotoBtn.style.display = 'none';
+    if (addVideoBtn) addVideoBtn.style.display = 'none';
+    if (label) label.textContent = '';
+
+    const url = URL.createObjectURL(selectedPostVideo);
+    el.innerHTML = `
+      <div class="feed-video-preview-wrap">
+        <video class="feed-video-preview" src="${url}"
+               controls muted playsinline></video>
+        <button class="feed-video-remove-btn" id="feedVideoRemoveBtn">
+          ✕ Remove video
+        </button>
+        <div class="feed-video-size-label">
+          ${(selectedPostVideo.size / (1024*1024)).toFixed(1)} MB · 7-day expiry
+        </div>
+      </div>`;
+
+    document.getElementById('feedVideoRemoveBtn')?.addEventListener('click', () => {
+      selectedPostVideo = null;
+      const videoInput = document.getElementById('feedVideoInput');
+      if (videoInput) videoInput.value = '';
+      renderVideoPreview();
+      // Re-show image previews section
+      renderModalPreviews();
+    });
   }
 
   // ── Create Post ───────────────────────────────────────────
@@ -533,6 +907,52 @@
       document.body.style.overflow = 'hidden';
       document.getElementById('feedPostTitle')?.focus();
     }
+
+    // Wire image input
+    const imageInput  = document.getElementById('feedImageInput');
+    const imageAddBtn = document.getElementById('feedImageAddBtn');
+    const videoInput  = document.getElementById('feedVideoInput');
+    const videoAddBtn = document.getElementById('feedVideoAddBtn');
+
+    imageAddBtn?.addEventListener('click', () => imageInput?.click());
+
+    imageInput?.addEventListener('change', () => {
+      // Can't add images if video selected
+      if (selectedPostVideo) return;
+      const files = Array.from(imageInput.files || []);
+      files.forEach(file => {
+        if (selectedPostImages.length >= 5) return;
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`${file.name} is too large. Max 5MB per image.`);
+          return;
+        }
+        selectedPostImages.push(file);
+      });
+      imageInput.value = '';
+      // Hide video button when images selected
+      if (selectedPostImages.length > 0) {
+        const vBtn = document.getElementById('feedVideoAddBtn');
+        if (vBtn) vBtn.style.display = 'none';
+      }
+      renderModalPreviews();
+    });
+
+    videoAddBtn?.addEventListener('click', () => videoInput?.click());
+
+    videoInput?.addEventListener('change', () => {
+      const file = videoInput.files?.[0];
+      if (!file) return;
+      if (file.size > 25 * 1024 * 1024) {
+        alert('Video too large. Max 25MB.');
+        videoInput.value = '';
+        return;
+      }
+      // Clear images if any
+      selectedPostImages = [];
+      renderModalPreviews();
+      selectedPostVideo = file;
+      renderVideoPreview();
+    });
   }
 
   // Close modal
@@ -562,6 +982,12 @@
     const commField = document.getElementById('feedPostCommunity')
                                ?.closest('.feed-modal-field');
     if (commField) commField.style.display = '';
+
+    // Reset images + video
+    selectedPostImages = [];
+    selectedPostVideo  = null;
+    renderModalPreviews();
+    renderVideoPreview();
   }
 
   // Update character counters
@@ -592,6 +1018,10 @@
     if (submitBtn && title) {
       submitBtn.disabled = title.value.trim().length === 0;
     }
+
+    // Auto-direction for Arabic input in modal
+    if (title) title.dir = isRTL(title.value) ? 'rtl' : 'ltr';
+    if (body)  body.dir  = isRTL(body.value)  ? 'rtl' : 'ltr';
   }
 
   // Submit post
@@ -618,27 +1048,68 @@
 
     const url    = isEditing ? `/api/posts/${editingId}` : '/api/posts';
     const method = isEditing ? 'PATCH' : 'POST';
-    const payload = isEditing
-      ? { title, body }
-      : { communityId, title, body, variantId: variantId || undefined };
 
-    try {
-      const res  = await fetch(url, {
+    // Build request — edit stays JSON, new post uses FormData for images
+    let fetchOptions;
+    if (isEditing) {
+      fetchOptions = {
         method,
         headers: {
           'Content-Type':  'application/json',
           'Authorization': 'Bearer ' + getToken()
         },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
+        body: JSON.stringify({ title, body })
+      };
+    } else {
+      const fd = new FormData();
+      fd.append('communityId', communityId);
+      fd.append('title', title);
+      fd.append('body', body);
+      if (variantId) fd.append('variantId', variantId);
+      selectedPostImages.forEach(file => fd.append('images', file));
+      fetchOptions = {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + getToken() },
+        body: fd
+      };
+    }
+
+    // Capture video before clearing state
+    const videoToUpload = !isEditing ? selectedPostVideo : null;
+
+    try {
+      const res  = await fetch(url, fetchOptions);
 
       // Reset spinner regardless of outcome
       if (submitBtn)     submitBtn.disabled = false;
       if (submitLabel)   submitLabel.style.display = '';
       if (submitSpinner) submitSpinner.style.display = 'none';
 
+      const data = res.ok ? null : await res.json(); // only parse on error
+
       if (res.ok) {
+        const postData = await res.json();
+
+        // Upload video separately if selected
+        if (videoToUpload && postData.post?._id) {
+          const vfd = new FormData();
+          vfd.append('video', videoToUpload);
+          try {
+            const vRes = await fetch(`/api/posts/${postData.post._id}/video`, {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + getToken() },
+              body: vfd
+            });
+            if (vRes.ok) {
+              const vData = await vRes.json();
+              postData.post.videoUrl       = vData.videoUrl;
+              postData.post.videoExpiresAt = vData.videoExpiresAt;
+            }
+          } catch (vErr) {
+            console.error('Video upload failed:', vErr);
+          }
+        }
+
         closePostModal();
 
         if (isEditing) {
@@ -659,11 +1130,11 @@
             }
           }
         } else {
-          insertPendingPost(data.post);
+          insertPendingPost(postData.post);
         }
       } else {
-        console.error('Submit failed:', data.message);
-        alert(data.message || 'Failed to submit post. Please try again.');
+        console.error('Submit failed:', data?.message);
+        alert(data?.message || 'Failed to submit post. Please try again.');
       }
     } catch (e) {
       console.error('Submit error:', e);
@@ -695,7 +1166,27 @@
             brand:       post.communityId.brandId || null
           }
         : (post.community || null),
-      variant: post.variantId || post.variant || null
+      variant: post.variantId || post.variant || null,
+      sharedPost: post.sharedPostId
+        ? {
+            _id:       post.sharedPostId._id,
+            title:     post.sharedPostId.title,
+            body:      post.sharedPostId.body,
+            imageUrls: post.sharedPostId.imageUrls || [],
+            videoUrl:  post.sharedPostId.videoUrl  || null,
+            isDeleted: post.sharedPostId.isDeleted,
+            author: post.sharedPostId.authorId
+              ? { name: post.sharedPostId.authorId.name }
+              : null,
+            community: post.sharedPostId.communityId
+              ? {
+                  name:  post.sharedPostId.communityId.name,
+                  slug:  post.sharedPostId.communityId.slug,
+                  brand: post.sharedPostId.communityId.brandId || null
+                }
+              : null
+          }
+        : (post.sharedPost || null)
     };
     const wrapper = document.createElement('div');
     wrapper.innerHTML = renderPostCard(normalized);
@@ -1204,6 +1695,263 @@
     });
   }
 
+  // ── Auto-direction for Arabic text inputs ────────────────
+  document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (el.matches('.feed-comment-input, .feed-reply-input')) {
+      el.dir = isRTL(el.value) ? 'rtl' : 'ltr';
+    }
+  });
+
+  // ── Image lightbox ────────────────────────────────────────
+  window.__rxOpenLightbox = function(startUrl, allUrls) {
+    let currentIndex = allUrls.indexOf(startUrl);
+    if (currentIndex === -1) currentIndex = 0;
+
+    const existing = document.getElementById('rxLightbox');
+    if (existing) existing.remove();
+
+    function buildLightbox() {
+      const lb = document.createElement('div');
+      lb.id        = 'rxLightbox';
+      lb.className = 'feed-lightbox';
+
+      const hasMultiple = allUrls.length > 1;
+      lb.innerHTML = `
+        <button class="feed-lightbox-close" id="lbClose">✕</button>
+        <img class="feed-lightbox-img" id="lbImg"
+             src="${allUrls[currentIndex]}" alt="Image">
+        ${hasMultiple ? `
+          <button class="feed-lightbox-nav feed-lightbox-prev" id="lbPrev">&#8249;</button>
+          <button class="feed-lightbox-nav feed-lightbox-next" id="lbNext">&#8250;</button>
+          <div class="feed-lightbox-counter" id="lbCounter">
+            ${currentIndex + 1} / ${allUrls.length}
+          </div>` : ''}`;
+
+      document.body.appendChild(lb);
+
+      const close = () => { lb.style.opacity = '0'; setTimeout(() => lb.remove(), 180); };
+
+      lb.addEventListener('click', (e) => {
+        if (e.target === lb) close();
+      });
+      document.getElementById('lbClose')?.addEventListener('click', close);
+
+      if (hasMultiple) {
+        const updateImg = () => {
+          document.getElementById('lbImg').src    = allUrls[currentIndex];
+          document.getElementById('lbCounter').textContent =
+            `${currentIndex + 1} / ${allUrls.length}`;
+        };
+        document.getElementById('lbPrev')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          currentIndex = (currentIndex - 1 + allUrls.length) % allUrls.length;
+          updateImg();
+        });
+        document.getElementById('lbNext')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          currentIndex = (currentIndex + 1) % allUrls.length;
+          updateImg();
+        });
+      }
+
+      document.addEventListener('keydown', function lbKeyHandler(e) {
+        if (!document.getElementById('rxLightbox')) {
+          document.removeEventListener('keydown', lbKeyHandler);
+          return;
+        }
+        if (e.key === 'Escape') close();
+        if (e.key === 'ArrowLeft' && hasMultiple) {
+          currentIndex = (currentIndex - 1 + allUrls.length) % allUrls.length;
+          document.getElementById('lbImg').src = allUrls[currentIndex];
+          document.getElementById('lbCounter').textContent = `${currentIndex + 1} / ${allUrls.length}`;
+        }
+        if (e.key === 'ArrowRight' && hasMultiple) {
+          currentIndex = (currentIndex + 1) % allUrls.length;
+          document.getElementById('lbImg').src = allUrls[currentIndex];
+          document.getElementById('lbCounter').textContent = `${currentIndex + 1} / ${allUrls.length}`;
+        }
+      });
+    }
+
+    buildLightbox();
+  };
+
+  // Wire post image grid clicks
+  document.addEventListener('click', (e) => {
+    const imgItem = e.target.closest('.feed-post-img-item');
+    if (!imgItem) return;
+    const grid = imgItem.closest('.feed-post-images');
+    if (!grid) return;
+
+    try {
+      const allUrls = JSON.parse(grid.dataset.images || '[]');
+      const clickedUrl = imgItem.dataset.src;
+      if (allUrls.length > 0) window.__rxOpenLightbox(clickedUrl, allUrls);
+    } catch (err) {
+      console.error('Lightbox error:', err);
+    }
+  });
+
+  // ── Share system ──────────────────────────────────────────
+
+  function openShareModal(postId, excludeCommunityId) {
+    if (!isLoggedIn()) {
+      window.location.href = '/login.html?returnTo=%2Ffeed.html';
+      return;
+    }
+
+    // Eligible: joined communities excluding the original post's community
+    const eligible = communities.filter(c =>
+      c.joined && c._id !== excludeCommunityId
+    );
+
+    if (eligible.length === 0) {
+      alert('Join at least one other community to share this post.');
+      return;
+    }
+
+    const central = eligible.find(c => c.isCentral);
+    const others  = eligible
+      .filter(c => !c.isCentral)
+      .sort((a, b) => b.memberCount - a.memberCount);
+    const sorted  = central ? [central, ...others] : others;
+
+    // Remove existing modal
+    document.getElementById('feedShareModal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id        = 'feedShareModal';
+    modal.className = 'feed-modal-overlay rx-open';
+    modal.innerHTML = `
+      <div class="feed-modal-card">
+        <div class="feed-modal-header">
+          <h3 class="feed-modal-title">Share Post</h3>
+          <button class="feed-modal-close" id="shareModalClose">✕</button>
+        </div>
+        <div class="feed-modal-body">
+          <div class="feed-modal-field">
+            <label class="feed-modal-label">Share to <span class="feed-modal-required">*</span></label>
+            <select class="feed-modal-select" id="shareTargetCommunity">
+              <option value="">Select a community...</option>
+              ${sorted.map(c => {
+                const name = c.isCentral
+                  ? 'RevXChange Central'
+                  : (c.brandId?.name || '') + ' ' + c.name;
+                return `<option value="${c._id}">${name}</option>`;
+              }).join('')}
+            </select>
+          </div>
+          <div class="feed-modal-field">
+            <label class="feed-modal-label">
+              Add a comment
+              <span style="font-size:0.75rem;color:var(--text-light);font-weight:400;">(optional)</span>
+            </label>
+            <textarea class="feed-modal-textarea"
+                      id="shareCommentary"
+                      placeholder="Say something about this post..."
+                      maxlength="300"
+                      rows="3"></textarea>
+            <div class="feed-modal-counter" id="shareCommentaryCounter">0 / 300</div>
+          </div>
+        </div>
+        <div class="feed-modal-footer">
+          <button class="feed-modal-cancel" id="shareModalCancel">Cancel</button>
+          <button class="feed-modal-submit" id="shareModalSubmit" disabled>
+            <span id="shareSubmitLabel">↗ Share</span>
+            <span id="shareSubmitSpinner" style="display:none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5"
+                   style="animation:feedSpin 0.8s linear infinite;">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+
+    const close = () => {
+      modal.remove();
+      document.body.style.overflow = '';
+    };
+
+    document.getElementById('shareModalClose')?.addEventListener('click', close);
+    document.getElementById('shareModalCancel')?.addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape' && document.getElementById('feedShareModal')) {
+        close();
+        document.removeEventListener('keydown', escHandler);
+      }
+    });
+
+    const select    = document.getElementById('shareTargetCommunity');
+    const submitBtn = document.getElementById('shareModalSubmit');
+    const textarea  = document.getElementById('shareCommentary');
+    const counter   = document.getElementById('shareCommentaryCounter');
+
+    select?.addEventListener('change', () => {
+      submitBtn.disabled = !select.value;
+    });
+
+    textarea?.addEventListener('input', () => {
+      if (counter) counter.textContent = `${textarea.value.length} / 300`;
+    });
+
+    submitBtn?.addEventListener('click', async () => {
+      const targetCommId = select?.value;
+      const commentary   = textarea?.value.trim() || '';
+      if (!targetCommId) return;
+
+      submitBtn.disabled = true;
+      document.getElementById('shareSubmitLabel').style.display  = 'none';
+      document.getElementById('shareSubmitSpinner').style.display = 'flex';
+
+      try {
+        const res = await fetch(`/api/posts/${postId}/share`, {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + getToken()
+          },
+          body: JSON.stringify({ communityId: targetCommId, shareCommentary: commentary })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          close();
+          // Show in feed only if current view includes target community
+          const isVisible = !currentCommId || currentCommId === targetCommId;
+          if (isVisible) insertPendingPost(data.post);
+        } else {
+          alert(data.message || 'Failed to share post.');
+          submitBtn.disabled = false;
+          document.getElementById('shareSubmitLabel').style.display  = '';
+          document.getElementById('shareSubmitSpinner').style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Share error:', err);
+        submitBtn.disabled = false;
+        document.getElementById('shareSubmitLabel').style.display  = '';
+        document.getElementById('shareSubmitSpinner').style.display = 'none';
+      }
+    });
+  }
+
+  // Wire Share button clicks
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.feed-share-btn');
+    if (!btn) return;
+    const postId      = btn.dataset.postid;
+    const communityId = btn.dataset.communityid;
+    if (postId) openShareModal(postId, communityId);
+  });
+
   // ── Comments ──────────────────────────────────────────────
 
   // Toggle comments section on 💬 button click
@@ -1274,15 +2022,29 @@
       <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
     </svg>`;
 
+    const cameraIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>`;
+
     const composeHtml = isLoggedIn()
-      ? `<div class="feed-comment-compose">
-           <div class="feed-comment-compose-avatar">${initial}</div>
-           <div class="feed-comment-pill-wrap">
-             <input class="feed-comment-input"
-                    type="text"
-                    placeholder="Write a comment..."
-                    data-postid="${postId}">
-             <button class="feed-comment-send-btn" disabled>${sendIcon}</button>
+      ? `<div>
+           <div class="feed-comment-img-previews" id="commentImgPreviews_${postId}"></div>
+           <div class="feed-comment-compose">
+             <div class="feed-comment-compose-avatar">${initial}</div>
+             <div class="feed-comment-pill-wrap">
+               <input class="feed-comment-input"
+                      type="text"
+                      placeholder="Write a comment..."
+                      data-postid="${postId}">
+               <button class="feed-comment-camera-btn" type="button"
+                       id="commentCameraBtn_${postId}"
+                       title="Add photo">${cameraIcon}</button>
+               <input type="file" id="commentCameraInput_${postId}"
+                      accept="image/*" multiple style="display:none;">
+               <button class="feed-comment-send-btn" disabled>${sendIcon}</button>
+             </div>
            </div>
          </div>`
       : `<div class="feed-comments-login">
@@ -1315,13 +2077,53 @@
     });
 
     // Wire pill input
-    const input   = section.querySelector('.feed-comment-input');
-    const sendBtn = section.querySelector('.feed-comment-send-btn');
+    const input      = section.querySelector('.feed-comment-input');
+    const sendBtn    = section.querySelector('.feed-comment-send-btn');
+    const cameraBtn  = section.querySelector(`#commentCameraBtn_${postId}`);
+    const cameraInp  = section.querySelector(`#commentCameraInput_${postId}`);
+    const previewsEl = section.querySelector(`#commentImgPreviews_${postId}`);
+    let commentImages = []; // closure — images for this compose box
+
+    function renderCommentPreviews() {
+      if (!previewsEl) return;
+      if (commentImages.length === 0) { previewsEl.innerHTML = ''; return; }
+      previewsEl.innerHTML = commentImages.map((file, i) => {
+        const url = URL.createObjectURL(file);
+        return `<div class="feed-comment-img-preview">
+          <img src="${url}" alt="preview">
+          <button class="feed-comment-img-remove" data-index="${i}">✕</button>
+        </div>`;
+      }).join('');
+      previewsEl.querySelectorAll('.feed-comment-img-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+          commentImages.splice(parseInt(btn.dataset.index), 1);
+          renderCommentPreviews();
+          updateSendBtn();
+        });
+      });
+    }
+
+    function updateSendBtn() {
+      if (sendBtn) {
+        sendBtn.disabled = input.value.trim().length === 0 && commentImages.length === 0;
+      }
+    }
+
+    // Wire camera
+    cameraBtn?.addEventListener('click', () => cameraInp?.click());
+    cameraInp?.addEventListener('change', () => {
+      Array.from(cameraInp.files || []).forEach(file => {
+        if (commentImages.length >= 2) return;
+        if (file.size > 5 * 1024 * 1024) { alert(`${file.name} exceeds 5MB.`); return; }
+        commentImages.push(file);
+      });
+      cameraInp.value = '';
+      renderCommentPreviews();
+      updateSendBtn();
+    });
 
     if (input && sendBtn) {
-      input.addEventListener('input', () => {
-        sendBtn.disabled = input.value.trim().length === 0;
-      });
+      input.addEventListener('input', updateSendBtn);
 
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
@@ -1332,15 +2134,18 @@
 
       sendBtn.addEventListener('click', async () => {
         const body = input.value.trim();
-        if (!body) return;
+        if (!body && commentImages.length === 0) return;
 
         sendBtn.disabled = true;
         const origIcon = sendBtn.innerHTML;
         sendBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="animation:feedSpin 0.7s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>';
 
-        const newComment = await postComment(postId, body, null);
+        const imagesToSend = [...commentImages];
+        const newComment = await postComment(postId, body || ' ', null, imagesToSend);
         if (newComment) {
-          input.value = '';
+          input.value   = '';
+          commentImages = [];
+          renderCommentPreviews();
 
           const list = section.querySelector(`#commentList_${postId}`);
           if (list) {
@@ -1351,7 +2156,6 @@
             wrapper.innerHTML = renderComment(newComment, postId);
             list.insertBefore(wrapper.firstElementChild, list.firstChild);
 
-            // Update comment count button
             const postEl  = section.closest('.feed-post');
             const commBtn = postEl?.querySelector('.feed-post-action-btn');
             if (commBtn && commBtn.textContent.includes('💬')) {
@@ -1362,7 +2166,7 @@
         }
 
         sendBtn.innerHTML = origIcon;
-        sendBtn.disabled = input.value.trim().length === 0;
+        updateSendBtn();
         input.focus();
       });
     }
@@ -1381,7 +2185,10 @@
          </div>`
       : '';
 
-    const maxDepth = (comment.depth || 0) >= 5;
+    const maxDepth  = (comment.depth || 0) >= 5;
+    const storedId  = localStorage.getItem('rxUserId');
+    const authorId  = (comment.author?._id || '').toString();
+    const isOwner   = isLoggedIn() && storedId && storedId === authorId;
 
     return `
       <div class="feed-comment" data-comment-id="${comment._id}" data-depth="${comment.depth || 0}">
@@ -1392,13 +2199,32 @@
             <span class="feed-comment-time">${timeAgo}</span>
             ${editedTag}
           </div>
-          <div class="feed-comment-body">${comment.body}</div>
+          <div class="feed-comment-body" id="commentBody_${comment._id}"${isRTL(comment.body) ? ' dir="rtl"' : ''}>${comment.body}</div>
+          ${comment.imageUrls && comment.imageUrls.length > 0
+            ? `<div class="feed-comment-images">
+                 ${comment.imageUrls.map(url =>
+                   `<img src="${url}" alt="comment image" loading="lazy"
+                         onclick="window.__rxOpenLightbox('${url}', [${comment.imageUrls.map(u => `'${u}'`).join(',')}])">`
+                 ).join('')}
+               </div>`
+            : ''}
           <div class="feed-comment-actions">
             ${!maxDepth
               ? `<button class="feed-comment-action reply-btn"
                          data-comment-id="${comment._id}"
                          data-postid="${postId}">
                    Reply
+                 </button>`
+              : ''}
+            ${isOwner
+              ? `<button class="feed-comment-action edit-comment-btn"
+                         data-comment-id="${comment._id}">
+                   Edit
+                 </button>
+                 <button class="feed-comment-action delete-comment-btn"
+                         data-comment-id="${comment._id}"
+                         data-postid="${postId}">
+                   Delete
                  </button>`
               : ''}
           </div>
@@ -1408,16 +2234,30 @@
       ${repliesHtml}`;
   }
 
-  async function postComment(postId, body, parentId) {
+  async function postComment(postId, body, parentId, images = []) {
     try {
-      const res = await fetch(`/api/posts/${postId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': 'Bearer ' + getToken()
-        },
-        body: JSON.stringify({ body, parentId: parentId || undefined })
-      });
+      let fetchOptions;
+      if (images.length > 0) {
+        const fd = new FormData();
+        fd.append('body', body);
+        if (parentId) fd.append('parentId', parentId);
+        images.forEach(file => fd.append('images', file));
+        fetchOptions = {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + getToken() },
+          body: fd
+        };
+      } else {
+        fetchOptions = {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + getToken()
+          },
+          body: JSON.stringify({ body, parentId: parentId || undefined })
+        };
+      }
+      const res = await fetch(`/api/posts/${postId}/comments`, fetchOptions);
 
       const data = await res.json();
       if (res.ok) return data.comment;
@@ -1429,6 +2269,190 @@
       return null;
     }
   }
+
+  // ── Edit comment handler ──────────────────────────────────
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.edit-comment-btn');
+    if (!btn) return;
+
+    const commentId = btn.dataset.commentId;
+    const bodyEl    = document.getElementById('commentBody_' + commentId);
+    if (!bodyEl) return;
+
+    // If already editing, do nothing
+    if (bodyEl.contentEditable === 'true') return;
+
+    const original = bodyEl.textContent.trim();
+
+    // Make body editable inline
+    bodyEl.contentEditable = 'true';
+    bodyEl.style.cssText = `
+      outline: none;
+      border: 1.5px solid var(--primary);
+      border-radius: 8px;
+      padding: 6px 10px;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(90,15,28,0.07);
+      min-width: 60px;
+    `;
+    bodyEl.focus();
+
+    // Move cursor to end
+    const range = document.createRange();
+    range.selectNodeContents(bodyEl);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    // Change Edit button to Save/Cancel
+    btn.textContent = 'Save';
+    btn.dataset.editing = 'true';
+
+    // Insert Cancel next to Save
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'feed-comment-action';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.id = 'editCancelBtn_' + commentId;
+    btn.after(cancelBtn);
+
+    // Cancel handler
+    cancelBtn.addEventListener('click', () => {
+      bodyEl.textContent      = original;
+      bodyEl.contentEditable  = 'false';
+      bodyEl.style.cssText    = '';
+      btn.textContent         = 'Edit';
+      btn.dataset.editing     = '';
+      cancelBtn.remove();
+    });
+
+    // Save handler
+    btn.addEventListener('click', async function saveHandler() {
+      if (!btn.dataset.editing) return;
+
+      const newBody = bodyEl.textContent.trim();
+      if (!newBody) return;
+      if (newBody === original) {
+        // No change — just cancel
+        bodyEl.contentEditable = 'false';
+        bodyEl.style.cssText   = '';
+        btn.textContent        = 'Edit';
+        btn.dataset.editing    = '';
+        cancelBtn.remove();
+        btn.removeEventListener('click', saveHandler);
+        return;
+      }
+
+      btn.textContent  = '...';
+      btn.disabled     = true;
+
+      try {
+        const res = await fetch(`/api/posts/comments/${commentId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + getToken()
+          },
+          body: JSON.stringify({ body: newBody })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          bodyEl.textContent     = data.comment.body;
+          bodyEl.contentEditable = 'false';
+          bodyEl.style.cssText   = '';
+          btn.textContent        = 'Edit';
+          btn.dataset.editing    = '';
+          btn.disabled           = false;
+          cancelBtn.remove();
+          btn.removeEventListener('click', saveHandler);
+
+          // Add (edited) tag if not already there
+          const metaEl = bodyEl.closest('.feed-comment-content')
+                                ?.querySelector('.feed-comment-meta');
+          if (metaEl && !metaEl.querySelector('.feed-comment-edited')) {
+            const tag = document.createElement('span');
+            tag.className   = 'feed-comment-edited';
+            tag.textContent = '(edited)';
+            metaEl.appendChild(tag);
+          }
+        } else {
+          console.error('Edit comment failed:', data.message);
+          btn.textContent = 'Save';
+          btn.disabled    = false;
+        }
+      } catch (err) {
+        console.error('Edit comment error:', err);
+        btn.textContent = 'Save';
+        btn.disabled    = false;
+      }
+    });
+  });
+
+  // ── Delete comment handler ────────────────────────────────
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.delete-comment-btn');
+    if (!btn) return;
+
+    const commentId = btn.dataset.commentId;
+    const postId    = btn.dataset.postid;
+
+    // Inline confirm — replace actions with Yes/No
+    const actionsEl = btn.closest('.feed-comment-actions');
+    if (!actionsEl) return;
+
+    const originalHTML = actionsEl.innerHTML;
+
+    actionsEl.innerHTML = `
+      <span style="font-size:0.72rem;color:var(--text-light);font-family:'Segoe UI',sans-serif;">
+        Delete this comment?
+      </span>
+      <button class="feed-comment-action" id="confirmDeleteYes_${commentId}"
+              style="color:#dc2626;">Yes</button>
+      <button class="feed-comment-action" id="confirmDeleteNo_${commentId}">No</button>`;
+
+    document.getElementById('confirmDeleteNo_' + commentId)
+      ?.addEventListener('click', () => {
+        actionsEl.innerHTML = originalHTML;
+      });
+
+    document.getElementById('confirmDeleteYes_' + commentId)
+      ?.addEventListener('click', async () => {
+        try {
+          const res = await fetch(`/api/posts/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+          });
+
+          if (res.ok) {
+            const commentEl = document.querySelector(
+              `[data-comment-id="${commentId}"]`
+            );
+            if (commentEl) {
+              commentEl.style.transition = 'opacity 0.3s ease, max-height 0.3s ease';
+              commentEl.style.opacity    = '0';
+              commentEl.style.maxHeight  = '0';
+              commentEl.style.overflow   = 'hidden';
+              setTimeout(() => commentEl.remove(), 320);
+            }
+
+            // Decrement comment count on post button
+            const postEl  = document.querySelector(`.feed-post[data-id="${postId}"]`);
+            const commBtn = postEl?.querySelector('.feed-post-action-btn');
+            if (commBtn && commBtn.textContent.includes('💬')) {
+              const current = parseInt(commBtn.textContent.replace(/\D/g, '')) || 0;
+              commBtn.textContent = '💬 ' + formatNum(Math.max(0, current - 1));
+            }
+          } else {
+            actionsEl.innerHTML = originalHTML;
+          }
+        } catch (err) {
+          console.error('Delete comment error:', err);
+          actionsEl.innerHTML = originalHTML;
+        }
+      });
+  });
 
   // Reply button handler
   document.addEventListener('click', (e) => {
