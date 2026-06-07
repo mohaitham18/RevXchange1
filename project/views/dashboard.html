@@ -27,7 +27,7 @@
             <ul class="nav-links">
                 <li><a href="used-cars.html">Used Cars</a></li>
                 <li><a href="buy-cars.html">New Cars</a></li>
-                <li><a href="#">Auctioned Cars</a></li>
+                <li><a href="rent-cars.html">Rent Cars</a></li>
                 <li>
                     <a href="#" class="cara-nav-link" id="caraNavBtn">
                         <svg class="cara-icon" viewBox="0 0 24 24" fill="none" width="15" height="15">
@@ -44,11 +44,11 @@
                         <span class="cara-spark"></span>
                     </a>
                 </li>
-                <li><a href="communities.html">Car Communities</a></li>
+                <li><a href="/feed.html">Car Communities</a></li>
                 <span class="nav-indicator" id="navIndicator"></span>
             </ul>
             <div class="nav-actions">
-                <button class="lang-btn">🌐 عربي</button>
+                <button class="lang-btn" id="langToggleBtn">🌐 العربية</button>
                 <a href="sell-car.html" class="sell-btn">+ Sell My Car</a>
                 <a href="login.html" class="login-btn" id="loginBtn">Login</a>
                 <div class="profile-menu hidden" id="profileMenu">
@@ -111,7 +111,14 @@
             <div class="dash-tabs">
                 <button class="dash-tab active" data-tab="ads">My Ads</button>
                 <button class="dash-tab" data-tab="saved">Saved Ads</button>
-                <button class="dash-tab" data-tab="posts">My Posts</button>
+                <button class="dash-tab" data-tab="requests">
+                    Requests
+                    <span class="dash-tab-badge" id="requestsBadge" style="display:none"></span>
+                </button>
+                <button class="dash-tab" data-tab="posts">
+                    My Posts
+                    <span class="dash-tab-badge" id="postsBadge" style="display:none"></span>
+                </button>
                 <button class="dash-tab" data-tab="settings">Settings</button>
             </div>
 
@@ -130,6 +137,15 @@
                     <h2>Saved Ads</h2>
                 </div>
                 <div class="dash-ads-grid" id="savedAdsGrid"></div>
+            </div>
+            
+            <!-- ── Tab: Requests ─────────────────────────────────── -->
+            <div class="dash-panel" id="tab-requests">
+                <div class="dash-panel-header">
+                    <h2>Incoming Requests</h2>
+                    <p style="color:#777;font-size:.9rem">Requests from buyers and renters on your listings</p>
+                </div>
+                <div id="incomingRequestsList"></div>
             </div>
 
             <!-- ── Tab: My Posts ─────────────────────────────────── -->

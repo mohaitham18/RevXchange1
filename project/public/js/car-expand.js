@@ -29,8 +29,12 @@
   let currentOriginEl = null;
   let galleryIndex = 0;
   let savedIds = new Set();
+  let isFullscreen = false;
 
   const formatPrice = value => Number(value || 0).toLocaleString() + ' EGP';
+  const displayPrice = car => car.listingType === 'rent'
+    ? Number(car.rentPricePerDay || car.price || 0).toLocaleString() + ' EGP / day'
+    : formatPrice(car.price);
   const formatKm = value => Number(value || 0).toLocaleString() + ' km';
 
   function token() {
@@ -148,6 +152,10 @@
       model: car.model || 'Car',
       year: Number(car.year || new Date().getFullYear()),
       price: Number(car.price || 0),
+      listingType: car.listingType || 'sale',
+      rentPricePerDay: car.rentPricePerDay || null,
+      rentPricePerMonth: car.rentPricePerMonth || null,
+      rentDeposit: car.rentDeposit || null,
       mileage: Number(car.mileage || 0),
       city: car.city || 'Not specified',
       transmission: niceText(car.transmission || 'automatic'),
@@ -267,7 +275,7 @@
 
         <div class="rx-info">
           <div class="rx-info-title">${car.brand} ${car.model} ${car.year}</div>
-          <div class="rx-info-price">${formatPrice(car.price)}</div>
+          <div class="rx-info-price">${displayPrice(car)}</div>
 
           <div class="rx-info-pills">
             <span class="rx-pill">📅 ${car.year}</span>
@@ -394,6 +402,55 @@
     });
   }
 
+  function setFullscreen(on) {
+    if (!isOpen) return;
+
+    isFullscreen = on;
+    card.classList.toggle('rx-fullscreen', on);
+
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+      navbar.classList.toggle('rx-above-card', on);
+      if (on) {
+        navbar.classList.add('scrolled');
+      } else {
+        if (window.scrollY <= 80) {
+          navbar.classList.remove('scrolled');
+        }
+      }
+    }
+
+    applyTarget(targetRect());
+
+    if (on) {
+      card.style.transform = 'translate(0px, 0px) scale(1, 1)';
+    } else {
+      const body = card.querySelector('.rx-card-body');
+      if (body) body.scrollTop = 0;
+      card.style.transform = expandedTransform();
+    }
+  }
+
+  function handleCardWheel(e) {
+    if (!isOpen) return;
+
+    if (!isFullscreen && e.deltaY > 8) {
+      e.preventDefault();
+      setFullscreen(true);
+      return;
+    }
+
+    if (isFullscreen && e.deltaY < -20) {
+      const body = card.querySelector('.rx-card-body');
+      const atTop = !body || body.scrollTop <= 0;
+
+      if (atTop) {
+        e.preventDefault();
+        setFullscreen(false);
+      }
+    }
+  }
+
   async function openCard(cardEl, id) {
     if (isOpen) return;
 
@@ -402,6 +459,23 @@
     if (!car) {
       alert('Car details could not be loaded.');
       return;
+    }
+
+    // Increment view count — server deduplicates for logged-in users, localStorage for guests
+    const viewedKey = 'rxViewed_' + id;
+    const token = localStorage.getItem('rxToken');
+
+    if (token) {
+      // Logged-in: server handles deduplication via viewedCars array
+      fetch('/api/cars/' + encodeURIComponent(id) + '/view', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).catch(() => {});
+    } else if (!localStorage.getItem(viewedKey)) {
+      // Guest: use localStorage to deduplicate
+      fetch('/api/cars/' + encodeURIComponent(id) + '/view', { method: 'POST' })
+        .then(() => localStorage.setItem(viewedKey, '1'))
+        .catch(() => {});
     }
 
     await loadSavedIds();
@@ -419,6 +493,8 @@
 
     card.style.display = 'block';
     shadow.style.display = 'block';
+    isFullscreen = false;
+    document.querySelector('.navbar')?.classList.remove('rx-above-card');
     card.classList.remove('rx-closing', 'rx-fullscreen');
     card.style.transform = originTransform(currentOrigin, target);
 
@@ -443,6 +519,8 @@
       currentOrigin = currentOriginEl.getBoundingClientRect();
     }
 
+    isFullscreen = false;
+    document.querySelector('.navbar')?.classList.remove('rx-above-card');
     card.classList.add('rx-closing');
     card.classList.remove('rx-open', 'rx-fullscreen');
     shadow.classList.remove('rx-visible');
@@ -493,6 +571,7 @@
 
   closeBtn.addEventListener('click', closeCard);
   overlay.addEventListener('click', closeCard);
+  card.addEventListener('wheel', handleCardWheel, { passive: false });
 
   lbOverlay.addEventListener('click', () => {
     lbOverlay.classList.remove('rx-visible');
@@ -504,6 +583,15 @@
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeCard();
+  });
+
+  window.addEventListener('resize', () => {
+    if (!isOpen) return;
+
+    applyTarget(targetRect());
+    card.style.transform = isFullscreen
+      ? 'translate(0px, 0px) scale(1, 1)'
+      : expandedTransform();
   });
 
   function tryOpenDeepLink() {

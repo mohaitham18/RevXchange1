@@ -2,27 +2,58 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true, minlength: 6 },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
-
+  name: { 
+    type: String, 
+    required: true, 
+    trim: true 
+  },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true, 
+    lowercase: true, 
+    trim: true 
+  },
+  password: { 
+    type: String, 
+    required: true, 
+    minlength: 6 
+  },
+  role: { 
+    type: String, 
+    enum: ['user', 'admin'], 
+    default: 'user' 
+  },
   savedCars: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Car'
     }
   ],
-
-  createdAt: { type: Date, default: Date.now }
+  viewedCars: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Car'
+    }
+  ],
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
 });
 
-userSchema.pre('save', async function() {
-  if (!this.isModified('password')) return;
+// ── Password Hashing Middleware ────────────────────────────────
+userSchema.pre('save', async function () {
+  // If the password wasn't changed, do nothing
+  if (!this.isModified('password')) {
+    return;
+  }
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
+// ── Password Verification Method ───────────────────────────────
 userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

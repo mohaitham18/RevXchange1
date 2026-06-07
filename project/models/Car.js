@@ -29,6 +29,27 @@ const carSchema = new mongoose.Schema({
     required: true
   },
 
+  listingType: {
+    type: String,
+    enum: ['sale', 'rent'],
+    default: 'sale'
+  },
+
+  rentPricePerDay: {
+    type: Number,
+    default: null
+  },
+
+  rentPricePerMonth: {
+    type: Number,
+    default: null
+  },
+
+  rentDeposit: {
+    type: Number,
+    default: null
+  },
+
   mileage: {
     type: Number,
     required: true
@@ -140,9 +161,11 @@ const carSchema = new mongoose.Schema({
     }
   ],
 
+  views: { type: Number, default: 0 },
+
   status: {
     type: String,
-    enum: ['active', 'pending', 'sold'],
+    enum: ['active', 'pending', 'rejected'],
     default: 'pending'
   },
 

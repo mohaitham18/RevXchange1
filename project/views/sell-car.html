@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sell Your Car - RevXChange</title>
+  <title>List Your Car - RevXChange</title>
 
   <link rel="stylesheet" href="/css/base/reset.css" />
   <link rel="stylesheet" href="/css/base/variables.css" />
@@ -82,7 +82,7 @@
 
       <div class="sell-form-header">
         <h1>List Your Car</h1>
-        <p>Fill in the details below and your ad goes live instantly.</p>
+        <p>Choose sale or rent, then fill in the details below.</p>
       </div>
 
       <!-- Section: Images -->
@@ -109,6 +109,16 @@
           <div class="sell-form-group full">
             <label>Brand, Model & Year</label>
             <input type="text" id="carInfo" placeholder="e.g., Mercedes C200 2024">
+          </div>
+        </div>
+
+        <div class="sell-form-row">
+          <div class="sell-form-group full">
+            <label>Listing Type</label>
+            <div class="sell-toggle" id="listingTypeToggle">
+              <button type="button" class="active" data-val="sale">For Sale</button>
+              <button type="button" data-val="rent">For Rent</button>
+            </div>
           </div>
         </div>
 
@@ -194,7 +204,6 @@
     <select id="drivetrainSelect">
       <option value="FWD">FWD</option>
       <option value="RWD">RWD</option>
-      <option value="AWD">AWD</option>
       <option value="4WD">4WD</option>
     </select>
   </div>
@@ -273,12 +282,28 @@
 
       <!-- Section: Price -->
       <div class="sell-section">
-        <h3 class="sell-section-title">Price</h3>
+        <h3 class="sell-section-title" id="priceSectionTitle">Sale Price</h3>
         <div class="sell-form-row">
           <div class="sell-form-group full">
-            <label>Price (EGP)</label>
+            <label id="priceLabel">Price (EGP)</label>
             <div class="sell-input-suffix">
               <input type="number" id="carPrice" placeholder="e.g., 850000">
+              <span>EGP</span>
+            </div>
+          </div>
+        </div>
+        <div class="sell-form-row" id="rentExtraFields" style="display:none">
+          <div class="sell-form-group">
+            <label>Monthly Rent (EGP)</label>
+            <div class="sell-input-suffix">
+              <input type="number" id="rentPricePerMonth" placeholder="e.g., 35000">
+              <span>EGP</span>
+            </div>
+          </div>
+          <div class="sell-form-group">
+            <label>Deposit (EGP)</label>
+            <div class="sell-input-suffix">
+              <input type="number" id="rentDeposit" placeholder="e.g., 10000">
               <span>EGP</span>
             </div>
           </div>

@@ -4,9 +4,35 @@
   box-sizing: border-box;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+html,
 body {
-    padding-top: 0;
-    background: var(--color-bg);
-    font-family: 'Segoe UI', sans-serif;
-    color: var(--text-primary);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  padding-top: 0;
+  background: var(--color-bg);
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-primary);
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
 }

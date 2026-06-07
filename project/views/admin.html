@@ -13,6 +13,8 @@
 </head>
 <body>
   <div class="admin-layout">
+
+    <!-- SIDEBAR -->
     <aside class="admin-sidebar">
       <div class="admin-brand">
         <div class="brand-mark">RX</div>
@@ -23,118 +25,184 @@
       </div>
 
       <nav class="admin-menu">
-        <a href="#" class="active">Dashboard</a>
-         <a href="#">Automation API</a>
-        <a href="#">Pending Listings</a>
-        <a href="#">Approved Cars</a>
-        <a href="#">Rejected Cars</a>
-        <a href="#">Users</a>
-        <a href="#">Buy Requests</a>
-        <a href="#">Rent Requests</a>
-        <a href="#">Settings</a>
+        <a href="#" class="active" data-section="dashboard">Dashboard</a>
+        <a href="#"                data-section="pending">Pending Listings</a>
+        <a href="#"                data-section="all-cars">Approved Cars</a>
+        <a href="#"                data-section="rejected">Rejected Cars</a>
+        <a href="#"                data-section="users">Users</a>
+        <a href="#"                data-section="buy-requests">Buy Requests</a>
+        <a href="#"                data-section="rent-requests">Rent Requests</a>
         <a href="#" id="logoutBtn">Logout</a>
       </nav>
     </aside>
 
+    <!-- MAIN -->
     <main class="admin-main">
+
+      <!-- Top Bar -->
       <header class="admin-topbar">
         <div>
-          <h1>Admin Dashboard</h1>
-          <p>Monitor users, listings, and requests.</p>
+          <h1 id="topbarTitle">Admin Dashboard</h1>
+          <p id="topbarSub">Monitor users, listings, and requests.</p>
         </div>
-
         <div class="admin-topbar-right">
-          <input type="text" placeholder="Search..." class="admin-search" />
-          <div class="admin-avatar">A</div>
+          <input type="text" id="adminSearch" placeholder="Search..." class="admin-search" />
+          <div class="admin-avatar" id="adminAvatar">A</div>
         </div>
       </header>
 
-      <section class="stats-grid">
-        <div class="stat-card">
-          <h3>1,248</h3>
-          <p>Total Users</p>
-        </div>
-        <div class="stat-card">
-          <h3>584</h3>
-          <p>Total Listings</p>
-        </div>
-        <div class="stat-card">
-          <h3>26</h3>
-          <p>Pending Approvals</p>
-        </div>
-        <div class="stat-card">
-          <h3>41</h3>
-          <p>Open Requests</p>
-        </div>
-      </section>
+      <!-- SECTION: Dashboard -->
+      <div class="admin-section active" id="section-dashboard">
 
-      <section class="admin-panel">
-        <div class="panel-header">
-          <h2>Pending Listings</h2>
-          <button class="panel-btn">View All</button>
-        </div>
-
-        <div class="admin-table">
-          <div class="table-row table-head">
-            <span>Car</span>
-            <span>Seller</span>
-            <span>Price</span>
-            <span>Status</span>
-            <span>Actions</span>
+        <section class="stats-grid">
+          <div class="stat-card">
+            <h3 id="stat-users">—</h3>
+            <p>Total Users</p>
           </div>
-
-          <div class="table-row">
-            <span>BMW 320i 2020</span>
-            <span>Karim Ahmed</span>
-            <span>1,650,000 EGP</span>
-            <span><span class="status pending">Pending</span></span>
-            <span class="actions">
-              <button class="approve-btn">Approve</button>
-              <button class="reject-btn">Reject</button>
-            </span>
+          <div class="stat-card">
+            <h3 id="stat-listings">—</h3>
+            <p>Total Listings</p>
           </div>
-
-          <div class="table-row">
-            <span>Kia Sportage 2022</span>
-            <span>Sara Tarek</span>
-            <span>980,000 EGP</span>
-            <span><span class="status pending">Pending</span></span>
-            <span class="actions">
-              <button class="approve-btn">Approve</button>
-              <button class="reject-btn">Reject</button>
-            </span>
+          <div class="stat-card">
+            <h3 id="stat-pending">—</h3>
+            <p>Pending Approvals</p>
           </div>
-        </div>
-      </section>
+          <div class="stat-card">
+            <h3 id="stat-active">—</h3>
+            <p>Active Listings</p>
+          </div>
+        </section>
 
-      <section class="admin-lower-grid">
-        <div class="admin-panel">
+        <section class="admin-panel">
           <div class="panel-header">
-            <h2>Recent Users</h2>
+            <h2>Pending Listings</h2>
+            <button class="panel-btn" onclick="switchSection('pending')">View All</button>
           </div>
-          <ul class="simple-list">
-            <li>Karim Ahmed</li>
-            <li>Youssef Ehab</li>
-            <li>Youssef El Shenawy</li>
-            <li>Jonthan George</li>
-          </ul>
-        </div>
+          <div class="admin-table">
+            <div class="table-row table-head">
+              <span>Car</span>
+              <span>Seller</span>
+              <span>Price</span>
+              <span>Status</span>
+              <span>Actions</span>
+            </div>
+            <div id="pendingTableBody"></div>
+          </div>
+        </section>
 
-        <div class="admin-panel">
-          <div class="panel-header">
-            <h2>Recent Requests</h2>
+        <section class="admin-lower-grid">
+          <div class="admin-panel">
+            <div class="panel-header"><h2>Recent Users</h2></div>
+            <ul class="simple-list" id="recentUsersList"></ul>
           </div>
-          <ul class="simple-list">
-            <li>Purchase request for Mercedes C200</li>
-            <li>Rental request for Hyundai Elantra</li>
-            <li>Listing edit request from user #284</li>
-            <li>Complaint on seller account</li>
-          </ul>
-        </div>
-      </section>
+          <div class="admin-panel">
+            <div class="panel-header"><h2>Rejected Listings</h2></div>
+            <ul class="simple-list" id="rejectedPreviewList"></ul>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- SECTION: Pending Listings -->
+      <div class="admin-section" id="section-pending">
+        <section class="admin-panel">
+          <div class="panel-header">
+            <h2>Pending Listings</h2>
+            <span class="panel-count" id="pendingCount"></span>
+          </div>
+          <div class="admin-table">
+            <div class="table-row table-head">
+              <span>Car</span><span>Seller</span><span>Price</span><span>Status</span><span>Actions</span>
+            </div>
+            <div id="pendingFullTableBody"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- SECTION: Approved Cars -->
+      <div class="admin-section" id="section-all-cars">
+        <section class="admin-panel">
+          <div class="panel-header">
+            <h2>Approved Cars</h2>
+            <span class="panel-count" id="allCarsCount"></span>
+          </div>
+          <div class="admin-table">
+            <div class="table-row table-head">
+              <span>Car</span><span>Seller</span><span>Price</span><span>Status</span><span>Actions</span>
+            </div>
+            <div id="allCarsTableBody"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- SECTION: Rejected Cars -->
+      <div class="admin-section" id="section-rejected">
+        <section class="admin-panel">
+          <div class="panel-header">
+            <h2>Rejected Cars</h2>
+            <span class="panel-count" id="rejectedCount"></span>
+          </div>
+          <div class="admin-table">
+            <div class="table-row table-head">
+              <span>Car</span><span>Seller</span><span>Price</span><span>Status</span><span>Actions</span>
+            </div>
+            <div id="rejectedTableBody"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- SECTION: Users -->
+      <div class="admin-section" id="section-users">
+        <section class="admin-panel">
+          <div class="panel-header">
+            <h2>All Users</h2>
+            <span class="panel-count" id="usersCount"></span>
+          </div>
+          <div class="admin-table">
+            <div class="table-row table-head users-head">
+              <span>Name</span><span>Email</span><span>Role</span><span>Joined</span><span>Actions</span>
+            </div>
+            <div id="usersTableBody"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- SECTION: Buy Requests -->
+      <div class="admin-section" id="section-buy-requests">
+        <section class="admin-panel">
+          <div class="panel-header">
+            <h2>Buy Requests</h2>
+            <span class="panel-count" id="buyReqCount"></span>
+          </div>
+          <div class="admin-table">
+            <div class="table-row table-head req-head">
+              <span>Car</span><span>Buyer</span><span>Phone</span><span>Offer</span><span>Status</span><span>Actions</span>
+            </div>
+            <div id="buyReqTableBody"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- SECTION: Rent Requests -->
+      <div class="admin-section" id="section-rent-requests">
+        <section class="admin-panel">
+          <div class="panel-header">
+            <h2>Rent Requests</h2>
+            <span class="panel-count" id="rentReqCount"></span>
+          </div>
+          <div class="admin-table">
+            <div class="table-row table-head req-head">
+              <span>Car</span><span>Renter</span><span>Phone</span><span>Dates</span><span>Status</span><span>Actions</span>
+            </div>
+            <div id="rentReqTableBody"></div>
+          </div>
+        </section>
+      </div>
+
     </main>
   </div>
 
+  <div id="adminToast" class="admin-toast"></div>
   <script src="/js/admin.js"></script>
 </body>
 </html>

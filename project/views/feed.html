@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feed — RevXChange</title>
+
+  <link rel="stylesheet" href="/css/base/reset.css">
+  <link rel="stylesheet" href="/css/base/variables.css">
+  <link rel="stylesheet" href="/css/base/typography.css">
+  <link rel="stylesheet" href="/css/base/style.css">
+  <link rel="stylesheet" href="/css/components/navbar.css">
+  <link rel="stylesheet" href="/css/components/cara.css">
+  <link rel="stylesheet" href="/css/pages/communities.css">
+  <link rel="stylesheet" href="/css/pages/feed.css">
+  <link rel="stylesheet" href="/css/base/ambient.css">
+</head>
+<body>
+
+  <!-- ── Universal Navbar ──────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="container">
+
+      <a href="/" class="nav-logo">
+        <img src="/images/Logo.png" alt="RevXChange Logo">
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="used-cars.html">Used Cars</a></li>
+        <li><a href="buy-cars.html">New Cars</a></li>
+        <li><a href="rent-cars.html">Rent Cars</a></li>
+        <li>
+          <a href="#" class="cara-nav-link" id="caraNavBtn">
+            <svg class="cara-icon" viewBox="0 0 24 24" fill="none" width="15" height="15">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8.5 13C8.5 10.5 10.1 8.8 12 8.8C13.9 8.8 15.5 10.5 15.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="9.5" cy="15" r="1.1" fill="currentColor"/>
+              <circle cx="14.5" cy="15" r="1.1" fill="currentColor"/>
+            </svg>
+            <span class="cara-text">Cara AI</span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+            <span class="cara-spark"></span>
+          </a>
+        </li>
+        <li><a href="communities.html">Car Communities</a></li>
+        <span class="nav-indicator" id="navIndicator"></span>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="lang-btn" id="langToggleBtn">🌐 العربية</button>
+        <a href="sell-car.html" class="sell-btn">+ Sell My Car</a>
+        <a href="login.html" class="login-btn" id="loginBtn">Login</a>
+
+        <div class="profile-menu hidden" id="profileMenu">
+          <button class="profile-trigger" id="profileTrigger">
+            <div class="profile-avatar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+            </div>
+            <span class="profile-name" id="profileName">User</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </button>
+
+          <ul class="dropdown" id="dropdownMenu">
+            <li class="dropdown-header">
+              <div class="dropdown-avatar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                </svg>
+              </div>
+              <span id="dropdownName">User</span>
+            </li>
+            <li><a href="dashboard.html?tab=ads">My Ads</a></li>
+            <li><a href="dashboard.html?tab=saved">Saved Ads</a></li>
+            <li><a href="dashboard.html?tab=posts">My Posts</a></li>
+            <li><a href="dashboard.html?tab=settings">Settings</a></li>
+            <li class="dropdown-logout">
+              <a href="#" id="logoutBtn">
+                Logout
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Feed Hero (minimal) ──────────────────────────────────── -->
+  <section class="feed-hero">
+    <div class="container">
+      <div class="feed-hero-inner">
+        <div class="feed-hero-text">
+          <h1 id="feedHeroTitle">Community Feed</h1>
+          <p id="feedHeroSub">Top posts from across RevXChange communities</p>
+        </div>
+        <div class="feed-sort-tabs" id="feedSortTabs">
+          <button class="feed-sort-btn active" data-sort="top">🔥 Top</button>
+          <button class="feed-sort-btn" data-sort="new">🕐 New</button>
+          <button class="feed-sort-btn" data-sort="hot">📈 Trending</button>
+          <button class="feed-sort-btn" data-sort="controversial">⚡ Controversial</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rx-melt-wrap">
+      <svg viewBox="0 0 1440 74" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="meltMainFD" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#5a0f1c" stop-opacity="1"/>
+            <stop offset="55%"  stop-color="#6b1222" stop-opacity="0.80"/>
+            <stop offset="100%" stop-color="#3e0a13" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="meltBloomFD" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#8b1a2a" stop-opacity="0.45"/>
+            <stop offset="70%"  stop-color="#5a0f1c" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#5a0f1c" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#meltBloomFD)">
+          <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+            keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+            values="
+              M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z;
+              M0,0 L1440,0 L1440,44 C1260,68 1020,14 840,50 C640,72 440,10 270,48 C120,68 40,24 0,44 Z;
+              M0,0 L1440,0 L1440,68 C1320,40 1060,72 840,38 C620,8  380,68 180,36 C80,18 30,52 0,30 Z;
+              M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z
+            "/>
+        </path>
+        <path fill="url(#meltMainFD)">
+          <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+            keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+            values="
+              M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z;
+              M0,0 L1440,0 L1440,28 C1260,50 1020,2  840,34 C640,58 440,0  270,32 C120,52 40,10 0,28 Z;
+              M0,0 L1440,0 L1440,52 C1320,24 1060,56 840,22 C620,0  380,52 180,20 C80,4  30,38 0,14 Z;
+              M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z
+            "/>
+        </path>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ── Three-column layout ──────────────────────────────────── -->
+  <section class="feed-layout-section">
+    <div class="container">
+      <div class="feed-layout">
+
+        <!-- LEFT: Your Communities -->
+        <aside class="feed-left" id="feedLeft">
+          <div class="feed-sidebar-box">
+            <div class="feed-sidebar-title">Your Communities</div>
+            <div id="feedYourComms">
+              <!-- populated by JS -->
+            </div>
+            <a href="/communities.html" class="feed-explore-btn">
+              + Explore Communities
+            </a>
+          </div>
+        </aside>
+
+        <!-- CENTER: Posts -->
+        <main class="feed-center">
+
+          <!-- What's on your mind bar -->
+          <div class="feed-compose-bar" id="feedComposeBar">
+            <div class="feed-compose-avatar" id="feedComposeAvatar">?</div>
+            <div class="feed-compose-input" id="feedComposeInput">
+              What's on your mind?
+            </div>
+            <button class="feed-compose-btn" id="feedComposeBtn">+ Post</button>
+          </div>
+
+          <!-- Create post modal -->
+          <div class="feed-modal-overlay" id="feedPostModal">
+            <div class="feed-modal-card">
+
+              <div class="feed-modal-header">
+                <h3 class="feed-modal-title">Create Post</h3>
+                <button class="feed-modal-close" id="feedModalClose">✕</button>
+              </div>
+
+              <div class="feed-modal-body">
+
+                <!-- Community selector -->
+                <div class="feed-modal-field">
+                  <label class="feed-modal-label">Community</label>
+                  <select class="feed-modal-select" id="feedPostCommunity">
+                    <option value="">Select a community...</option>
+                  </select>
+                </div>
+
+                <!-- Variant selector (hidden by default) -->
+                <div class="feed-modal-field" id="feedVariantField" style="display:none;">
+                  <label class="feed-modal-label">Posting as</label>
+                  <select class="feed-modal-select" id="feedPostVariant">
+                    <option value="">General — no specific variant</option>
+                  </select>
+                </div>
+
+                <!-- Title -->
+                <div class="feed-modal-field">
+                  <label class="feed-modal-label">Title <span class="feed-modal-required">*</span></label>
+                  <input type="text"
+                         class="feed-modal-input"
+                         id="feedPostTitle"
+                         placeholder="Give your post a title..."
+                         maxlength="300">
+                  <div class="feed-modal-counter" id="feedTitleCounter">0 / 300</div>
+                </div>
+
+                <!-- Body -->
+                <div class="feed-modal-field">
+                  <label class="feed-modal-label">Body <span style="font-size:0.75rem;color:var(--text-light);font-weight:400;">(optional)</span></label>
+                  <textarea class="feed-modal-textarea"
+                            id="feedPostBody"
+                            placeholder="Share your thoughts, questions, or tips..."
+                            maxlength="10000"
+                            rows="5"></textarea>
+                  <div class="feed-modal-counter" id="feedBodyCounter">0 / 10,000</div>
+                </div>
+
+                <!-- Image upload -->
+                <div class="feed-modal-image-section" id="feedImageSection">
+                  <div class="feed-image-toolbar">
+                    <button type="button" class="feed-image-add-btn" id="feedImageAddBtn">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2"
+                           stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                      Add Photos
+                    </button>
+                    <button type="button" class="feed-image-add-btn" id="feedVideoAddBtn"
+                            style="display:none;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2"
+                           stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"/>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                      </svg>
+                      Add Video
+                    </button>
+                    <span class="feed-image-count-label" id="feedImageCountLabel"></span>
+                  </div>
+                  <input type="file" id="feedImageInput" multiple accept="image/*" style="display:none;">
+                  <input type="file" id="feedVideoInput" accept="video/*" style="display:none;">
+                  <div class="feed-image-previews" id="feedImagePreviews"></div>
+                  <div id="feedVideoPreview"></div>
+                </div>
+
+              </div>
+
+              <div class="feed-modal-footer">
+                <button class="feed-modal-cancel" id="feedModalCancel">Cancel</button>
+                <button class="feed-modal-submit" id="feedModalSubmit" disabled>
+                  <span class="feed-submit-label">Post</span>
+                  <span class="feed-submit-spinner" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5"
+                         style="animation:feedSpin 0.8s linear infinite;">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                  </span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <div id="feedPosts">
+            <!-- populated by JS -->
+          </div>
+          <div id="feedPagination" class="feed-pagination"></div>
+        </main>
+
+        <!-- RIGHT: Suggestions + Trending -->
+        <aside class="feed-right" id="feedRight">
+          <div class="feed-sidebar-box" id="feedSuggested">
+            <div class="feed-sidebar-title">Explore More</div>
+            <!-- populated by JS -->
+          </div>
+          <div class="feed-sidebar-box feed-suggest-box">
+            <div class="feed-suggest-icon">✦</div>
+            <div class="feed-suggest-text">
+              Don't see your community?
+            </div>
+            <a href="/communities.html" class="feed-suggest-btn">
+              Suggest a Community
+            </a>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <script src="/js/ambient.js"></script>
+  <script src="/js/feed.js"></script>
+  <script src="/js/navbar.js"></script>
+  <script src="/js/cara.js"></script>
+</body>
+</html>

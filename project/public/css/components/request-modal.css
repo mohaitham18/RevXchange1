@@ -1,0 +1,156 @@
+/* ── Request Modal Overlay ─────────────────────────────────── */
+.req-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.72);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.req-modal {
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  color: #ffffff;
+}
+
+.req-close {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: rgba(255,255,255,.1);
+  border: none;
+  color: #fff;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: .9rem;
+  transition: background .2s;
+}
+.req-close:hover { background: rgba(255,255,255,.22); }
+
+.req-modal h2 {
+  font-size: 1.3rem;
+  margin-bottom: .25rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.req-sub {
+  font-size: .85rem;
+  color: rgba(255,255,255,.6);
+  margin-bottom: 1.5rem;
+}
+
+.req-form-group { margin-bottom: 1rem; }
+
+.req-form-group label {
+  display: block;
+  font-size: .82rem;
+  color: rgba(255,255,255,.85);
+  font-weight: 600;
+  margin-bottom: .4rem;
+}
+
+.req-form-group input,
+.req-form-group textarea {
+  width: 100%;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 8px;
+  padding: .7rem .9rem;
+  color: #ffffff;
+  font-size: .9rem;
+  font-family: 'Segoe UI', sans-serif;
+  transition: border-color .2s, background .2s;
+}
+
+.req-form-group input::placeholder,
+.req-form-group textarea::placeholder {
+  color: rgba(255,255,255,.35);
+}
+
+.req-form-group input:focus,
+.req-form-group textarea:focus {
+  outline: none;
+  border-color: #c0392b;
+  background: rgba(255,255,255,.12);
+}
+
+/* Date inputs */
+.req-form-group input[type="date"] {
+  color-scheme: dark;
+  color: #ffffff;
+}
+
+.req-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+}
+
+/* Chips */
+.req-chips { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .5rem; }
+.req-chip {
+  padding: .45rem 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.8);
+  font-size: .82rem;
+  cursor: pointer;
+  transition: all .2s;
+  font-family: 'Segoe UI', sans-serif;
+}
+.req-chip:hover { border-color: rgba(255,255,255,.4); color: #fff; }
+.req-chip.active {
+  background: rgba(192,57,43,.3);
+  border-color: #c0392b;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Divider between sections */
+.req-divider {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,.08);
+  margin: 1rem 0;
+}
+
+/* Error */
+.req-error {
+  background: rgba(192,57,43,.15);
+  border: 1px solid rgba(192,57,43,.4);
+  color: #ff8a80;
+  border-radius: 8px;
+  padding: .6rem .9rem;
+  font-size: .85rem;
+  margin-bottom: 1rem;
+}
+
+/* Submit */
+.req-submit-btn {
+  width: 100%;
+  padding: .9rem;
+  background: #5a0f1c;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Segoe UI', sans-serif;
+  transition: background .2s, transform .15s;
+  margin-top: .5rem;
+}
+.req-submit-btn:hover { background: #7a1525; transform: translateY(-1px); }
+.req-submit-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
