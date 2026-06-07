@@ -350,11 +350,7 @@ async function loadRequests(type, tbodyId, countId) {
           ? (req.offerPrice ? Number(req.offerPrice).toLocaleString() + ' EGP' : '—')
           : dates}</span>
         <span><span class="status ${cls}">${req.status}</span></span>
-        <span class="actions">
-          ${req.status === 'pending'
-            ? `<button class="approve-btn" data-id="${req._id}" data-action="req-contacted">Contacted</button>` : ''}
-          ${req.status !== 'closed'
-            ? `<button class="reject-btn" data-id="${req._id}" data-action="req-close">Close</button>` : ''}
+       <span class="actions">
           <button class="delete-btn" data-id="${req._id}" data-action="req-delete">Delete</button>
         </span>`;
       tbody.appendChild(row);
@@ -416,25 +412,7 @@ document.addEventListener('click', async function (e) {
       loadStats();
     }
 
-    // Mark request as contacted
-    else if (action === 'req-contacted') {
-      await apiFetch(`/requests/${id}/status`, { method:'PUT', body: JSON.stringify({ status:'contacted' }) });
-      showToast('Marked as contacted ✓');
-      const sec = document.querySelector('.admin-section.active');
-      if (sec?.id === 'section-buy-requests')  loadRequests('buy',  'buyReqTableBody',  'buyReqCount');
-      if (sec?.id === 'section-rent-requests') loadRequests('rent', 'rentReqTableBody', 'rentReqCount');
-    }
-
-    // Close request
-    else if (action === 'req-close') {
-      await apiFetch(`/requests/${id}/status`, { method:'PUT', body: JSON.stringify({ status:'closed' }) });
-      showToast('Request closed');
-      const sec = document.querySelector('.admin-section.active');
-      if (sec?.id === 'section-buy-requests')  loadRequests('buy',  'buyReqTableBody',  'buyReqCount');
-      if (sec?.id === 'section-rent-requests') loadRequests('rent', 'rentReqTableBody', 'rentReqCount');
-    }
-
-    // Delete request
+     // Delete request
     else if (action === 'req-delete') {
       if (!confirm('Delete this request permanently?')) { btn.disabled = false; btn.textContent = orig; return; }
       await apiFetch(`/requests/${id}`, { method:'DELETE' });
