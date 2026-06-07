@@ -420,13 +420,26 @@
             await speak('I\'ll help you find the right mechanic!', 600);
             flowMechanic();
         } else {
-            await speak(
-                `I heard you — but I\'m still learning to understand free text perfectly.<br>
-                Let me show you what I can help with:`,
-                900
-            );
-            addQuickActions();
+      addTyping();
+      try {
+        const res = await fetch('/api/cara/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        removeTyping();
+        if (data.reply) {
+          addBubble(data.reply, 'cara');
+        } else {
+          addBubble('I\'m not sure about that. Let me show you what I can help with:', 'cara');
+          addQuickActions();
         }
+      } catch (err) {
+        removeTyping();
+        addBubble('Sorry, I\'m having trouble connecting. Please try again!', 'cara');
+      }
+    }
     }
 
     sendBtn.addEventListener('click', handleInput);
