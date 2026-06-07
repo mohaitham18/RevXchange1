@@ -456,7 +456,14 @@
     const thumbUrl    = shared.imageUrls?.[0] || null;
 
     return `
-      <div class="feed-share-embed">
+      <div class="feed-share-embed"
+           data-shared-id="${shared._id}"
+           data-shared-title="${(shared.title || '').replace(/"/g,'&quot;')}"
+           data-shared-body="${(shared.body || '').slice(0,500).replace(/"/g,'&quot;')}"
+           data-shared-comm="${commName}"
+           data-shared-logo="${commLogo}"
+           data-shared-thumb="${thumbUrl || ''}"
+           data-shared-author="${shared.author?.name || 'Anonymous'}">
         <div class="feed-share-embed-comm">
           <img class="feed-share-embed-logo"
                src="${commLogo}" alt="${commName}"
@@ -472,6 +479,49 @@
                   src="${thumbUrl}" alt="Post image" loading="lazy">`
           : ''}
         <div class="feed-share-embed-author">by ${shared.author?.name || 'Anonymous'}</div>
+      </div>`;
+  }
+
+  // ── Video card renderer ───────────────────────────────────
+  function renderVideoCard(videoUrl, videoExpiresAt) {
+    // Cloudinary thumbnail — largest dimension capped at 800px, preserves aspect ratio
+    let thumbUrl = null;
+    try {
+      thumbUrl = videoUrl
+        .replace('/video/upload/', '/video/upload/so_0,w_800,h_800,c_limit,q_auto,f_jpg/')
+        .replace(/\.[^.]+$/, '.jpg');
+    } catch (e) {
+      thumbUrl = null;
+    }
+
+    const expiryTag = videoExpiresAt
+      ? `<div class="feed-post-video-expiry">🕐 Expires ${formatExpiry(videoExpiresAt)}</div>`
+      : '';
+
+    const playIcon = `<svg width="28" height="28" viewBox="2.5 0 24 24" fill="none">
+      <path d="M7 4.5C7 3.4 8.2 2.7 9.2 3.3l13 7.5c1 .6 1 2.1 0 2.7l-13 7.5C8.2 21.6 7 20.9 7 19.8V4.5z"
+            fill="#fff"
+            stroke="none"
+            stroke-linejoin="round"/>
+    </svg>`;
+
+    return `
+      <div class="feed-post-video-outer">
+        <div class="feed-post-video-wrap" data-video-url="${videoUrl}">
+          <div class="feed-post-video-thumb">
+            ${thumbUrl
+              ? `<img src="${thumbUrl}"
+                      alt="Video thumbnail"
+                      loading="lazy"
+                      onload="(function(img){var r=img.naturalWidth/img.naturalHeight;var wrap=img.closest('.feed-post-video-wrap');var thumb=img.closest('.feed-post-video-thumb');if(!wrap||!thumb)return;thumb.style.aspectRatio=r;wrap.style.maxWidth=Math.round(460*r)+'px';wrap.style.marginLeft='auto';wrap.style.marginRight='auto';})(this)"
+                      onerror="this.style.display='none';">`
+              : `<div class="feed-post-video-thumb-fallback">
+                   <span style="font-size:2.5rem;">🎥</span>
+                 </div>`}
+            <div class="feed-post-video-play-btn">${playIcon}</div>
+          </div>
+        </div>
+        ${expiryTag}
       </div>`;
   }
 
@@ -496,7 +546,7 @@
       : '';
 
     return `
-      <div class="feed-post" data-id="${post._id}">
+      <div class="feed-post" data-id="${post._id}" data-is-share="${post.isShare ? '1' : '0'}">
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <a class="feed-post-community" href="/communities.html">
@@ -520,24 +570,12 @@
           ? `${post.shareCommentary
               ? `<div class="feed-post-share-commentary"${isRTL(post.shareCommentary) ? ' dir="rtl"' : ''}>${post.shareCommentary}</div>`
               : ''}
-             ${renderShareEmbed(post)}`
+             ${renderShareEmbed(post)}
+             <div class="feed-share-expanded" id="shareExpand_${post._id}"></div>`
           : `${post.title ? `<div class="feed-post-title"${isRTL(post.title) ? ' dir="rtl"' : ''}>${post.title}</div>` : ''}
              ${bodyPreview ? `<div class="feed-post-body"${isRTL(bodyPreview) ? ' dir="rtl"' : ''}>${bodyPreview}</div>` : ''}
              ${renderPostImages(post.imageUrls)}
-             ${post.videoUrl ? `
-               <div class="feed-post-video-wrap">
-                 <video class="feed-post-video"
-                        src="${post.videoUrl}"
-                        controls
-                        preload="metadata"
-                        playsinline>
-                   Your browser does not support video.
-                 </video>
-                 ${post.videoExpiresAt ? `
-                   <div class="feed-post-video-expiry">
-                     🕐 Video expires ${formatTime(post.videoExpiresAt)}
-                   </div>` : ''}
-               </div>` : ''}`}
+             ${post.videoUrl ? renderVideoCard(post.videoUrl, post.videoExpiresAt) : ''}`}
 
         <div class="feed-post-menu-wrap">
           <button class="feed-post-menu-btn"
@@ -722,6 +760,18 @@
     const d = Math.floor(h / 24);
     if (d < 7)  return d + 'd ago';
     return new Date(dateStr).toLocaleDateString();
+  }
+
+  function formatExpiry(dateStr) {
+    if (!dateStr) return '';
+    const ms = new Date(dateStr).getTime() - Date.now();
+    if (ms <= 0) return 'expired';
+    const m = Math.round(ms / 60000);
+    if (m < 60)  return 'in ' + m + 'm';
+    const h = Math.round(m / 60);
+    if (h < 24)  return 'in ' + h + 'h';
+    const d = Math.round(h / 24);
+    return 'in ' + d + 'd';
   }
 
   // ── Post image grid renderer ──────────────────────────────
@@ -977,6 +1027,12 @@
     if (modalTitle)  modalTitle.textContent  = 'Create Post';
     if (submitLabel) submitLabel.textContent = 'Post';
     if (titleInput)  titleInput.removeAttribute('data-editing-post-id');
+    if (titleInput)  titleInput.removeAttribute('data-editing-share');
+
+    // Restore title field visibility
+    const titleField = document.getElementById('feedPostTitle')
+                                ?.closest('.feed-modal-field');
+    if (titleField) titleField.style.display = '';
 
     // Restore community field visibility
     const commField = document.getElementById('feedPostCommunity')
@@ -1048,17 +1104,22 @@
 
     const url    = isEditing ? `/api/posts/${editingId}` : '/api/posts';
     const method = isEditing ? 'PATCH' : 'POST';
+    const isEditingShare = titleInput?.getAttribute('data-editing-share') === '1';
 
     // Build request — edit stays JSON, new post uses FormData for images
     let fetchOptions;
     if (isEditing) {
+      // Share post edit — only send body as shareCommentary
+      const editPayload = isEditingShare
+        ? { shareCommentary: body, title: body || ' ' }
+        : { title, body };
       fetchOptions = {
         method,
         headers: {
           'Content-Type':  'application/json',
           'Authorization': 'Bearer ' + getToken()
         },
-        body: JSON.stringify({ title, body })
+        body: JSON.stringify(editPayload)
       };
     } else {
       const fd = new FormData();
@@ -1113,15 +1174,23 @@
         closePostModal();
 
         if (isEditing) {
-          const postEl = document.querySelector(`.feed-post[data-id="${editingId}"]`);
+          const postEl = document.querySelector(`[data-id="${editingId}"]`);
           if (postEl) {
-            const titleEl  = postEl.querySelector('.feed-post-title');
-            const bodyEl   = postEl.querySelector('.feed-post-body');
+            if (isEditingShare) {
+              // Update commentary text in DOM
+              const commEl = postEl.querySelector('.feed-post-share-commentary');
+              if (commEl) {
+                commEl.textContent = body;
+                commEl.dir = isRTL(body) ? 'rtl' : '';
+              }
+            } else {
+              const titleEl  = postEl.querySelector('.feed-post-title');
+              const bodyEl   = postEl.querySelector('.feed-post-body');
+              if (titleEl) titleEl.textContent = title;
+              if (bodyEl && body) bodyEl.textContent = body;
+            }
+
             const authorEl = postEl.querySelector('.feed-post-author');
-
-            if (titleEl) titleEl.textContent = title;
-            if (bodyEl && body) bodyEl.textContent = body;
-
             if (authorEl && !authorEl.querySelector('.feed-edited-tag')) {
               const tag = document.createElement('span');
               tag.className = 'feed-edited-tag';
@@ -1308,49 +1377,77 @@
   });
 
   function handleEditPost(postId) {
-    const postEl = document.querySelector(`.feed-post[data-id="${postId}"]`);
+    const postEl   = document.querySelector(`[data-id="${postId}"]`);
     if (!postEl) return;
-
-    const titleEl = postEl.querySelector('.feed-post-title');
-    const bodyEl  = postEl.querySelector('.feed-post-body');
+    const isShare  = postEl.dataset.isShare === '1';
+    const titleEl  = postEl.querySelector('.feed-post-title');
+    const bodyEl   = postEl.querySelector('.feed-post-body');
+    const commEl   = postEl.querySelector('.feed-post-share-commentary');
 
     // Open modal
     openPostModal();
 
     setTimeout(() => {
-      // Hide community selector — can't change community when editing
+      // Always hide community + variant — can't change either when editing
       const commField = document.getElementById('feedPostCommunity')?.closest('.feed-modal-field');
       if (commField) commField.style.display = 'none';
-
-      // Hide variant field too
       const variantField = document.getElementById('feedVariantField');
       if (variantField) variantField.style.display = 'none';
 
-      // Pre-fill title
-      const titleInput = document.getElementById('feedPostTitle');
-      if (titleInput && titleEl) {
-        titleInput.value = titleEl.textContent
-          .replace('(edited)', '').trim();
-        // Store the post ID being edited
-        titleInput.setAttribute('data-editing-post-id', postId);
-      }
-
-      // Pre-fill body
-      const bodyInput = document.getElementById('feedPostBody');
-      if (bodyInput && bodyEl) {
-        bodyInput.value = bodyEl.textContent.trim();
-      }
-
-      // Update counters and enable submit
-      updateCounters();
-      const submitBtn = document.getElementById('feedModalSubmit');
-      if (submitBtn) submitBtn.disabled = false;
-
-      // Change modal title and submit label
+      const titleInput  = document.getElementById('feedPostTitle');
+      const bodyInput   = document.getElementById('feedPostBody');
       const modalTitle  = document.querySelector('.feed-modal-title');
       const submitLabel = document.querySelector('.feed-submit-label');
-      if (modalTitle)  modalTitle.textContent  = 'Edit Post';
-      if (submitLabel) submitLabel.textContent = 'Save Changes';
+
+      if (isShare) {
+        // Share post — only edit the commentary
+        // Hide title field entirely — title is not editable on shares
+        const titleField = titleInput?.closest('.feed-modal-field');
+        if (titleField) titleField.style.display = 'none';
+
+        // Change modal title + label
+        if (modalTitle)  modalTitle.textContent  = 'Edit Commentary';
+        if (submitLabel) submitLabel.textContent = 'Save Changes';
+
+        // Pre-fill body with existing commentary
+        if (bodyInput) {
+          const existingCommentary = commEl
+            ? commEl.textContent.trim()
+            : (bodyEl ? bodyEl.textContent.trim() : '');
+          bodyInput.value = existingCommentary;
+          // Store a special flag so submitPost sends the right payload
+          titleInput?.setAttribute('data-editing-post-id', postId);
+          titleInput?.setAttribute('data-editing-share', '1');
+          // Set a placeholder title so submitPost validation passes
+          titleInput.value = existingCommentary || ' ';
+        }
+
+        const submitBtn = document.getElementById('feedModalSubmit');
+        if (submitBtn) submitBtn.disabled = false;
+
+        // Update body counter
+        updateCounters();
+        if (bodyInput) bodyInput.focus();
+
+      } else {
+        // Regular post — normal edit flow
+        if (titleInput && titleEl) {
+          titleInput.value = titleEl.textContent.replace('(edited)', '').trim();
+          titleInput.setAttribute('data-editing-post-id', postId);
+          titleInput.removeAttribute('data-editing-share');
+        }
+
+        if (bodyInput && bodyEl) {
+          bodyInput.value = bodyEl.textContent.trim();
+        }
+
+        updateCounters();
+        const submitBtn = document.getElementById('feedModalSubmit');
+        if (submitBtn) submitBtn.disabled = false;
+
+        if (modalTitle)  modalTitle.textContent  = 'Edit Post';
+        if (submitLabel) submitLabel.textContent = 'Save Changes';
+      }
     }, 80);
   }
 
@@ -1700,6 +1797,12 @@
     const el = e.target;
     if (el.matches('.feed-comment-input, .feed-reply-input')) {
       el.dir = isRTL(el.value) ? 'rtl' : 'ltr';
+      // Arabic characters are taller — ensure enough line height
+      if (el.dir === 'rtl') {
+        el.style.lineHeight = '1.8';
+      } else {
+        el.style.lineHeight = '1.5';
+      }
     }
   });
 
@@ -1952,6 +2055,202 @@
     if (postId) openShareModal(postId, communityId);
   });
 
+  // ── Share embed expand ────────────────────────────────────
+  document.addEventListener('click', async (e) => {
+    // Collapse button
+    const collapseBtn = e.target.closest('.fse-collapse-btn');
+    if (collapseBtn) {
+      e.stopPropagation();
+      const embed = collapseBtn.closest('.feed-share-embed');
+      if (!embed) return;
+      const orig = embed._originalHTML;
+      if (!orig) return;
+      embed.classList.remove('expanded');
+      embed.classList.add('collapsing');
+      setTimeout(() => {
+        embed.classList.remove('collapsing');
+        embed.innerHTML = orig;
+        embed._originalHTML = null;
+      }, 280);
+      return;
+    }
+
+    // Don't fire when clicking inside expanded content
+    if (e.target.closest('.feed-share-embed.expanded')) return;
+
+    const embed = e.target.closest('.feed-share-embed');
+    if (!embed) return;
+    if (embed.classList.contains('feed-share-embed-deleted')) return;
+    if (embed.classList.contains('loading')) return;
+
+    const sharedId = embed.dataset.sharedId;
+    if (!sharedId) return;
+
+    // Store original HTML for collapse
+    embed._originalHTML = embed.innerHTML;
+
+    // Loading state
+    embed.classList.add('loading');
+
+    try {
+      const headers = {};
+      if (getToken()) headers['Authorization'] = 'Bearer ' + getToken();
+      const res  = await fetch(`/api/posts/${sharedId}`, { headers });
+      const data = await res.json();
+
+      embed.classList.remove('loading');
+
+      if (!res.ok || !data.post) {
+        embed._originalHTML = null;
+        return;
+      }
+
+      const orig      = data.post;
+      const community = orig.community;
+      const commName  = community
+        ? (community.isCentral
+            ? 'RevXChange Central'
+            : ((community.brand?.name || '') + ' ' + community.name).trim())
+        : '';
+      const commLogo   = community?.brand?.logoUrl || '';
+      const authorName = orig.author?.name || 'Anonymous';
+      const authorInit = authorName.charAt(0).toUpperCase();
+      const titleDir   = isRTL(orig.title) ? ' dir="rtl"' : '';
+      const bodyDir    = isRTL(orig.body)  ? ' dir="rtl"' : '';
+      const timeAgo    = formatTime(orig.createdAt);
+      const editedTag  = orig.isEdited
+        ? '<span style="font-size:0.7rem;color:var(--text-light)">(edited)</span>' : '';
+
+      embed.classList.add('expanded');
+      embed.innerHTML = `
+        <div class="fse-expanded-header">
+          <div class="fse-comm-label">
+            <img src="${commLogo}" alt="${commName}"
+                 onerror="this.style.opacity='0'">
+            ${commName}
+          </div>
+          <button class="fse-collapse-btn">↑ Collapse</button>
+        </div>
+        <div class="fse-body">
+          <div class="feed-post-header" style="margin-bottom:10px;">
+            <div class="feed-post-avatar">${authorInit}</div>
+            <div>
+              <div class="feed-post-author">${authorName} ${editedTag}</div>
+              <div class="feed-post-time">${timeAgo}</div>
+            </div>
+          </div>
+          ${orig.title
+            ? `<div class="feed-post-title"${titleDir}>${orig.title}</div>`
+            : ''}
+          ${orig.body
+            ? `<div class="feed-post-body"${bodyDir}>${orig.body.slice(0,500)}</div>`
+            : ''}
+          ${renderPostImages(orig.imageUrls)}
+          ${orig.videoUrl
+            ? `<div class="feed-post-video-wrap" style="margin-top:8px;">
+                 <video class="feed-post-video" src="${orig.videoUrl}"
+                        controls preload="metadata" playsinline></video>
+               </div>`
+            : ''}
+          <div class="feed-post-actions">
+            <div class="feed-post-vote">
+              <button class="feed-vote-btn upvote-btn ${orig.userVote === 1 ? 'upvoted' : ''}"
+                      data-id="${orig._id}" data-value="1">
+                ▲ ${formatNum(orig.upvotes)}
+              </button>
+              <div class="feed-vote-divider"></div>
+              <button class="feed-vote-btn downvote-btn ${orig.userVote === -1 ? 'downvoted' : ''}"
+                      data-id="${orig._id}" data-value="-1">
+                ▼ ${formatNum(orig.downvotes)}
+              </button>
+            </div>
+            <button class="feed-post-action-btn fse-comment-btn"
+                    data-postid="${orig._id}">
+              💬 ${formatNum(orig.commentCount)}
+            </button>
+            ${!orig.isShare
+              ? `<button class="feed-post-action-btn feed-share-btn"
+                         data-postid="${orig._id}"
+                         data-communityid="${community?._id || ''}">
+                   ↗ Share
+                 </button>`
+              : ''}
+          </div>
+        </div>
+        <div class="fse-comments-section" id="fseComments_${orig._id}"></div>`;
+
+      // Smooth scroll embed into view
+      setTimeout(() => {
+        embed.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 60);
+
+      // Wire comment button
+      embed.querySelector('.fse-comment-btn')
+        ?.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
+          const section = document.getElementById('fseComments_' + orig._id);
+          if (!section) return;
+
+          if (section.classList.contains('rx-open')) {
+            section.classList.remove('rx-open');
+            setTimeout(() => { section.innerHTML = ''; }, 380);
+            return;
+          }
+
+          section.innerHTML = `
+            <div class="feed-comment-skel" style="margin-bottom:8px;"></div>
+            <div class="feed-comment-skel" style="width:70%;"></div>`;
+
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => section.classList.add('rx-open'));
+          });
+
+          await loadComments(orig._id, section, 'top');
+
+          setTimeout(() => {
+            section.querySelector('.feed-comment-input')?.focus();
+          }, 60);
+        });
+
+    } catch (err) {
+      console.error('Share embed expand error:', err);
+      embed.classList.remove('loading');
+      embed._originalHTML = null;
+    }
+  });
+
+  // ── Video card click → replace thumb with player ──────────
+  document.addEventListener('click', (e) => {
+    const wrap = e.target.closest('.feed-post-video-wrap');
+    if (!wrap) return;
+    if (wrap.querySelector('video')) return;
+
+    const videoUrl   = wrap.dataset.videoUrl;
+    if (!videoUrl) return;
+
+    wrap.style.cursor = 'default';
+    wrap.innerHTML = `
+      <video class="feed-post-video"
+             src="${videoUrl}"
+             controls
+             autoplay
+             preload="auto"
+             playsinline>
+      </video>`;
+
+    // Size from actual video dimensions (handles fallback / onerror case)
+    const video = wrap.querySelector('video');
+    if (video) {
+      video.addEventListener('loadedmetadata', () => {
+        const r = video.videoWidth / video.videoHeight;
+        if (!r) return;
+        wrap.style.maxWidth = Math.round(460 * r) + 'px';
+        wrap.style.marginLeft = 'auto';
+        wrap.style.marginRight = 'auto';
+      });
+    }
+  });
+
   // ── Comments ──────────────────────────────────────────────
 
   // Toggle comments section on 💬 button click
@@ -2034,10 +2333,10 @@
            <div class="feed-comment-compose">
              <div class="feed-comment-compose-avatar">${initial}</div>
              <div class="feed-comment-pill-wrap">
-               <input class="feed-comment-input"
-                      type="text"
-                      placeholder="Write a comment..."
-                      data-postid="${postId}">
+               <textarea class="feed-comment-input"
+                         placeholder="Write a comment..."
+                         data-postid="${postId}"
+                         rows="1"></textarea>
                <button class="feed-comment-camera-btn" type="button"
                        id="commentCameraBtn_${postId}"
                        title="Add photo">${cameraIcon}</button>
@@ -2123,7 +2422,15 @@
     });
 
     if (input && sendBtn) {
-      input.addEventListener('input', updateSendBtn);
+      function autoResizeComment() {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+      }
+
+      input.addEventListener('input', () => {
+        autoResizeComment();
+        sendBtn.disabled = input.value.trim().length === 0 && commentImages.length === 0;
+      });
 
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
@@ -2143,7 +2450,8 @@
         const imagesToSend = [...commentImages];
         const newComment = await postComment(postId, body || ' ', null, imagesToSend);
         if (newComment) {
-          input.value   = '';
+          input.value        = '';
+          input.style.height = '';
           commentImages = [];
           renderCommentPreviews();
 
@@ -2483,9 +2791,9 @@
       <div class="feed-reply-compose">
         <div class="feed-comment-avatar" style="width:24px;height:24px;font-size:0.65rem;flex-shrink:0;">${initial}</div>
         <div class="feed-reply-pill-wrap">
-          <input class="feed-reply-input"
-                 type="text"
-                 placeholder="Write a reply...">
+          <textarea class="feed-reply-input"
+                    placeholder="Write a reply..."
+                    rows="1"></textarea>
           <button class="feed-reply-send-btn" disabled>${sendIcon}</button>
         </div>
       </div>`;
@@ -2495,12 +2803,18 @@
 
     input.focus();
 
+    function autoResizeReply() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+    }
+
     input.addEventListener('input', () => {
+      autoResizeReply();
       submitBtn.disabled = input.value.trim().length === 0;
     });
 
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !submitBtn.disabled) {
+      if (e.key === 'Enter' && !submitBtn.disabled && !e.shiftKey) {
         e.preventDefault();
         submitBtn.click();
       }
@@ -2516,6 +2830,7 @@
 
       const newComment = await postComment(postId, body, commentId);
       if (newComment) {
+        input.style.height = '';
         area.innerHTML = '';
 
         const commentEl = document.querySelector(`[data-comment-id="${commentId}"]`);
