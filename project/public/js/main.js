@@ -111,62 +111,56 @@ const priceBucketMap = {
     above:     'Above 10M'
 };
 
-// ─── Static lookup maps (logo/icon fallbacks) ─────────────────
-const brandImgMap  = {};
-const cityIconMap  = {};
-tabData['Top Brands'].forEach(b => brandImgMap[b.name.toLowerCase()] = b.img);
-tabData['Top Cities'].forEach(c => cityIconMap[c.name.toLowerCase()] = c.icon);
-
-// ─── Fetch real counts and rebuild tabData from DB ────────────
+// ─── Fetch real counts and merge into static tabData ─────────
 async function loadCarStats() {
     try {
         const res  = await fetch('/api/cars/stats');
         const data = await res.json();
 
-        // Brands — only show brands that exist in DB
+        // Update brand counts — keep all static brands
         if (data.brands?.length) {
-            tabData['Top Brands'] = data.brands
-                .filter(b => b._id)
-                .map(b => ({
-                    name:  b._id,
-                    count: b.count.toLocaleString(),
-                    img:   brandImgMap[b._id.toLowerCase()] || '/images/default-brand.png'
-                }));
-        }
-
-        // Cities — only show cities that exist in DB
-        if (data.cities?.length) {
-            tabData['Top Cities'] = data.cities
-                .filter(c => c._id)
-                .map(c => ({
-                    name:  c._id,
-                    count: c.count.toLocaleString(),
-                    icon:  cityIconMap[c._id.toLowerCase()] || '🏙️'
-                }));
-        }
-
-        // Models — only show models that exist in DB (top 16)
-        if (data.models?.length) {
-            tabData['Top Models'] = data.models
-                .filter(m => m._id?.model)
-                .slice(0, 16)
-                .map(m => ({
-                    name:  m._id.model,
-                    brand: m._id.brand,
-                    count: m.count.toLocaleString()
-                }));
-        }
-
-        // Price ranges — only show ranges with at least 1 car
-        if (data.prices?.length) {
-            const priceCountMap = {};
-            data.prices.forEach(p => {
-                const name = priceBucketMap[p._id];
-                if (name) priceCountMap[name] = p.count;
+            const brandMap = {};
+            data.brands.forEach(b => { if (b._id) brandMap[b._id.toLowerCase()] = b.count; });
+            tabData['Top Brands'].forEach(item => {
+                const c = brandMap[item.name.toLowerCase()];
+                item.count = c !== undefined ? c.toLocaleString() : '0';
             });
-            tabData['Price Ranges'] = tabData['Price Ranges']
-                .filter(item => priceCountMap[item.name] > 0)
-                .map(item => ({ ...item, count: priceCountMap[item.name].toLocaleString() }));
+            tabData['Top Brands'].sort((a, b) =>
+                parseInt(b.count.replace(/,/g,'')) - parseInt(a.count.replace(/,/g,'')));
+        }
+
+        // Update city counts — keep all static cities
+        if (data.cities?.length) {
+            const cityMap = {};
+            data.cities.forEach(c => { if (c._id) cityMap[c._id.toLowerCase()] = c.count; });
+            tabData['Top Cities'].forEach(item => {
+                const c = cityMap[item.name.toLowerCase()];
+                item.count = c !== undefined ? c.toLocaleString() : '0';
+            });
+            tabData['Top Cities'].sort((a, b) =>
+                parseInt(b.count.replace(/,/g,'')) - parseInt(a.count.replace(/,/g,'')));
+        }
+
+        // Update model counts — keep all static models
+        if (data.models?.length) {
+            const modelMap = {};
+            data.models.forEach(m => { if (m._id?.model) modelMap[m._id.model.toLowerCase()] = m.count; });
+            tabData['Top Models'].forEach(item => {
+                const c = modelMap[item.name.toLowerCase()];
+                item.count = c !== undefined ? c.toLocaleString() : '0';
+            });
+            tabData['Top Models'].sort((a, b) =>
+                parseInt(b.count.replace(/,/g,'')) - parseInt(a.count.replace(/,/g,'')));
+        }
+
+        // Update price range counts — keep all static ranges
+        if (data.prices?.length) {
+            const priceMap = {};
+            data.prices.forEach(p => { const name = priceBucketMap[p._id]; if (name) priceMap[name] = p.count; });
+            tabData['Price Ranges'].forEach(item => {
+                const c = priceMap[item.name];
+                item.count = c !== undefined ? c.toLocaleString() : '0';
+            });
         }
 
     } catch (err) {
@@ -225,7 +219,8 @@ function renderGrid(tabName) {
 }
 
 function renderChip(label) {
-    return `<button class="search-chip">${label}</button>`;
+    const url = `/used-cars.html?search=${encodeURIComponent(label)}`;
+    return `<button class="search-chip" onclick="window.location.href='${url}'">${label}</button>`;
 }
 
 // ─── Animated Tab Switch ──────────────────────────────────────

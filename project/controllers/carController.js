@@ -50,7 +50,7 @@ const addCar = async (req, res) => {
     const car = await Car.create({
       user: req.user.id,
 
-      brand,
+      brand: (brand || '').trim().replace(/\b\w/g, c => c.toUpperCase()),
       model,
       year,
       price,
@@ -169,7 +169,7 @@ const getCarStats = async (req, res) => {
     const [brands, cities, models, prices] = await Promise.all([
       Car.aggregate([
         { $match: { status: 'active' } },
-        { $group: { _id: '$brand', count: { $sum: 1 } } },
+        { $group: { _id: { $toLower: '$brand' }, displayName: { $first: '$brand' }, count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]),
       Car.aggregate([
@@ -278,6 +278,11 @@ const updateCar = async (req, res) => {
         car[field] = req.body[field];
       }
     });
+
+    // Normalize brand name
+    if (req.body.brand !== undefined) {
+      car.brand = (req.body.brand || '').trim().replace(/\b\w/g, c => c.toUpperCase());
+    }
 
     if (req.body.phone !== undefined) {
       car.phone = normalizePhone(req.body.phone);
