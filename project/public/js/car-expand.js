@@ -79,6 +79,101 @@
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
+  function carHistoryDocsCount(car) {
+    if (typeof car.historyDocsCount === 'number') return car.historyDocsCount;
+    if (Array.isArray(car.historyDocs)) return car.historyDocs.length;
+    return 0;
+  }
+
+  function buildRealHighlights(car) {
+    const items = [];
+
+    if (car.mileage !== undefined) items.push(`${formatKm(car.mileage)} mileage`);
+    if (car.condition) items.push(`${niceText(car.condition)} condition`);
+    if (car.service) items.push(`${car.service} service history`);
+    if (car.engine) items.push(`${car.engine} engine`);
+    if (car.owners) items.push(`${car.owners} owner history`);
+
+    if (car.listingType === 'rent') {
+      if (car.rentPricePerDay) items.push(`${Number(car.rentPricePerDay).toLocaleString()} EGP daily rent`);
+      if (car.rentPricePerMonth) items.push(`${Number(car.rentPricePerMonth).toLocaleString()} EGP monthly rent`);
+      if (car.rentDeposit) items.push(`${Number(car.rentDeposit).toLocaleString()} EGP deposit`);
+    }
+
+    const docsCount = carHistoryDocsCount(car);
+    if (docsCount > 0) items.push(`${docsCount} history document${docsCount === 1 ? '' : 's'} attached`);
+
+    return items.length ? items : ['Seller description available'];
+  }
+
+  function buildRealIncluded(car) {
+    const items = [];
+    const docsCount = carHistoryDocsCount(car);
+
+    if (Array.isArray(car.images) && car.images.length) {
+      items.push(`${car.images.length} listing photo${car.images.length === 1 ? '' : 's'} uploaded`);
+    }
+
+    if (docsCount > 0) {
+      items.push(`${docsCount} service/history document${docsCount === 1 ? '' : 's'} ${car.historyDocsVisibility === 'public' ? 'available to view' : 'attached privately'}`);
+    }
+
+    if (car.body || car.doors || car.seats) {
+      items.push(`${car.body || 'Body'} · ${car.doors || '—'} doors · ${car.seats || '—'} seats`);
+    }
+
+    if (car.drivetrain) items.push(`${car.drivetrain} drivetrain`);
+
+    if (car.listingType === 'rent' && car.rentDeposit) {
+      items.push(`${Number(car.rentDeposit).toLocaleString()} EGP rent deposit`);
+    }
+
+    return items.length ? items : ['Contact seller for included accessories'];
+  }
+
+  function renderHistoryDocs(car) {
+    const count = Number(car.historyDocsCount || 0);
+    const docs = Array.isArray(car.historyDocs) ? car.historyDocs : [];
+
+    if (!count) {
+      return `
+        <div class="rx-doc-summary empty">
+          No service history documents attached.
+        </div>
+      `;
+    }
+
+    const countText = `${count} history document${count === 1 ? '' : 's'} attached`;
+
+    if (car.historyDocsVisibility !== 'public' || docs.length === 0) {
+      return `
+        <div class="rx-doc-summary private">
+          <strong>📄 ${escapeHTML(countText)}</strong>
+          <span>Seller kept these documents private. Ask the seller for access after your request is accepted.</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="rx-doc-summary public">
+        <strong>📄 ${escapeHTML(countText)}</strong>
+        <div class="rx-doc-links">
+          ${docs.map((doc, index) => `
+            <a
+              class="rx-doc-link"
+              href="${escapeHTML(doc.url)}"
+              target="_blank"
+              rel="noopener"
+            >
+              View Document ${index + 1}
+              <span>${escapeHTML(doc.originalName || '')}</span>
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   function normalizeCar(car) {
     const fallbackImg =
       typeof brandImages !== 'undefined' && car.brand
@@ -115,6 +210,10 @@
       engine: car.engine || 'Not specified',
       owners: car.owners || car.owner || 'Not specified',
       service: car.service || 'Not specified',
+      historyDocsVisibility: car.historyDocsVisibility === 'public' ? 'public' : 'private',
+      historyDocs: Array.isArray(car.historyDocs) ? car.historyDocs : [],
+      historyDocsCount: carHistoryDocsCount(car),
+      hasHistoryDocs: carHistoryDocsCount(car) > 0,
 
       phone: String(car.phone || '').replace(/\D/g, ''),
 
@@ -122,18 +221,11 @@
 
       highlights: Array.isArray(car.highlights) && car.highlights.length
         ? car.highlights
-        : [
-            'Seller description available',
-            'Contact seller for inspection details',
-            'Check service history before purchase'
-          ],
+        : buildRealHighlights(car),
 
       included: Array.isArray(car.included) && car.included.length
         ? car.included
-        : [
-            'Documents available from seller',
-            'Contact seller for included accessories'
-          ],
+        : buildRealIncluded(car),
 
       images: Array.isArray(car.images) && car.images.length
         ? car.images
@@ -430,6 +522,12 @@ Seller description: ${car.description || 'No seller description'}
         <div class="rx-info">
           <div class="rx-info-title">${escapeHTML(`${car.brand} ${car.model} ${car.year}`)}</div>
           <div class="rx-info-price">${escapeHTML(displayPrice(car))}</div>
+          ${car.listingType === 'rent' ? `
+            <div class="rx-rent-mini">
+              ${car.rentPricePerMonth ? `<span>Monthly: ${Number(car.rentPricePerMonth).toLocaleString()} EGP</span>` : ''}
+              ${car.rentDeposit ? `<span>Deposit: ${Number(car.rentDeposit).toLocaleString()} EGP</span>` : ''}
+            </div>
+          ` : ''}
 
           <div class="rx-info-pills">
             <span class="rx-pill">📅 ${escapeHTML(car.year)}</span>
@@ -486,6 +584,11 @@ Seller description: ${car.description || 'No seller description'}
             <div class="rx-desc-list">
               ${car.included.map(item => `<div class="rx-desc-list-item">${escapeHTML(item)}</div>`).join('')}
             </div>
+          </div>
+
+          <div class="rx-desc-section">
+            <div class="rx-desc-label">History Documents</div>
+            ${renderHistoryDocs(car)}
           </div>
         </div>
 
@@ -736,7 +839,6 @@ Seller description: ${car.description || 'No seller description'}
     if (e.target.closest('.save-car-btn')) return;
     if (e.target.closest('.car-action-btn')) return;
     if (e.target.closest('.rx-action-btn')) return;
-    if (e.target.closest('.carousel-arrow')) return;
 
     const cardEl = e.target.closest('.car-card-placeholder');
     if (!cardEl) return;
