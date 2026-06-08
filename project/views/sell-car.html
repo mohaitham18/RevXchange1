@@ -236,7 +236,7 @@
 <div class="sell-form-row">
   <div class="sell-form-group">
     <label>Engine</label>
-    <input type="text" id="engineInput" placeholder="e.g., 1.6L Turbo">
+    <input type="text" id="engineInput" maxlength="35" placeholder="e.g., 1.6L Turbo">
   </div>
 
   <div class="sell-form-group">
@@ -258,6 +258,32 @@
       <option value="Partial History">Partial History</option>
       <option value="No History">No History</option>
     </select>
+  </div>
+</div>
+
+<div class="sell-form-row" id="historyDocsRow">
+  <div class="sell-form-group full">
+    <label>Service / History Documents</label>
+
+    <div class="sell-doc-upload" id="historyDocsZone">
+      <div class="sell-doc-icon">📄</div>
+      <div>
+        <strong>Upload service-history documents</strong>
+        <p>PDF, JPG, PNG, or WEBP. Max 5 files, 5MB each.</p>
+        <label for="historyDocumentsInput" class="sell-upload-link">Browse documents</label>
+      </div>
+
+      <input
+        type="file"
+        id="historyDocumentsInput"
+        name="historyDocuments"
+        accept="application/pdf,image/*"
+        multiple
+        style="display:none"
+      >
+    </div>
+
+    <div class="sell-doc-list" id="historyDocsList"></div>
   </div>
 </div>
 
@@ -287,7 +313,7 @@
           <div class="sell-form-group full">
             <label id="priceLabel">Price (EGP)</label>
             <div class="sell-input-suffix">
-              <input type="number" id="carPrice" placeholder="e.g., 850000">
+              <input type="number" id="carPrice" min="1" step="1" placeholder="e.g., 850000">
               <span>EGP</span>
             </div>
           </div>
@@ -296,14 +322,14 @@
           <div class="sell-form-group">
             <label>Monthly Rent (EGP)</label>
             <div class="sell-input-suffix">
-              <input type="number" id="rentPricePerMonth" placeholder="e.g., 35000">
+              <input type="number" id="rentPricePerMonth" min="1" step="1" placeholder="e.g., 35000">
               <span>EGP</span>
             </div>
           </div>
           <div class="sell-form-group">
             <label>Deposit (EGP)</label>
             <div class="sell-input-suffix">
-              <input type="number" id="rentDeposit" placeholder="e.g., 10000">
+              <input type="number" id="rentDeposit" min="0" step="1" placeholder="e.g., 10000">
               <span>EGP</span>
             </div>
           </div>
