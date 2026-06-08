@@ -1,11 +1,4 @@
 const Car = require('../models/Car');
-const cloudinary = require('cloudinary').v2;
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
 
 const normalizePhone = (phone) => {
   const digits = String(phone || '').replace(/\D/g, '');
@@ -23,277 +16,187 @@ const normalizePhone = (phone) => {
   return digits;
 };
 
-const positiveNumber = value => {
+const getUploadedFiles = (req, fieldName) => {
+  if (!req.files) return [];
+
+  if (Array.isArray(req.files)) {
+    return fieldName === 'images' ? req.files : [];
+  }
+
+  return req.files[fieldName] || [];
+};
+
+const mapFileUrl = (file) => file.path || file.secure_url || file.url || '';
+
+const mapHistoryDocument = (file) => ({
+  url: mapFileUrl(file),
+  originalName: file.originalname || '',
+  mimeType: file.mimetype || ''
+});
+
+const isPositiveNumber = (value) => {
   const n = Number(value);
   return Number.isFinite(n) && n > 0;
 };
 
-const numberOrNull = value => {
-  if (value === undefined || value === null || value === '') return null;
+const isNonNegativeNumber = (value) => {
   const n = Number(value);
-  return Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) && n >= 0;
 };
 
-const normalizeVisibility = value => {
-  return value === 'public' ? 'public' : 'private';
-};
+const validateEngineValue = (engine) => {
+  const value = String(engine || '').trim();
 
-const validEngine = value => {
-  const engine = String(value || '').trim();
-
-  if (!engine) return false;
-  if (engine.length < 2 || engine.length > 35) return false;
-  if (!/^[A-Za-z0-9.\-\s]+$/.test(engine)) return false;
-
-  // Accept normal engine specs like 1.6L Turbo, V6 3.0, 2.0 TSI, Electric, Hybrid.
-  return /\d/.test(engine) || /\b(electric|hybrid)\b/i.test(engine);
-};
-
-const parseJsonArray = value => {
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (!value) return [];
-
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
-  } catch {
-    return [];
-  }
-};
-
-const getFiles = (req, field) => {
-  if (!req.files) return [];
-  if (Array.isArray(req.files)) return field === 'images' ? req.files : [];
-  return Array.isArray(req.files[field]) ? req.files[field] : [];
-};
-
-const uploadBufferToCloudinary = (file, folder) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: 'auto',
-        use_filename: true,
-        unique_filename: true
-      },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result);
-      }
-    );
-
-    stream.end(file.buffer);
-  });
-};
-
-const uploadImages = async files => {
-  const uploaded = [];
-
-  for (const file of files) {
-    const result = await uploadBufferToCloudinary(file, 'revxchange/cars');
-    uploaded.push(result.secure_url || result.url);
+  if (!value) {
+    return 'Engine is required.';
   }
 
-  return uploaded.filter(Boolean);
-};
-
-const uploadHistoryDocs = async files => {
-  const uploaded = [];
-
-  for (const file of files) {
-    const result = await uploadBufferToCloudinary(file, 'revxchange/history-docs');
-
-    uploaded.push({
-      url: result.secure_url || result.url,
-      originalName: file.originalname || 'History document',
-      mimeType: file.mimetype || '',
-      size: file.size || 0,
-      resourceType: result.resource_type || 'auto',
-      uploadedAt: new Date()
-    });
+  if (value.length < 2 || value.length > 35) {
+    return 'Engine must be between 2 and 35 characters.';
   }
 
-  return uploaded.filter(doc => doc.url);
+  if (!/^[A-Za-z0-9\s.+\-/]+$/.test(value)) {
+    return 'Engine can only contain letters, numbers, spaces, dot, +, /, or -.';
+  }
+
+  const hasNumber = /\d/.test(value);
+  const isElectricText = /\b(electric|ev|hybrid|motor)\b/i.test(value);
+
+  if (!hasNumber && !isElectricText) {
+    return 'Engine must include a size/code like 1.6L, V6, or Electric Motor.';
+  }
+
+  return '';
 };
 
-const docsAreRequiredForService = service => {
-  const value = String(service || '').toLowerCase();
-  return value.includes('full') || value.includes('partial');
-};
-
-const validateCarPayload = ({ body, imageFiles = [], historyDocFiles = [], existingCar = null, isUpdate = false }) => {
+const validateCarPayload = (body, uploadedHistoryDocuments = [], existingHistoryDocuments = []) => {
   const listingType = body.listingType === 'rent' ? 'rent' : 'sale';
 
-  if (!positiveNumber(body.price)) {
+  const engineError = validateEngineValue(body.engine);
+  if (engineError) return engineError;
+
+  if (!isPositiveNumber(body.price)) {
     return listingType === 'rent'
-      ? 'Enter a valid daily rent in EGP.'
-      : 'Enter a valid price in EGP.';
+      ? 'Daily rent must be a valid number.'
+      : 'Sale price must be a valid number.';
+  }
+
+  if (listingType === 'sale' && Number(body.price) < 10000) {
+    return 'Sale price must be at least 10,000 EGP.';
   }
 
   if (listingType === 'rent') {
-    const dailyRent = body.rentPricePerDay || body.price;
-
-    if (!positiveNumber(dailyRent)) {
-      return 'Enter a valid daily rent in EGP.';
+    if (Number(body.price) < 100) {
+      return 'Daily rent must be at least 100 EGP.';
     }
 
-    if (!positiveNumber(body.rentPricePerMonth)) {
-      return 'Enter a valid monthly rent in EGP.';
+    if (!isPositiveNumber(body.rentPricePerDay)) {
+      return 'Daily rent is required for rent listings.';
     }
 
-    if (!positiveNumber(body.rentDeposit)) {
-      return 'Enter a valid rent deposit in EGP.';
+    if (!isPositiveNumber(body.rentPricePerMonth)) {
+      return 'Monthly rent is required for rent listings.';
     }
 
-    if (Number(body.rentPricePerMonth) <= Number(dailyRent)) {
+    if (Number(body.rentPricePerMonth) < 1000) {
+      return 'Monthly rent must be at least 1,000 EGP.';
+    }
+
+    if (Number(body.rentPricePerMonth) <= Number(body.rentPricePerDay)) {
       return 'Monthly rent must be higher than daily rent.';
     }
+
+    if (body.rentDeposit !== undefined && body.rentDeposit !== '' && !isNonNegativeNumber(body.rentDeposit)) {
+      return 'Rent deposit must be 0 or more.';
+    }
   }
 
-  const engine = body.engine !== undefined
-    ? body.engine
-    : existingCar?.engine;
+  const service = String(body.service || '').trim();
+  const needsDocs = service && service !== 'No History';
 
-  if (!validEngine(engine)) {
-    return 'Enter a valid engine value like 1.6L, 1.6L Turbo, V6 3.0, Electric, or Hybrid.';
+  if (needsDocs && uploadedHistoryDocuments.length === 0 && existingHistoryDocuments.length === 0) {
+    return 'Upload at least one service-history document, or choose No History.';
   }
 
-  const service = body.service !== undefined
-    ? body.service
-    : existingCar?.service;
-
-  const existingDocsCount = Array.isArray(existingCar?.historyDocs)
-    ? existingCar.historyDocs.length
-    : 0;
-
-  const shouldCheckDocs = !isUpdate || body.service !== undefined || historyDocFiles.length > 0;
-
-  if (shouldCheckDocs && docsAreRequiredForService(service) && existingDocsCount + historyDocFiles.length === 0) {
-    return 'Upload at least one service history document for Full History or Partial History.';
-  }
-
-  if (historyDocFiles.length > 5) {
-    return 'You can upload up to 5 history documents only.';
-  }
-
-  if (imageFiles.length > 20) {
-    return 'You can upload up to 20 car images only.';
-  }
-
-  return null;
-};
-
-const serializeCar = (car, options = {}) => {
-  const { owner = false, admin = false } = options;
-  const obj = typeof car.toObject === 'function' ? car.toObject() : { ...car };
-  const docs = Array.isArray(obj.historyDocs) ? obj.historyDocs : [];
-
-  obj.historyDocsCount = docs.length;
-  obj.hasHistoryDocs = docs.length > 0;
-  obj.historyDocsVisibility = normalizeVisibility(obj.historyDocsVisibility);
-
-  if (!owner && !admin && obj.historyDocsVisibility !== 'public') {
-    obj.historyDocs = [];
-  }
-
-  return obj;
-};
-
-const buildCarData = (req, images, historyDocs) => {
-  const {
-    brand,
-    model,
-    year,
-    price,
-    mileage,
-    city,
-    condition,
-    transmission,
-    fuel,
-    color,
-    description,
-    phone,
-    fabrika,
-    body,
-    drivetrain,
-    doors,
-    seats,
-    engine,
-    owners,
-    service,
-    listingType,
-    rentPricePerDay,
-    rentPricePerMonth,
-    rentDeposit,
-    historyDocsVisibility,
-    highlights,
-    included
-  } = req.body;
-
-  const finalListingType = listingType === 'rent' ? 'rent' : 'sale';
-
-  return {
-    user: req.user.id || req.user._id,
-
-    brand: (brand || '').trim().replace(/\b\w/g, c => c.toUpperCase()),
-    model,
-    year: Number(year),
-    price: Number(price),
-    mileage: Number(mileage),
-    city,
-    condition,
-    transmission,
-    fuel,
-    color,
-    description,
-
-    phone: normalizePhone(phone),
-    fabrika: fabrika === true || fabrika === 'true' || fabrika === 'yes',
-
-    body,
-    drivetrain,
-    doors: Number(doors) || 4,
-    seats: Number(seats) || 5,
-    engine: String(engine || '').trim(),
-    owners,
-    service,
-
-    historyDocsVisibility: normalizeVisibility(historyDocsVisibility),
-    historyDocs,
-
-    listingType: finalListingType,
-    rentPricePerDay: finalListingType === 'rent' ? Number(rentPricePerDay || price) : null,
-    rentPricePerMonth: finalListingType === 'rent' ? numberOrNull(rentPricePerMonth) : null,
-    rentDeposit: finalListingType === 'rent' ? numberOrNull(rentDeposit) : null,
-
-    highlights: parseJsonArray(highlights),
-    included: parseJsonArray(included),
-
-    images
-  };
+  return '';
 };
 
 const addCar = async (req, res) => {
   try {
-    const imageFiles = getFiles(req, 'images');
-    const historyDocFiles = getFiles(req, 'historyDocs');
+    console.log('ADD CAR BODY:', req.body);
 
-    const validationError = validateCarPayload({
-      body: req.body,
-      imageFiles,
-      historyDocFiles
-    });
+    const {
+      brand,
+      model,
+      year,
+      price,
+      mileage,
+      city,
+      condition,
+      transmission,
+      fuel,
+      color,
+      description,
+      phone,
+      fabrika,
+      body,
+      drivetrain,
+      doors,
+      seats,
+      engine,
+      owners,
+      service,
+      listingType,
+      rentPricePerDay,
+      rentPricePerMonth,
+      rentDeposit
+    } = req.body;
 
+    const imageFiles = getUploadedFiles(req, 'images');
+    const historyDocumentFiles = getUploadedFiles(req, 'historyDocuments');
+
+    const validationError = validateCarPayload(req.body, historyDocumentFiles);
     if (validationError) {
       return res.status(400).json({ message: validationError });
     }
 
-    const [images, historyDocs] = await Promise.all([
-      uploadImages(imageFiles),
-      uploadHistoryDocs(historyDocFiles)
-    ]);
+    const images = imageFiles.map(mapFileUrl).filter(Boolean);
+    const historyDocuments = historyDocumentFiles.map(mapHistoryDocument).filter(doc => doc.url);
 
-    const car = await Car.create(buildCarData(req, images, historyDocs));
+    const car = await Car.create({
+      user: req.user.id,
+
+      brand: (brand || '').trim().replace(/\b\w/g, c => c.toUpperCase()),
+      model,
+      year,
+      price,
+      mileage,
+      city,
+      condition,
+      transmission,
+      fuel,
+      color,
+      description,
+
+      phone: normalizePhone(phone),
+      fabrika: fabrika === true || fabrika === 'true' || fabrika === 'yes',
+
+      body,
+      drivetrain,
+      doors,
+      seats,
+      engine,
+      owners,
+      service,
+
+      listingType: listingType === 'rent' ? 'rent' : 'sale',
+      rentPricePerDay: rentPricePerDay ? Number(rentPricePerDay) : null,
+      rentPricePerMonth: listingType === 'rent' ? Number(rentPricePerMonth) : null,
+      rentDeposit: listingType === 'rent' && rentDeposit !== '' && rentDeposit !== undefined ? Number(rentDeposit) : null,
+
+      historyDocuments,
+      images
+    });
 
     res.status(201).json({
       message: 'Car listed successfully',
@@ -310,8 +213,8 @@ const addCar = async (req, res) => {
 
 const getMyCars = async (req, res) => {
   try {
-    const cars = await Car.find({ user: req.user.id || req.user._id }).sort({ createdAt: -1 });
-    res.json({ cars: cars.map(car => serializeCar(car, { owner: true })) });
+    const cars = await Car.find({ user: req.user.id }).sort({ createdAt: -1 });
+    res.json({ cars });
   } catch (err) {
     console.error('GET MY CARS ERROR:', err);
     res.status(500).json({
@@ -344,6 +247,7 @@ const getAllCars = async (req, res) => {
       });
     }
 
+    // Text search across brand, model, city
     if (search) {
       const regex = new RegExp(search, 'i');
       andFilters.push({
@@ -351,10 +255,10 @@ const getAllCars = async (req, res) => {
       });
     }
 
-    if (brand) query.brand = new RegExp(`^${brand}$`, 'i');
-    if (city) query.city = new RegExp(`^${city}$`, 'i');
+    if (brand)        query.brand        = new RegExp(`^${brand}$`, 'i');
+    if (city)         query.city         = new RegExp(`^${city}$`, 'i');
     if (transmission) query.transmission = new RegExp(`^${transmission}$`, 'i');
-    if (fuel) query.fuel = new RegExp(`^${fuel}$`, 'i');
+    if (fuel)         query.fuel         = new RegExp(`^${fuel}$`, 'i');
     if (fabrika === 'true') query.fabrika = true;
 
     if (andFilters.length) {
@@ -367,19 +271,21 @@ const getAllCars = async (req, res) => {
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
 
+    // Sort
     const sortMap = {
-      newest: { createdAt: -1 },
-      'price-low': { price: 1 },
-      'price-high': { price: -1 },
-      'year-new': { year: -1 },
-      'mileage-low': { mileage: 1 },
-      'most-viewed': { views: -1 }
+      newest:       { createdAt: -1 },
+      'price-low':  { price:     1  },
+      'price-high': { price:    -1  },
+      'year-new':   { year:     -1  },
+      'mileage-low':{ mileage:   1  },
+      'most-viewed':{ views:    -1  },
     };
-
     const sortObj = sortMap[sort] || { createdAt: -1 };
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 12));
-    const skip = (pageNum - 1) * limitNum;
+
+    // Pagination
+    const pageNum  = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip     = (pageNum - 1) * limitNum;
 
     const [cars, total] = await Promise.all([
       Car.find(query).sort(sortObj).skip(skip).limit(limitNum),
@@ -387,9 +293,9 @@ const getAllCars = async (req, res) => {
     ]);
 
     res.json({
-      cars: cars.map(car => serializeCar(car)),
+      cars,
       total,
-      page: pageNum,
+      page:  pageNum,
       pages: Math.ceil(total / limitNum),
       limit: limitNum
     });
@@ -438,9 +344,8 @@ const getCarFilters = async (req, res) => {
   try {
     const [brands, cities] = await Promise.all([
       Car.distinct('brand', { status: 'active' }),
-      Car.distinct('city', { status: 'active' })
+      Car.distinct('city',  { status: 'active' })
     ]);
-
     res.json({
       brands: brands.filter(Boolean).sort(),
       cities: cities.filter(Boolean).sort()
@@ -460,7 +365,7 @@ const getCarById = async (req, res) => {
       });
     }
 
-    res.json({ car: serializeCar(car) });
+    res.json({ car });
   } catch (err) {
     console.error('GET CAR BY ID ERROR:', err);
     res.status(500).json({
@@ -480,25 +385,10 @@ const updateCar = async (req, res) => {
       });
     }
 
-    if (car.user.toString() !== String(req.user.id || req.user._id)) {
+    if (car.user.toString() !== req.user.id) {
       return res.status(401).json({
         message: 'Not authorized'
       });
-    }
-
-    const imageFiles = getFiles(req, 'images');
-    const historyDocFiles = getFiles(req, 'historyDocs');
-
-    const validationError = validateCarPayload({
-      body: req.body,
-      imageFiles,
-      historyDocFiles,
-      existingCar: car,
-      isUpdate: true
-    });
-
-    if (validationError) {
-      return res.status(400).json({ message: validationError });
     }
 
     const allowedFields = [
@@ -522,12 +412,32 @@ const updateCar = async (req, res) => {
       'engine',
       'owners',
       'service',
-      'historyDocsVisibility',
       'listingType',
       'rentPricePerDay',
       'rentPricePerMonth',
       'rentDeposit'
     ];
+
+    const historyDocumentFiles = getUploadedFiles(req, 'historyDocuments');
+
+    let keptHistoryDocuments = car.historyDocuments || [];
+    if (req.body.keptHistoryDocuments) {
+      try {
+        keptHistoryDocuments = JSON.parse(req.body.keptHistoryDocuments);
+      } catch {
+        keptHistoryDocuments = car.historyDocuments || [];
+      }
+    }
+
+    const validationError = validateCarPayload(
+      { ...car.toObject(), ...req.body },
+      historyDocumentFiles,
+      keptHistoryDocuments
+    );
+
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
+    }
 
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
@@ -535,6 +445,7 @@ const updateCar = async (req, res) => {
       }
     });
 
+    // Normalize brand name
     if (req.body.brand !== undefined) {
       car.brand = (req.body.brand || '').trim().replace(/\b\w/g, c => c.toUpperCase());
     }
@@ -550,24 +461,6 @@ const updateCar = async (req, res) => {
         req.body.fabrika === 'yes';
     }
 
-    if (req.body.historyDocsVisibility !== undefined) {
-      car.historyDocsVisibility = normalizeVisibility(req.body.historyDocsVisibility);
-    }
-
-    if (req.body.listingType !== undefined) {
-      car.listingType = req.body.listingType === 'rent' ? 'rent' : 'sale';
-    }
-
-    if (req.body.rentPricePerDay !== undefined) car.rentPricePerDay = numberOrNull(req.body.rentPricePerDay);
-    if (req.body.rentPricePerMonth !== undefined) car.rentPricePerMonth = numberOrNull(req.body.rentPricePerMonth);
-    if (req.body.rentDeposit !== undefined) car.rentDeposit = numberOrNull(req.body.rentDeposit);
-
-    if (car.listingType !== 'rent') {
-      car.rentPricePerDay = null;
-      car.rentPricePerMonth = null;
-      car.rentDeposit = null;
-    }
-
     let keptImages = car.images || [];
 
     if (req.body.keptImages) {
@@ -578,27 +471,35 @@ const updateCar = async (req, res) => {
       }
     }
 
-    const newImages = await uploadImages(imageFiles);
+    const newImages = getUploadedFiles(req, 'images')
+      .map(mapFileUrl)
+      .filter(Boolean);
+
+    const newHistoryDocuments = getUploadedFiles(req, 'historyDocuments')
+      .map(mapHistoryDocument)
+      .filter(doc => doc.url);
+
     car.images = [...keptImages, ...newImages];
+    car.historyDocuments = [...keptHistoryDocuments, ...newHistoryDocuments];
 
-    let keptHistoryDocs = car.historyDocs || [];
-
-    if (req.body.keptHistoryDocs) {
-      try {
-        keptHistoryDocs = JSON.parse(req.body.keptHistoryDocs);
-      } catch {
-        keptHistoryDocs = car.historyDocs || [];
-      }
+    if (car.listingType !== 'rent') {
+      car.rentPricePerDay = null;
+      car.rentPricePerMonth = null;
+      car.rentDeposit = null;
+    } else {
+      car.rentPricePerDay = Number(car.rentPricePerDay || car.price);
+      car.rentPricePerMonth = Number(car.rentPricePerMonth);
+      car.rentDeposit =
+        car.rentDeposit !== '' && car.rentDeposit !== undefined && car.rentDeposit !== null
+          ? Number(car.rentDeposit)
+          : null;
     }
-
-    const newHistoryDocs = await uploadHistoryDocs(historyDocFiles);
-    car.historyDocs = [...keptHistoryDocs, ...newHistoryDocs].slice(0, 5);
 
     const updated = await car.save();
 
     res.json({
       message: 'Car updated successfully',
-      car: serializeCar(updated, { owner: true })
+      car: updated
     });
   } catch (err) {
     console.error('UPDATE CAR ERROR:', err);
@@ -619,7 +520,7 @@ const deleteCar = async (req, res) => {
       });
     }
 
-    if (car.user.toString() !== String(req.user.id || req.user._id)) {
+    if (car.user.toString() !== req.user.id) {
       return res.status(401).json({
         message: 'Not authorized'
       });
@@ -643,6 +544,7 @@ const incrementViews = async (req, res) => {
   try {
     const carId = req.params.id;
 
+    // Logged-in user — check viewedCars array in DB
     if (req.user) {
       const User = require('../models/User');
       const user = await User.findById(req.user.id);
@@ -651,12 +553,14 @@ const incrementViews = async (req, res) => {
       const alreadyViewed = user.viewedCars.some(id => id.toString() === carId);
       if (alreadyViewed) return res.json({ skipped: true });
 
+      // Add to viewedCars and increment
       await User.findByIdAndUpdate(req.user.id, { $addToSet: { viewedCars: carId } });
       const car = await Car.findByIdAndUpdate(carId, { $inc: { views: 1 } }, { new: true });
       if (!car) return res.status(404).json({ message: 'Car not found' });
       return res.json({ views: car.views });
     }
 
+    // Guest — just increment (localStorage handles dedup on frontend)
     const car = await Car.findByIdAndUpdate(carId, { $inc: { views: 1 } }, { new: true });
     if (!car) return res.status(404).json({ message: 'Car not found' });
     res.json({ views: car.views });
