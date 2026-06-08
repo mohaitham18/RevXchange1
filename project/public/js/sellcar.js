@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   let images = [];
+  let historyDocuments = [];
   let carouselIndex = 0;
 
   const contactProfileInfo = document.getElementById('contactProfileInfo');
@@ -49,6 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const engineInput = document.getElementById('engineInput');
   const ownerSelect = document.getElementById('ownerSelect');
   const serviceSelect = document.getElementById('serviceSelect');
+  const historyDocumentsInput = document.getElementById('historyDocumentsInput');
+  const historyDocsZone = document.getElementById('historyDocsZone');
+  const historyDocsList = document.getElementById('historyDocsList');
 
   const imgInput = document.getElementById('imgInput');
   const imgThumbs = document.getElementById('imgThumbs');
@@ -98,16 +102,25 @@ document.addEventListener('DOMContentLoaded', () => {
       previewTitle.textContent = carInfo?.value.trim() || 'Your Car Title';
     }
 
-    const price = carPrice?.value.trim();
+    const dailyPrice = carPrice?.value.trim();
+    const monthlyPrice = rentPricePerMonth?.value.trim();
 
     if (previewPrice) {
-      if (price) {
+      if (activeListingType === 'rent') {
+        if (dailyPrice && monthlyPrice) {
+          previewPrice.textContent =
+            `${parseInt(dailyPrice, 10).toLocaleString('en-EG')} EGP / day · ${parseInt(monthlyPrice, 10).toLocaleString('en-EG')} EGP / month`;
+        } else if (dailyPrice) {
+          previewPrice.textContent =
+            `${parseInt(dailyPrice, 10).toLocaleString('en-EG')} EGP / day`;
+        } else {
+          previewPrice.textContent = 'Daily and monthly rent not set';
+        }
+      } else if (dailyPrice) {
         previewPrice.textContent =
-          parseInt(price, 10).toLocaleString('en-EG') +
-          (activeListingType === 'rent' ? ' EGP / day' : ' EGP');
+          parseInt(dailyPrice, 10).toLocaleString('en-EG') + ' EGP';
       } else {
-        previewPrice.textContent =
-          activeListingType === 'rent' ? 'Daily rent not set' : 'Price not set';
+        previewPrice.textContent = 'Price not set';
       }
     }
 
@@ -217,7 +230,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       activeListingType = btn.dataset.val === 'rent' ? 'rent' : 'sale';
 
+      if (activeListingType === 'sale') {
+        RXValidation.clearState(rentPricePerMonth);
+        RXValidation.clearState(rentDeposit);
+      }
+
       updateListingTypeUI();
+      validatePrice();
+      validateRentFields();
     });
   });
 
@@ -250,6 +270,100 @@ document.addEventListener('DOMContentLoaded', () => {
   imgInput?.addEventListener('change', () => {
     handleFiles(Array.from(imgInput.files));
     imgInput.value = '';
+  });
+
+  function isAllowedHistoryDocument(file) {
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp'
+    ];
+
+    return allowedTypes.includes(file.type);
+  }
+
+  function handleHistoryDocuments(files) {
+    const accepted = [];
+
+    files.forEach(file => {
+      if (!isAllowedHistoryDocument(file)) return;
+      if (file.size > 5 * 1024 * 1024) return;
+      if (historyDocuments.length + accepted.length >= 5) return;
+
+      accepted.push({
+        file,
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+    });
+
+    historyDocuments = [...historyDocuments, ...accepted];
+    renderHistoryDocuments();
+
+    if (historyDocuments.length > 0 && historyDocumentsInput) {
+      RXValidation.showSuccess(historyDocumentsInput);
+    }
+  }
+
+  function renderHistoryDocuments() {
+    if (!historyDocsList) return;
+
+    if (!historyDocuments.length) {
+      historyDocsList.innerHTML = '';
+      return;
+    }
+
+    historyDocsList.innerHTML = historyDocuments.map((doc, index) => `
+      <div class="sell-doc-item">
+        <span class="sell-doc-file-icon">${doc.type === 'application/pdf' ? '📕' : '🖼️'}</span>
+        <div class="sell-doc-meta">
+          <strong>${doc.name}</strong>
+          <small>${(doc.size / 1024 / 1024).toFixed(2)} MB</small>
+        </div>
+        <button type="button" class="sell-doc-remove" data-index="${index}">✕</button>
+      </div>
+    `).join('');
+
+    historyDocsList.querySelectorAll('.sell-doc-remove').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        historyDocuments.splice(parseInt(btn.dataset.index, 10), 1);
+        renderHistoryDocuments();
+
+        if (historyDocumentsInput) {
+          validateHistoryDocuments();
+        }
+      });
+    });
+  }
+
+  historyDocsZone?.addEventListener('click', e => {
+    if (e.target.closest('.sell-upload-link')) return;
+    historyDocumentsInput?.click();
+  });
+
+  historyDocsZone?.addEventListener('dragover', e => {
+    e.preventDefault();
+    historyDocsZone.classList.add('rx-zone-valid');
+  });
+
+  historyDocsZone?.addEventListener('dragleave', () => {
+    historyDocsZone.classList.remove('rx-zone-valid');
+  });
+
+  historyDocsZone?.addEventListener('drop', e => {
+    e.preventDefault();
+    historyDocsZone.classList.remove('rx-zone-valid');
+    handleHistoryDocuments(Array.from(e.dataTransfer.files));
+  });
+
+  historyDocumentsInput?.addEventListener('change', () => {
+    handleHistoryDocuments(Array.from(historyDocumentsInput.files));
+    historyDocumentsInput.value = '';
   });
 
   function handleFiles(files) {
@@ -386,7 +500,105 @@ document.addEventListener('DOMContentLoaded', () => {
       return false;
     }
 
+    const value = Number(carPrice.value);
+
+    if (activeListingType === 'rent' && value < 100) {
+      RXValidation.showError(carPrice, 'Daily rent must be at least 100 EGP');
+      return false;
+    }
+
+    if (activeListingType === 'sale' && value < 10000) {
+      RXValidation.showError(carPrice, 'Sale price must be at least 10,000 EGP');
+      return false;
+    }
+
     RXValidation.showSuccess(carPrice);
+    return true;
+  }
+
+  function validateRentFields() {
+    if (activeListingType !== 'rent') {
+      RXValidation.clearState(rentPricePerMonth);
+      RXValidation.clearState(rentDeposit);
+      return true;
+    }
+
+    const daily = Number(carPrice?.value || 0);
+    const monthly = Number(rentPricePerMonth?.value || 0);
+    const depositRaw = rentDeposit?.value ?? '';
+
+    if (!RXValidation.validators.positiveNumber(rentPricePerMonth?.value || '')) {
+      RXValidation.showError(rentPricePerMonth, 'Enter a valid monthly rent in EGP');
+      return false;
+    }
+
+    if (monthly < 1000) {
+      RXValidation.showError(rentPricePerMonth, 'Monthly rent must be at least 1,000 EGP');
+      return false;
+    }
+
+    if (daily > 0 && monthly <= daily) {
+      RXValidation.showError(rentPricePerMonth, 'Monthly rent must be higher than daily rent');
+      return false;
+    }
+
+    if (depositRaw !== '' && !RXValidation.validators.nonNegativeNumber(depositRaw)) {
+      RXValidation.showError(rentDeposit, 'Deposit must be 0 or more');
+      return false;
+    }
+
+    RXValidation.showSuccess(rentPricePerMonth);
+
+    if (depositRaw !== '') {
+      RXValidation.showSuccess(rentDeposit);
+    } else {
+      RXValidation.clearState(rentDeposit);
+    }
+
+    return true;
+  }
+
+  function validateEngine() {
+    const value = (engineInput?.value || '').trim();
+
+    if (!value) {
+      RXValidation.showError(engineInput, 'Engine is required, e.g. 1.6L Turbo or Electric Motor');
+      return false;
+    }
+
+    if (value.length < 2 || value.length > 35) {
+      RXValidation.showError(engineInput, 'Engine must be between 2 and 35 characters');
+      return false;
+    }
+
+    if (!/^[A-Za-z0-9\s.+\-/]+$/.test(value)) {
+      RXValidation.showError(engineInput, 'Engine can only contain letters, numbers, spaces, dot, +, /, or -');
+      return false;
+    }
+
+    const hasNumber = /\d/.test(value);
+    const isElectricText = /\b(electric|ev|hybrid|motor)\b/i.test(value);
+
+    if (!hasNumber && !isElectricText) {
+      RXValidation.showError(engineInput, 'Add an engine size like 1.6L, 2.0 Turbo, V6, or Electric Motor');
+      return false;
+    }
+
+    RXValidation.showSuccess(engineInput);
+    return true;
+  }
+
+  function validateHistoryDocuments() {
+    if (!historyDocumentsInput) return true;
+
+    const needsDocs = serviceSelect && serviceSelect.value !== 'No History';
+
+    if (needsDocs && historyDocuments.length === 0) {
+      RXValidation.showError(historyDocumentsInput, 'Upload at least one service-history document, or choose No History');
+      return false;
+    }
+
+    RXValidation.clearState(historyDocumentsInput);
     return true;
   }
 
@@ -435,6 +647,9 @@ document.addEventListener('DOMContentLoaded', () => {
       validateKms(),
       validateCity(),
       validatePrice(),
+      validateRentFields(),
+      validateEngine(),
+      validateHistoryDocuments(),
       validateDesc(),
       validatePhone()
     ].every(Boolean);
@@ -457,10 +672,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   enableDirtyValidation(carInfo, validateCarInfo);
   enableDirtyValidation(kmsDriven, validateKms);
-  enableDirtyValidation(carPrice, validatePrice);
+  enableDirtyValidation(carPrice, () => {
+    validatePrice();
+    validateRentFields();
+  });
+  enableDirtyValidation(rentPricePerMonth, validateRentFields);
+  enableDirtyValidation(rentDeposit, validateRentFields);
+  enableDirtyValidation(engineInput, validateEngine);
   enableDirtyValidation(carDesc, validateDesc);
 
   citySelect?.addEventListener('change', validateCity);
+  serviceSelect?.addEventListener('change', validateHistoryDocuments);
 
   phoneInput?.addEventListener('input', () => {
     const digits = phoneInput.value.replace(/\D/g, '').slice(0, 11);
@@ -572,6 +794,12 @@ document.addEventListener('DOMContentLoaded', () => {
       'Documents available from seller',
       'Contact seller for included accessories'
     ]));
+
+    historyDocuments.forEach(doc => {
+      if (doc.file) {
+        formData.append('historyDocuments', doc.file);
+      }
+    });
 
     images.forEach(img => {
       if (img.file) {

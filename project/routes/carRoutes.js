@@ -25,17 +25,22 @@ router.get('/stats',   carController.getCarStats);
 router.post('/:id/view', optionalAuth, carController.incrementViews);
 router.get('/:id', carController.getCarById);
 
+const carUploadFields = upload.fields([
+  { name: 'images', maxCount: 20 },
+  { name: 'historyDocuments', maxCount: 5 }
+]);
+
 router.post(
   '/',
   protect,
-  upload.array('images', 20),
+  carUploadFields,
   carController.addCar
 );
 
 router.put(
   '/:id',
   protect,
-  upload.array('images', 20),
+  carUploadFields,
   carController.updateCar
 );
 
