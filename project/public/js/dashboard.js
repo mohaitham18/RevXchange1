@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  // ── Helper Utilities ────────────────────────────────────────
   async function safeJson(res) {
     try {
       return await res.json();
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
       : (typeof brandImages !== 'undefined' ? brandImages?.[car.brand] : '') || '';
   }
 
+  // ── User Profile Authentication & Loading ───────────────────
   async function loadUserProfile() {
     try {
       const res = await fetch('/api/auth/profile', {
@@ -76,8 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  loadUserProfile();
-
+  // ── Tab Management ──────────────────────────────────────────
   const tabs = document.querySelectorAll('.dash-tab');
   const panels = document.querySelectorAll('.dash-panel');
 
@@ -99,11 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const params = new URLSearchParams(window.location.search);
   const tabParam = params.get('tab');
-
   if (tabParam) {
     switchTab(tabParam);
   }
 
+  // ── Render Templates ────────────────────────────────────────
   function renderMyAdCard(car) {
     const imgSrc = carImage(car);
 
@@ -141,8 +142,11 @@ document.addEventListener('DOMContentLoaded', () => {
               ${car.brand} ${car.model} ${car.year}
             </div>
 
-            <span class="dash-status ${car.status}">
-              ${String(car.status || 'active').charAt(0).toUpperCase() + String(car.status || 'active').slice(1)}
+            <span class="dash-status ${car.status || 'active'}">
+              ${capitalize(car.status || 'active')}
+              ${car.status === 'rejected' && car.rejectionReason
+                ? `<span class="dash-rejection-reason" title="${car.rejectionReason}">ⓘ Reason: ${car.rejectionReason}</span>`
+                : ''}
             </span>
           </div>
 
@@ -200,8 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
               ${car.brand} ${car.model} ${car.year}
             </div>
 
-            <span class="dash-status ${car.status}">
-              ${String(car.status || 'active').charAt(0).toUpperCase() + String(car.status || 'active').slice(1)}
+            <span class="dash-status ${car.status || 'active'}">
+              ${capitalize(car.status || 'active')}
             </span>
           </div>
 
@@ -228,9 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
+  // ── Core Resource API Data Fetching ─────────────────────────
   async function loadMyAds() {
     const grid = document.getElementById('myAdsGrid');
-
     if (!grid) return;
 
     try {
@@ -262,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
           e.stopPropagation();
 
           const id = btn.dataset.id;
-
           if (!confirm('Remove this listing?')) return;
 
           const r = await fetch('/api/cars/' + encodeURIComponent(id), {
@@ -284,6 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
           e.preventDefault();
           e.stopPropagation();
 
+          // Safely restore single quotes during parsing context
           const car = JSON.parse(btn.dataset.car.replace(/&apos;/g, "'"));
           openEditOverlay(car);
         });
@@ -296,7 +300,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadSavedAds() {
     const grid = document.getElementById('savedAdsGrid');
-
     if (!grid) return;
 
     try {
@@ -346,7 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
           e.stopPropagation();
 
           const carId = btn.dataset.id;
-
           const removeRes = await fetch('/api/auth/save-car/' + encodeURIComponent(carId), {
             method: 'POST',
             headers: {
@@ -363,7 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       console.error('Saved ads error:', err);
-
       grid.innerHTML = `
         <div class="dash-empty">
           <span>⚠️</span>
@@ -373,16 +374,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  //user dashboard 
+  
+
+  // ── Image Carousel Switch Logic ──────────────────────────────
   document.addEventListener('click', function (e) {
     const btn = e.target.closest('.carousel-arrow');
-
     if (!btn) return;
 
     e.preventDefault();
     e.stopPropagation();
 
     const carId = btn.dataset.id;
-
     const card =
       document.querySelector(`.dash-ad-card [data-id="${carId}"].carousel-counter`)?.closest('.dash-ad-img') ||
       document.querySelector(`.dash-ad-img .carousel-arrow[data-id="${carId}"]`)?.closest('.dash-ad-img');
@@ -396,7 +399,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!total) return;
 
     let current = 0;
-
     slides.forEach((slide, i) => {
       if (slide.classList.contains('active')) {
         current = i;
@@ -415,6 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ── Ad Listing Edit Overlay Management ───────────────────────
   let editTransmission = 'automatic';
   let editFuel = 'petrol';
   let editCondition = 'used';
@@ -424,7 +427,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderEditThumbs() {
     const thumbs = document.getElementById('editImgThumbs');
-
     if (!thumbs) return;
 
     thumbs.innerHTML = editImages.map((img, i) => `
@@ -441,7 +443,6 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
 
         editImages.splice(parseInt(btn.dataset.index), 1);
-
         renderEditThumbs();
         updateEditPreview();
       });
@@ -509,31 +510,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (citySelect) citySelect.value = car.city || '';
 
     editCondition = car.condition || 'used';
-
     document.querySelectorAll('#editConditionToggle button').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.val === editCondition);
     });
 
     editTransmission = car.transmission || 'automatic';
-
     document.querySelectorAll('#editTransmissionChips .sell-chip').forEach(chip => {
       chip.classList.toggle('active', chip.dataset.val === editTransmission);
     });
 
     editFuel = car.fuel || 'petrol';
-
     document.querySelectorAll('#editFuelChips .sell-chip').forEach(chip => {
       chip.classList.toggle('active', chip.dataset.val === editFuel);
     });
 
     editColor = (car.color || 'white').toLowerCase();
-
     document.querySelectorAll('#editColorPicker .sell-color-item').forEach(item => {
       item.classList.toggle('active', item.dataset.color === editColor);
     });
 
     editFabrika = car.fabrika || false;
-
     document.querySelectorAll('#editFabrikaChips .sell-chip').forEach(chip => {
       chip.classList.toggle('active', chip.dataset.val === String(editFabrika));
     });
@@ -541,7 +537,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateEditPreview();
 
     const overlay = document.getElementById('editOverlay');
-
     if (overlay) {
       overlay.style.display = 'block';
       document.body.style.overflow = 'hidden';
@@ -550,7 +545,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeEditOverlay() {
     const overlay = document.getElementById('editOverlay');
-
     if (overlay) {
       overlay.style.display = 'none';
       document.body.style.overflow = '';
@@ -578,7 +572,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editPreviewFuel) editPreviewFuel.textContent = editFuel;
 
     const fabrikaTag = document.getElementById('editPreviewFabrika');
-
     if (fabrikaTag) {
       fabrikaTag.style.display = editFabrika ? 'inline-block' : 'none';
     }
@@ -589,7 +582,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (previewImg && placeholder) {
       if (editImages.length > 0) {
         placeholder.style.display = 'none';
-
         let existing = previewImg.querySelector('.edit-preview-cover');
 
         if (!existing) {
@@ -598,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
           existing.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;inset:0;';
           previewImg.appendChild(existing);
         }
-
         existing.src = editImages[0].url;
       } else {
         placeholder.style.display = 'flex';
@@ -661,14 +652,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('editSaveBtn')?.addEventListener('click', async () => {
     const id = document.getElementById('editCarId').value;
-
     const infoVal = document.getElementById('editCarInfo').value.trim().split(/\s+/);
     const brand = (infoVal[0] || '').replace(/,/g, '');
     const model = (infoVal[1] || '').replace(/,/g, '');
     const year = parseInt(infoVal[infoVal.length - 1]) || new Date().getFullYear();
 
     const body = new FormData();
-
     body.append('brand', brand);
     body.append('model', model);
     body.append('year', year);
@@ -682,17 +671,12 @@ document.addEventListener('DOMContentLoaded', () => {
     body.append('fabrika', editFabrika);
     body.append('description', document.getElementById('editCarDesc').value.trim());
 
-    const keptImages = editImages
-      .filter(img => !img.isNew)
-      .map(img => img.url);
-
+    const keptImages = editImages.filter(img => !img.isNew).map(img => img.url);
     body.append('keptImages', JSON.stringify(keptImages));
 
-    editImages
-      .filter(img => img.isNew && img.file)
-      .forEach(img => {
-        body.append('images', img.file);
-      });
+    editImages.filter(img => img.isNew && img.file).forEach(img => {
+      body.append('images', img.file);
+    });
 
     try {
       const res = await fetch('/api/cars/' + encodeURIComponent(id), {
@@ -713,13 +697,33 @@ document.addEventListener('DOMContentLoaded', () => {
       closeEditOverlay();
       showToast('Listing updated ✓');
       loadMyAds();
-
     } catch (err) {
       console.error('Update listing error:', err);
       showToast('Something went wrong');
     }
   });
 
+  // ── Mock Community Posts Engine ─────────────────────────────
+  const myPosts = [
+    {
+      id: 1,
+      community: 'Toyota Corolla',
+      text: 'Anyone know a reliable mechanic in Cairo for a Corolla 2019? AC compressor is making a grinding noise.',
+      time: '2h ago',
+      likes: 24,
+      comments: 8
+    },
+    {
+      id: 2,
+      community: 'Kia Sportage',
+      text: 'Comparing the 2023 Sportage vs MG RX5 for a family car. Which holds better resale value in Egypt long term?',
+      time: '1d ago',
+      likes: 41,
+      comments: 15
+    }
+  ];
+
+  function renderMyPosts() {
   // ── My Posts helpers ──────────────────────────────────────
 
   function dpFormatTime(dateStr) {
@@ -1133,6 +1137,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    list.innerHTML = myPosts.map(post => `
+      <div class="dash-post-card">
+        <div class="dash-post-community">${post.community}</div>
+        <p class="dash-post-text">${post.text}</p>
+        <div class="dash-post-footer">
+          <div class="dash-post-stats">
+            <span>▲ ${post.likes}</span>
+            <span>💬 ${post.comments}</span>
+            <span>${post.time}</span>
+          </div>
+          <button class="dash-post-delete">Delete</button>
     document.getElementById('dashCommentsOverlay')?.remove();
 
     const overlay = document.createElement('div');
@@ -1332,8 +1347,8 @@ document.addEventListener('DOMContentLoaded', () => {
       ${repliesHtml}`;
   }
 
+  // ── Profile Settings Actions ────────────────────────────────
   const saveBtn = document.getElementById('saveProfileBtn');
-
   if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
       const name = document.getElementById('settingName').value.trim();
@@ -1348,10 +1363,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({
-            name,
-            email
-          })
+          body: JSON.stringify({ name, email })
         });
 
         const data = await safeJson(res);
@@ -1382,7 +1394,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const updatePasswordBtn = document.getElementById('updatePasswordBtn');
-
   if (updatePasswordBtn) {
     updatePasswordBtn.addEventListener('click', async () => {
       const currentPassword = document.getElementById('currentPassword').value.trim();
@@ -1411,10 +1422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({
-            currentPassword,
-            newPassword
-          })
+          body: JSON.stringify({ currentPassword, newPassword })
         });
 
         const data = await safeJson(res);
@@ -1443,105 +1451,185 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-// ── Load Incoming Requests ─────────────────────────────────
-    async function loadIncomingRequests() {
-        const list = document.getElementById('incomingRequestsList');
-        if (!list) return;
+  // ── Incoming Requests Engine ──────────────────────────────
+ async function loadIncomingRequests() {
+  const list = document.getElementById('incomingRequestsList');
+  if (!list) return;
 
-        try {
-            const res = await fetch('/api/requests/incoming', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            const requests = data.requests || [];
+  try {
+    const res  = await fetch('/api/requests/incoming', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    const requests = data.requests || [];
 
-            if (requests.length === 0) {
-                list.innerHTML = `<div class="dash-empty">
-                    <span>📬</span>
-                    <p>No incoming requests yet.</p>
-                </div>`;
-                return;
-            }
-
-            // Update badge
-            const pending = requests.filter(r => r.status === 'pending').length;
-            const badge = document.getElementById('requestsBadge');
-            if (badge && pending > 0) {
-                badge.textContent = pending;
-                badge.style.display = 'inline-flex';
-            }
-
-            list.innerHTML = requests.map(req => `
-                <div class="dash-request-card" data-id="${req._id}">
-                    <div class="dash-request-top">
-                        <div>
-                            <div class="dash-request-car">${req.car ? req.car.brand + ' ' + req.car.model + ' ' + req.car.year : 'Unknown Car'}</div>
-                            <div class="dash-request-type">${req.type === 'rent' ? '🔑 Rent Request' : '🛒 Buy Request'}</div>
-                        </div>
-                        <span class="dash-request-status ${req.status}">${req.status.charAt(0).toUpperCase() + req.status.slice(1)}</span>
-                    </div>
-                    <div class="dash-request-info">
-                        <span>👤 ${req.name}</span>
-                        <span>📞 ${req.phone}</span>
-                        <span>📱 ${req.contact === 'whatsapp' ? 'WhatsApp' : 'Call'}</span>
-                        ${req.rentFrom ? `<span>📅 ${new Date(req.rentFrom).toLocaleDateString()} → ${new Date(req.rentTo).toLocaleDateString()}</span>` : ''}
-                        ${req.offerPrice ? `<span>💰 ${req.offerPrice.toLocaleString()} EGP</span>` : ''}
-                    </div>
-                    ${req.message ? `<div class="dash-request-message">"${req.message}"</div>` : ''}
-                    ${req.status === 'pending' ? `
-                    <div class="dash-request-actions">
-                        <button class="dash-req-btn accept" data-id="${req._id}">✓ Accept</button>
-                        <button class="dash-req-btn reject" data-id="${req._id}">✕ Reject</button>
-                    </div>` : ''}
-                </div>
-            `).join('');
-
-            // Accept / Reject buttons
-            list.querySelectorAll('.dash-req-btn.accept').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    await updateRequestStatus(btn.dataset.id, 'accepted');
-                    loadIncomingRequests();
-                });
-            });
-
-            list.querySelectorAll('.dash-req-btn.reject').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    await updateRequestStatus(btn.dataset.id, 'rejected');
-                    loadIncomingRequests();
-                });
-            });
-
-        } catch (err) {
-            console.error('Load incoming requests error:', err);
-        }
+    // Update badge count
+    const pendingCount = requests.filter(r =>
+      (r.ownerStatus || r.status) === 'pending'
+    ).length;
+    const badge = document.getElementById('requestsBadge');
+    if (badge) {
+      badge.textContent    = pendingCount;
+      badge.style.display  = pendingCount > 0 ? 'inline-flex' : 'none';
     }
 
-    async function updateRequestStatus(id, status) {
-        try {
-            await fetch(`/api/requests/${id}/owner-status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ status })
-            });
-        } catch (err) {
-            console.error('Update request status error:', err);
-        }
-    }
-
-// ── Render: Saved Ads (placeholder) ───────────────────────
-    function renderSavedAds() {
-        const grid = document.getElementById('savedAdsGrid');
-        if (!grid) return;
-        grid.innerHTML = `<div class="dash-empty">
-            <span>🔖</span>
-            <p>You haven't saved any cars yet.</p>
-            <a href="/used-cars.html">Browse Cars</a>
+    if (!requests.length) {
+      list.innerHTML = `
+        <div class="dash-empty">
+          <span>📬</span>
+          <p>No incoming requests yet.</p>
         </div>`;
+      return;
     }
 
+    list.innerHTML = requests.map(req => {
+      const status = req.ownerStatus || req.status || 'pending';
+
+      // Status badge style
+      const badgeStyles = {
+        pending:  'background:#fef3c7;color:#d97706;border:1px solid #fcd34d',
+        accepted: 'background:#d1fae5;color:#065f46;border:1px solid #a7f3d0',
+        rejected: 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5'
+      };
+      const badgeLabels = {
+        pending:  'Pending',
+        accepted: 'Accepted ✓',
+        rejected: 'Rejected ✕'
+      };
+      const badgeStyle = badgeStyles[status] || badgeStyles.pending;
+      const badgeLabel = badgeLabels[status] || 'Pending';
+
+      // Type label
+      const typeLabel = req.type === 'rent'
+        ? '🔑 Rent Request'
+        : req.type === 'appointment'
+          ? '📅 Appointment Request'
+          : '🛒 Buy Request';
+
+      // Extra info
+      const dateInfo = req.rentFrom
+        ? `📅 ${new Date(req.rentFrom).toLocaleDateString()} → ${new Date(req.rentTo).toLocaleDateString()}`
+        : req.appointmentDate
+          ? `📅 Visit: ${new Date(req.appointmentDate).toLocaleDateString()}`
+          : '';
+
+      const offerInfo = req.offerPrice
+        ? `💰 Offer: ${Number(req.offerPrice).toLocaleString()} EGP`
+        : '';
+
+      return `
+        <div class="dash-request-card" data-id="${req._id}">
+          <div class="dash-request-top">
+            <div>
+              <div class="dash-request-car">
+                ${req.car ? `${req.car.brand} ${req.car.model} ${req.car.year}` : 'Unknown Car'}
+              </div>
+              <div class="dash-request-type">${typeLabel}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="dash-request-status"
+                style="padding:4px 12px;border-radius:20px;font-size:.82rem;font-weight:600;${badgeStyle}">
+                ${badgeLabel}
+              </span>
+              ${status !== 'pending' ? `
+                <button class="dash-req-edit" data-id="${req._id}"
+                  style="padding:4px 10px;font-size:.78rem;background:#f3f4f6;border:1px solid #d1d5db;
+                         color:#374151;border-radius:6px;cursor:pointer">
+                  ✏️ Edit
+                </button>` : ''}
+            </div>
+          </div>
+
+          <div class="dash-request-info">
+            <span>👤 ${req.name}</span>
+            <span>📞 ${req.phone}</span>
+            <span>${req.contact === 'whatsapp' ? '💬 WhatsApp' : '📞 Call'}</span>
+            ${dateInfo  ? `<span>${dateInfo}</span>`  : ''}
+            ${offerInfo ? `<span>${offerInfo}</span>` : ''}
+          </div>
+
+          ${req.message
+            ? `<div class="dash-request-message">"${req.message}"</div>`
+            : ''}
+
+          <div class="dash-request-actions">
+            ${status === 'pending' ? `
+              <button class="dash-req-btn accept" data-id="${req._id}">✓ Accept</button>
+              <button class="dash-req-btn reject" data-id="${req._id}">✕ Reject</button>
+            ` : `
+              <span style="font-size:.85rem;color:#9ca3af;font-style:italic">
+                ${status === 'accepted'
+                  ? '✅ You accepted this request — buyer will contact you.'
+                  : '❌ You rejected this request.'}
+              </span>
+            `}
+          </div>
+        </div>`;
+    }).join('');
+
+    // Accept buttons
+    list.querySelectorAll('.dash-req-btn.accept').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled    = true;
+        btn.textContent = '…';
+        await updateRequestStatus(btn.dataset.id, 'accepted');
+        showToast('Request accepted ✓');
+        loadIncomingRequests();
+      });
+    });
+
+    // Reject buttons
+    list.querySelectorAll('.dash-req-btn.reject').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled    = true;
+        btn.textContent = '…';
+        await updateRequestStatus(btn.dataset.id, 'rejected');
+        showToast('Request rejected');
+        loadIncomingRequests();
+      });
+    });
+
+    // Edit (reset to pending) buttons
+    list.querySelectorAll('.dash-req-edit').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled    = true;
+        btn.textContent = '…';
+        await updateRequestStatus(btn.dataset.id, 'pending');
+        showToast('Reset to pending — you can accept or reject again');
+        loadIncomingRequests();
+      });
+    });
+
+  } catch (err) {
+    console.error('Load incoming requests error:', err);
+    list.innerHTML = `
+      <div class="dash-empty">
+        <span>⚠️</span>
+        <p>Could not load requests.</p>
+      </div>`;
+  }
+}
+async function updateRequestStatus(id, status) {
+  const res = await fetch(`/api/requests/${id}/owner-status`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Update failed');
+  }
+  return res.json();
+}
+  // ── Kickoff Initializers ────────────────────────────────────
+  loadUserProfile();
+  loadMyAds();
+  loadSavedAds();
+  loadIncomingRequests();
+  renderMyPosts();
     // ── Init ───────────────────────────────────────────────────
     loadMyAds();
     renderSavedAds();
