@@ -72,6 +72,10 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+  /* Reserve enough height for a full page of 16 cards so
+     the pagination bar never shifts between pages. */
+  min-height: 920px;
+  align-content: start;
 }
 
 /* ── Regular community card ─────────────────────────────────── */
@@ -613,4 +617,387 @@
 .comm-leave-yes:hover {
   background: rgba(239,68,68,0.12);
   border-color: #dc2626;
+}
+
+/* ── Pagination (Google-style) ──────────────────────────────── */
+.comm-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 28px;
+  padding: 4px 0 12px;
+  /* Fixed height always reserved — prevents page-shift on last page */
+  min-height: 60px;
+}
+
+/* Numbered page buttons */
+.comm-pg-num {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 6px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  background: #fff;
+  color: #444;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  flex-shrink: 0;
+}
+
+.comm-pg-num:hover {
+  border-color: #5a0f1c;
+  color: #5a0f1c;
+  background: rgba(90,15,28,0.05);
+}
+
+.comm-pg-num.comm-pg-active {
+  background: #5a0f1c;
+  border-color: #5a0f1c;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(90,15,28,0.28);
+}
+
+.comm-pg-num.comm-pg-active:hover {
+  background: #3e0a13;
+  border-color: #3e0a13;
+}
+
+/* Arrow / edge navigation buttons */
+.comm-pg-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  background: #fff;
+  color: #555;
+  font-size: 17px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.comm-pg-btn:hover:not(:disabled) {
+  border-color: #5a0f1c;
+  color: #5a0f1c;
+  background: rgba(90,15,28,0.05);
+}
+
+.comm-pg-btn:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+}
+
+/* Add slight extra gap between edge «/» and the arrows ‹/› */
+.comm-pg-edge { margin: 0 3px; }
+
+/* Non-interactive ellipsis */
+.comm-pg-dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 38px;
+  color: #bbb;
+  font-size: 13px;
+  font-family: 'Segoe UI', sans-serif;
+  letter-spacing: 1px;
+  cursor: default;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* Row holding the numbered buttons */
+.comm-pg-nums {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+/* ── Suggest a Community sidebar box ───────────────────────── */
+.comm-suggest-box {
+  margin-top: 20px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+  border: 1.5px dashed rgba(90,15,28,0.18);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.comm-suggest-box-icon {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: #5a0f1c;
+}
+
+.comm-suggest-box-text {
+  font-size: 0.88rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.comm-suggest-box-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1.5px solid #5a0f1c;
+  background: transparent;
+  color: #5a0f1c;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.comm-suggest-box-btn:hover {
+  background: #5a0f1c;
+  color: #fff;
+}
+
+/* ── Suggest a Community modal ──────────────────────────────── */
+.comm-suggest-modal {
+  max-width: 480px;
+  text-align: left;
+  position: relative;
+  padding: 40px 36px 32px;
+}
+
+.comm-suggest-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.06);
+  color: var(--text-light);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.comm-suggest-close:hover {
+  background: rgba(90,15,28,0.1);
+  color: #5a0f1c;
+}
+
+.comm-suggest-modal .comm-leave-title {
+  text-align: left;
+}
+
+.comm-suggest-modal .comm-leave-desc {
+  text-align: left;
+}
+
+.comm-suggest-modal .comm-leave-icon {
+  text-align: left;
+}
+
+.comm-suggest-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comm-suggest-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.comm-suggest-row {
+  display: flex;
+  gap: 12px;
+}
+
+.comm-suggest-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.comm-suggest-req {
+  color: #5a0f1c;
+}
+
+.comm-suggest-select,
+.comm-suggest-input {
+  padding: 10px 14px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f9f9fb;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.comm-suggest-select:focus,
+.comm-suggest-input:focus {
+  border-color: #5a0f1c;
+  box-shadow: 0 0 0 3px rgba(90,15,28,0.08);
+  background: #fff;
+}
+
+.comm-suggest-textarea {
+  padding: 10px 14px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f9f9fb;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.comm-suggest-textarea:focus {
+  border-color: #5a0f1c;
+  box-shadow: 0 0 0 3px rgba(90,15,28,0.08);
+  background: #fff;
+}
+
+.comm-suggest-counter {
+  font-size: 0.72rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  text-align: right;
+  margin-top: -4px;
+}
+
+/* Step 2 — hidden by default, revealed with transition */
+.comm-suggest-step2 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+
+.comm-suggest-step2.comm-suggest-step2-visible {
+  max-height: 600px;
+  opacity: 1;
+}
+
+.comm-suggest-guest-note {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-family: 'Segoe UI', sans-serif;
+  background: rgba(90,15,28,0.04);
+  border-left: 3px solid rgba(90,15,28,0.3);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  margin: 0;
+}
+
+.comm-suggest-guest-note a {
+  color: #5a0f1c;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.comm-suggest-guest-note a:hover {
+  text-decoration: underline;
+}
+
+.comm-suggest-error {
+  font-size: 0.85rem;
+  color: #dc2626;
+  font-family: 'Segoe UI', sans-serif;
+  background: rgba(239,68,68,0.06);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.comm-suggest-submit {
+  width: 100%;
+  padding: 13px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #5a0f1c, #3e0a13);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.comm-suggest-submit:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.comm-suggest-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.comm-suggest-spinner {
+  display: inline-flex;
+  align-items: center;
+}
+
+@keyframes commSuggestSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Success state */
+.comm-suggest-success {
+  text-align: center;
+  padding: 16px 0 8px;
+}
+
+.comm-suggest-success-icon {
+  font-size: 2.4rem;
+  color: #16a34a;
+  margin-bottom: 12px;
+  font-weight: 800;
+}
+
+.comm-suggest-success p {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  line-height: 1.5;
 }

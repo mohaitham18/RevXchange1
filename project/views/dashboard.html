@@ -133,12 +133,21 @@
                 <div class="dash-ads-grid" id="savedAdsGrid"></div>
             </div>
             
-            <div class="dash-panel" id="tab-requests">
-                <div class="dash-panel-header">
-                    <h2>Incoming Requests</h2>
-                </div>
-                <div class="dash-requests-list" id="incomingRequestsList"></div>
-            </div>
+<div class="dash-panel" id="tab-requests">
+    <div class="dash-panel-header">
+        <h2>Requests</h2>
+    </div>
+
+    <div class="dash-request-section">
+        <h3 class="dash-request-section-title">Requests I Sent</h3>
+        <div class="dash-requests-list" id="mySentRequestsList"></div>
+    </div>
+
+    <div class="dash-request-section">
+        <h3 class="dash-request-section-title">Incoming Requests</h3>
+        <div class="dash-requests-list" id="incomingRequestsList"></div>
+    </div>
+</div>
 
             <div class="dash-panel" id="tab-posts">
                 <div class="dash-panel-header">
@@ -422,86 +431,7 @@ function googleTranslateElementInit() {
     <script src="/js/cara.js"></script>
     <script src="/js/dashboard.js"></script>
 
-    <script>
-      // ── PASTE THIS INSIDE YOUR ADMIN HTML SCRIPT TAG ──────────────────────────
 
-// Global variable tracker to remember which car we are dealing with while the popup is open
-let currentCarIdForRejection = null;
-
-const rejectionModal = document.getElementById('rejectionModal');
-const rejectionInput = document.getElementById('rejectionReasonInput');
-const submitRejectionBtn = document.getElementById('confirmRejectionSubmitBtn');
-
-// 1. CALL THIS FUNCTION when the admin clicks the initial "Reject" button in your table/cards row
-function openRejectionModal(carId) {
-  currentCarIdForRejection = carId;
-  rejectionInput.value = ''; // Reset input text field block completely
-  submitRejectionBtn.disabled = true; // Disable button until they type something
-  rejectionModal.style.display = 'flex'; // Show modal layout interface container
-}
-
-// 2. Enable submit button dynamically ONLY if text exists inside the field
-rejectionInput.addEventListener('input', () => {
-  submitRejectionBtn.disabled = rejectionInput.value.trim().length === 0;
-});
-
-// 3. Modal closing handlers
-document.getElementById('cancelRejectionBtn').addEventListener('click', closeRejectionModal);
-function closeRejectionModal() {
-  rejectionModal.style.display = 'none';
-  currentCarIdForRejection = null;
-}
-
-// 4. Submit Form data payload to your API endpoint
-submitRejectionBtn.addEventListener('click', async () => {
-  if (!currentCarIdForRejection) return;
-  
-  const reasonText = rejectionInput.value.trim();
-
-  try {
-    const response = await fetch(`/api/admin/cars/${currentCarIdForRejection}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}` 
-      },
-      body: JSON.stringify({
-        status: 'rejected',
-        rejectionReason: reasonText
-      })
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      alert('Listing rejection completed successfully.');
-      closeRejectionModal();
-      window.location.reload(); // Refresh the list UI grid tracking element map
-    } else {
-      alert(data.message || 'An error occurred while updating status validation indexes.');
-    }
-  } catch (err) {
-    console.error('Rejection submission error:', err);
-    alert('Critical interface communications execution error.');
-  }
-  // ── Inside your dynamic request rendering loop ──
-const cls = { pending: 'pending', contacted: 'approved', closed: 'rejected' }[req.status] || 'pending';
-const statusText = { pending: 'Pending', contacted: 'Accepted', closed: 'Rejected' }[req.status] || 'Pending';
-
-let actionButtons = '';
-if (req.status === 'pending') {
-  actionButtons = `
-    <button class="approve-btn" onclick="handleOwnerStatusUpdate('${req._id}', 'contacted')">✓ Accept</button>
-    <button class="reject-btn" onclick="handleOwnerStatusUpdate('${req._id}', 'closed')">✕ Reject</button>
-  `;
-} else {
-  actionButtons = `<span class="status ${cls}">${statusText}</span>`;
-}
-
-// ── Inside your card innerHTML template literal, replace your old buttons with:
-// ${actionButtons}
-});
-    </script>
  
 </body>
 </html>

@@ -1329,6 +1329,67 @@
 .dash-edit-save:hover:not(:disabled) { opacity: 0.88; }
 .dash-edit-save:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* ── Edit Modal Media Previews ─────────────────────────────── */
+.dash-edit-media-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.dash-edit-media-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  flex-shrink: 0;
+  animation: dashEditPreviewIn 0.2s ease;
+}
+
+@keyframes dashEditPreviewIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.dash-edit-media-item img,
+.dash-edit-media-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dash-edit-media-item.dash-edit-video-item {
+  width: 140px;
+  height: 80px;
+  background: #000;
+}
+
+.dash-edit-media-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s ease;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.dash-edit-media-remove:hover { background: rgba(220,38,38,0.88); }
+.dash-edit-media-remove:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ── Comments Modal ─────────────────────────────────────────── */
 .dash-comments-overlay {
   position: fixed;
@@ -1581,3 +1642,77 @@
 }
 .dash-comments-footer .dp-send-btn:hover:not(:disabled) { opacity: 0.88; transform: scale(1.08); }
 .dash-comments-footer .dp-send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.dash-contact-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 3px 9px;
+    transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.dash-contact-inline:hover {
+    transform: translateY(-1px);
+}
+
+.dash-contact-inline.call {
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+}
+
+.dash-contact-inline.whatsapp {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+/* ── Approved Request Contact Links ─────────────────────────── */
+.dash-accepted-contact {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    margin-bottom: 8px;
+}
+
+.dash-accepted-contact.muted {
+    color: #6b7280;
+    font-size: 0.88rem;
+    font-style: italic;
+}
+
+.dash-contact-link,
+.dash-contact-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 5px 11px;
+    transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.dash-contact-link:hover,
+.dash-contact-inline:hover {
+    transform: translateY(-1px);
+}
+
+.dash-contact-link.call,
+.dash-contact-inline.call {
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+}
+
+.dash-contact-link.whatsapp,
+.dash-contact-inline.whatsapp {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}

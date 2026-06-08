@@ -16,6 +16,111 @@ const normalizePhone = (phone) => {
   return digits;
 };
 
+const getUploadedFiles = (req, fieldName) => {
+  if (!req.files) return [];
+
+  if (Array.isArray(req.files)) {
+    return fieldName === 'images' ? req.files : [];
+  }
+
+  return req.files[fieldName] || [];
+};
+
+const mapFileUrl = (file) => file.path || file.secure_url || file.url || '';
+
+const mapHistoryDocument = (file) => ({
+  url: mapFileUrl(file),
+  originalName: file.originalname || '',
+  mimeType: file.mimetype || ''
+});
+
+const isPositiveNumber = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0;
+};
+
+const isNonNegativeNumber = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0;
+};
+
+const validateEngineValue = (engine) => {
+  const value = String(engine || '').trim();
+
+  if (!value) {
+    return 'Engine is required.';
+  }
+
+  if (value.length < 2 || value.length > 35) {
+    return 'Engine must be between 2 and 35 characters.';
+  }
+
+  if (!/^[A-Za-z0-9\s.+\-/]+$/.test(value)) {
+    return 'Engine can only contain letters, numbers, spaces, dot, +, /, or -.';
+  }
+
+  const hasNumber = /\d/.test(value);
+  const isElectricText = /\b(electric|ev|hybrid|motor)\b/i.test(value);
+
+  if (!hasNumber && !isElectricText) {
+    return 'Engine must include a size/code like 1.6L, V6, or Electric Motor.';
+  }
+
+  return '';
+};
+
+const validateCarPayload = (body, uploadedHistoryDocuments = [], existingHistoryDocuments = []) => {
+  const listingType = body.listingType === 'rent' ? 'rent' : 'sale';
+
+  const engineError = validateEngineValue(body.engine);
+  if (engineError) return engineError;
+
+  if (!isPositiveNumber(body.price)) {
+    return listingType === 'rent'
+      ? 'Daily rent must be a valid number.'
+      : 'Sale price must be a valid number.';
+  }
+
+  if (listingType === 'sale' && Number(body.price) < 10000) {
+    return 'Sale price must be at least 10,000 EGP.';
+  }
+
+  if (listingType === 'rent') {
+    if (Number(body.price) < 100) {
+      return 'Daily rent must be at least 100 EGP.';
+    }
+
+    if (!isPositiveNumber(body.rentPricePerDay)) {
+      return 'Daily rent is required for rent listings.';
+    }
+
+    if (!isPositiveNumber(body.rentPricePerMonth)) {
+      return 'Monthly rent is required for rent listings.';
+    }
+
+    if (Number(body.rentPricePerMonth) < 1000) {
+      return 'Monthly rent must be at least 1,000 EGP.';
+    }
+
+    if (Number(body.rentPricePerMonth) <= Number(body.rentPricePerDay)) {
+      return 'Monthly rent must be higher than daily rent.';
+    }
+
+    if (body.rentDeposit !== undefined && body.rentDeposit !== '' && !isNonNegativeNumber(body.rentDeposit)) {
+      return 'Rent deposit must be 0 or more.';
+    }
+  }
+
+  const service = String(body.service || '').trim();
+  const needsDocs = service && service !== 'No History';
+
+  if (needsDocs && uploadedHistoryDocuments.length === 0 && existingHistoryDocuments.length === 0) {
+    return 'Upload at least one service-history document, or choose No History.';
+  }
+
+  return '';
+};
+
 const addCar = async (req, res) => {
   try {
     console.log('ADD CAR BODY:', req.body);
@@ -47,9 +152,16 @@ const addCar = async (req, res) => {
       rentDeposit
     } = req.body;
 
-    const images = req.files
-      ? req.files.map(file => file.path || file.secure_url || file.url)
-      : [];
+    const imageFiles = getUploadedFiles(req, 'images');
+    const historyDocumentFiles = getUploadedFiles(req, 'historyDocuments');
+
+    const validationError = validateCarPayload(req.body, historyDocumentFiles);
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
+    }
+
+    const images = imageFiles.map(mapFileUrl).filter(Boolean);
+    const historyDocuments = historyDocumentFiles.map(mapHistoryDocument).filter(doc => doc.url);
 
     const car = await Car.create({
       user: req.user.id,
@@ -79,9 +191,10 @@ const addCar = async (req, res) => {
 
       listingType: listingType === 'rent' ? 'rent' : 'sale',
       rentPricePerDay: rentPricePerDay ? Number(rentPricePerDay) : null,
-      rentPricePerMonth: rentPricePerMonth ? Number(rentPricePerMonth) : null,
-      rentDeposit: rentDeposit ? Number(rentDeposit) : null,
+      rentPricePerMonth: listingType === 'rent' ? Number(rentPricePerMonth) : null,
+      rentDeposit: listingType === 'rent' && rentDeposit !== '' && rentDeposit !== undefined ? Number(rentDeposit) : null,
 
+      historyDocuments,
       images
     });
 
@@ -305,6 +418,27 @@ const updateCar = async (req, res) => {
       'rentDeposit'
     ];
 
+    const historyDocumentFiles = getUploadedFiles(req, 'historyDocuments');
+
+    let keptHistoryDocuments = car.historyDocuments || [];
+    if (req.body.keptHistoryDocuments) {
+      try {
+        keptHistoryDocuments = JSON.parse(req.body.keptHistoryDocuments);
+      } catch {
+        keptHistoryDocuments = car.historyDocuments || [];
+      }
+    }
+
+    const validationError = validateCarPayload(
+      { ...car.toObject(), ...req.body },
+      historyDocumentFiles,
+      keptHistoryDocuments
+    );
+
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
+    }
+
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
         car[field] = req.body[field];
@@ -337,11 +471,29 @@ const updateCar = async (req, res) => {
       }
     }
 
-    const newImages = req.files
-      ? req.files.map(file => file.path || file.secure_url || file.url)
-      : [];
+    const newImages = getUploadedFiles(req, 'images')
+      .map(mapFileUrl)
+      .filter(Boolean);
+
+    const newHistoryDocuments = getUploadedFiles(req, 'historyDocuments')
+      .map(mapHistoryDocument)
+      .filter(doc => doc.url);
 
     car.images = [...keptImages, ...newImages];
+    car.historyDocuments = [...keptHistoryDocuments, ...newHistoryDocuments];
+
+    if (car.listingType !== 'rent') {
+      car.rentPricePerDay = null;
+      car.rentPricePerMonth = null;
+      car.rentDeposit = null;
+    } else {
+      car.rentPricePerDay = Number(car.rentPricePerDay || car.price);
+      car.rentPricePerMonth = Number(car.rentPricePerMonth);
+      car.rentDeposit =
+        car.rentDeposit !== '' && car.rentDeposit !== undefined && car.rentDeposit !== null
+          ? Number(car.rentDeposit)
+          : null;
+    }
 
     const updated = await car.save();
 

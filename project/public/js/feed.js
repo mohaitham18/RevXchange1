@@ -29,6 +29,11 @@
   let selectedPostImages = []; // files staged for post modal
   let selectedPostVideo  = null; // single video staged for post modal
 
+  // Existing media state when editing a post
+  let _editPostImages  = []; // mutable copy of imageUrls for the post being edited
+  let _editPostVideo   = null; // videoUrl for the post being edited, or null
+  let _editPostId      = null; // ID of post being edited (for media delete calls)
+
   // ── Init ─────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
     updateHero();
@@ -879,6 +884,125 @@
     });
   }
 
+  // ── Existing media preview (edit mode) ───────────────────────
+
+  function renderExistingMediaPreviews() {
+    const el = document.getElementById('feedExistingMediaPreviews');
+    if (!el) return;
+
+    const hasImages = _editPostImages.length > 0;
+    const hasVideo  = !!_editPostVideo;
+
+    if (!hasImages && !hasVideo) {
+      el.innerHTML = '';
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="feed-existing-media-section">
+        <div class="feed-existing-media-label">Current media</div>
+        <div class="feed-existing-media-grid">
+          ${_editPostImages.map((url, i) => `
+            <div class="feed-image-preview-item" id="feedExistImg_${i}">
+              <img src="${url}" alt="Image ${i + 1}" loading="lazy">
+              <button class="feed-image-preview-remove"
+                      data-exist-img-idx="${i}"
+                      title="Remove image">✕</button>
+            </div>`).join('')}
+          ${hasVideo ? `
+            <div class="feed-existing-video-item" id="feedExistVideo">
+              <video class="feed-existing-video-preview"
+                     src="${_editPostVideo}"
+                     muted preload="metadata"></video>
+              <button class="feed-image-preview-remove"
+                      id="feedExistVideoRemove"
+                      title="Remove video">✕</button>
+            </div>` : ''}
+        </div>
+      </div>`;
+
+    el.querySelectorAll('[data-exist-img-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        deleteExistingPostImage(parseInt(btn.dataset.existImgIdx, 10), btn);
+      });
+    });
+
+    document.getElementById('feedExistVideoRemove')
+      ?.addEventListener('click', function () {
+        deleteExistingPostVideo(this);
+      });
+  }
+
+  async function deleteExistingPostImage(idx, btn) {
+    if (!_editPostId) return;
+    btn.disabled = true;
+    btn.textContent = '…';
+    try {
+      const res = await fetch(`/api/posts/${_editPostId}/images/${idx}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      if (res.ok) {
+        _editPostImages.splice(idx, 1);
+        renderExistingMediaPreviews();
+        _syncPostImagesInDom(_editPostId, _editPostImages);
+      } else {
+        btn.textContent = '✕';
+        btn.disabled = false;
+      }
+    } catch (e) {
+      btn.textContent = '✕';
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteExistingPostVideo(btn) {
+    if (!_editPostId) return;
+    btn.disabled = true;
+    btn.textContent = '…';
+    try {
+      const res = await fetch(`/api/posts/${_editPostId}/video`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      if (res.ok) {
+        _editPostVideo = null;
+        renderExistingMediaPreviews();
+        _syncPostVideoInDom(_editPostId);
+      } else {
+        btn.textContent = '✕';
+        btn.disabled = false;
+      }
+    } catch (e) {
+      btn.textContent = '✕';
+      btn.disabled = false;
+    }
+  }
+
+  function _syncPostImagesInDom(postId, imageUrls) {
+    const postEl = document.querySelector(`[data-id="${postId}"]`);
+    if (!postEl) return;
+    const oldImgs = postEl.querySelector('.feed-post-images');
+    const newHtml = renderPostImages(imageUrls);
+    if (oldImgs) {
+      oldImgs.outerHTML = newHtml;
+    } else if (newHtml) {
+      // Insert before video if present, else before menu-wrap
+      const ref = postEl.querySelector('.feed-post-video-outer') ||
+                  postEl.querySelector('.feed-post-menu-wrap');
+      if (ref) ref.insertAdjacentHTML('beforebegin', newHtml);
+    }
+    // Update data-images on the new element
+    const updatedEl = postEl.querySelector('.feed-post-images');
+    if (updatedEl) updatedEl.dataset.images = JSON.stringify(imageUrls);
+  }
+
+  function _syncPostVideoInDom(postId) {
+    const postEl = document.querySelector(`[data-id="${postId}"]`);
+    if (!postEl) return;
+    postEl.querySelector('.feed-post-video-outer')?.remove();
+  }
+
   // ── Create Post ───────────────────────────────────────────
 
   // Update compose bar avatar with user initial
@@ -1050,6 +1174,17 @@
     selectedPostVideo  = null;
     renderModalPreviews();
     renderVideoPreview();
+
+    // Reset existing-media state
+    _editPostImages = [];
+    _editPostVideo  = null;
+    _editPostId     = null;
+    const existingEl = document.getElementById('feedExistingMediaPreviews');
+    if (existingEl) existingEl.innerHTML = '';
+
+    // Restore add-media toolbar visibility
+    const imgToolbar = document.querySelector('#feedImageSection .feed-image-toolbar');
+    if (imgToolbar) imgToolbar.style.display = '';
   }
 
   // Update character counters
@@ -1453,6 +1588,20 @@
 
         if (modalTitle)  modalTitle.textContent  = 'Edit Post';
         if (submitLabel) submitLabel.textContent = 'Save Changes';
+
+        // Populate existing media previews
+        const imagesEl   = postEl.querySelector('.feed-post-images');
+        const videoWrap  = postEl.querySelector('.feed-post-video-wrap');
+        _editPostImages  = imagesEl ? JSON.parse(imagesEl.dataset.images || '[]') : [];
+        _editPostVideo   = videoWrap ? (videoWrap.dataset.videoUrl || null) : null;
+        _editPostId      = postId;
+
+        // Hide only the add-media toolbar while editing an existing post
+        // (keep #feedImageSection visible so #feedExistingMediaPreviews can show)
+        const imgToolbar = document.querySelector('#feedImageSection .feed-image-toolbar');
+        if (imgToolbar) imgToolbar.style.display = 'none';
+
+        renderExistingMediaPreviews();
       }
     }, 80);
   }
@@ -2589,14 +2738,94 @@
     const btn = e.target.closest('.edit-comment-btn');
     if (!btn) return;
 
-    const commentId = btn.dataset.commentId;
-    const bodyEl    = document.getElementById('commentBody_' + commentId);
+    const commentId   = btn.dataset.commentId;
+    const bodyEl      = document.getElementById('commentBody_' + commentId);
     if (!bodyEl) return;
 
     // If already editing, do nothing
     if (bodyEl.contentEditable === 'true') return;
 
-    const original = bodyEl.textContent.trim();
+    const contentEl   = bodyEl.closest('.feed-comment-content');
+    const original    = bodyEl.textContent.trim();
+
+    // ── Build existing image preview ──────────────────────
+    const commentImgsEl = contentEl?.querySelector('.feed-comment-images');
+    let   editImgUrls   = commentImgsEl
+      ? Array.from(commentImgsEl.querySelectorAll('img')).map(img => img.src)
+      : [];
+
+    // Insert edit-mode image preview section (removed on save/cancel)
+    let editMediaEl = null;
+    if (editImgUrls.length > 0) {
+      editMediaEl = document.createElement('div');
+      editMediaEl.id = 'commentEditMedia_' + commentId;
+      editMediaEl.className = 'feed-existing-media-section';
+
+      function renderCommentEditMedia() {
+        if (editImgUrls.length === 0) {
+          editMediaEl.innerHTML = '';
+          return;
+        }
+        editMediaEl.innerHTML = `
+          <div class="feed-existing-media-label">Current images</div>
+          <div class="feed-existing-media-grid">
+            ${editImgUrls.map((url, i) => `
+              <div class="feed-image-preview-item">
+                <img src="${url}" alt="Comment image" loading="lazy">
+                <button class="feed-image-preview-remove"
+                        data-cmt-img-idx="${i}"
+                        data-comment-id="${commentId}"
+                        title="Remove image">✕</button>
+              </div>`).join('')}
+          </div>`;
+
+        editMediaEl.querySelectorAll('[data-cmt-img-idx]').forEach(xBtn => {
+          xBtn.addEventListener('click', async () => {
+            const idx = parseInt(xBtn.dataset.cmtImgIdx, 10);
+            xBtn.disabled    = true;
+            xBtn.textContent = '…';
+            try {
+              const res = await fetch(
+                `/api/posts/comments/${commentId}/images/${idx}`,
+                { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + getToken() } }
+              );
+              if (res.ok) {
+                editImgUrls.splice(idx, 1);
+                renderCommentEditMedia();
+                // Update the live images section in the comment DOM
+                if (commentImgsEl) {
+                  if (editImgUrls.length === 0) {
+                    commentImgsEl.innerHTML = '';
+                  } else {
+                    commentImgsEl.innerHTML = editImgUrls.map(u =>
+                      `<img src="${u}" alt="comment image" loading="lazy"
+                            onclick="window.__rxOpenLightbox('${u}',[${editImgUrls.map(x=>`'${x}'`).join(',')}])">`
+                    ).join('');
+                  }
+                }
+                // Add (edited) tag if not already present
+                const metaEl = contentEl?.querySelector('.feed-comment-meta');
+                if (metaEl && !metaEl.querySelector('.feed-comment-edited')) {
+                  const tag = document.createElement('span');
+                  tag.className   = 'feed-comment-edited';
+                  tag.textContent = '(edited)';
+                  metaEl.appendChild(tag);
+                }
+              } else {
+                xBtn.textContent = '✕';
+                xBtn.disabled    = false;
+              }
+            } catch {
+              xBtn.textContent = '✕';
+              xBtn.disabled    = false;
+            }
+          });
+        });
+      }
+
+      renderCommentEditMedia();
+      bodyEl.after(editMediaEl);
+    }
 
     // Make body editable inline
     bodyEl.contentEditable = 'true';
@@ -2630,6 +2859,11 @@
     cancelBtn.id = 'editCancelBtn_' + commentId;
     btn.after(cancelBtn);
 
+    function cleanupEditMedia() {
+      editMediaEl?.remove();
+      editMediaEl = null;
+    }
+
     // Cancel handler
     cancelBtn.addEventListener('click', () => {
       bodyEl.textContent      = original;
@@ -2638,6 +2872,7 @@
       btn.textContent         = 'Edit';
       btn.dataset.editing     = '';
       cancelBtn.remove();
+      cleanupEditMedia();
     });
 
     // Save handler
@@ -2654,6 +2889,7 @@
         btn.dataset.editing    = '';
         cancelBtn.remove();
         btn.removeEventListener('click', saveHandler);
+        cleanupEditMedia();
         return;
       }
 
@@ -2681,6 +2917,7 @@
           btn.disabled           = false;
           cancelBtn.remove();
           btn.removeEventListener('click', saveHandler);
+          cleanupEditMedia();
 
           // Add (edited) tag if not already there
           const metaEl = bodyEl.closest('.feed-comment-content')
