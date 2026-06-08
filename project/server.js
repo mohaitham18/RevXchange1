@@ -35,6 +35,54 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/cara', caraRoutes);
 
     
+    // ── Video expiry cron job (runs every hour) ───────────────
+    const Post = require('./models/Post');
+    const cloudinary = require('cloudinary').v2;
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key:    process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+
+    async function deleteExpiredVideos() {
+      try {
+        const expired = await Post.find({
+          videoUrl:       { $ne: null },
+          videoExpiresAt: { $lte: new Date() },
+          isDeleted:      false
+        }).lean();
+
+        if (expired.length === 0) return;
+
+        console.log(`Video expiry: found ${expired.length} expired video(s)`);
+
+        for (const post of expired) {
+          try {
+            // Extract public_id from Cloudinary URL
+            const match = post.videoUrl.match(/revxchange\/videos\/([^.]+)/);
+            if (match) {
+              const publicId = 'revxchange/videos/' + match[1];
+              await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+            }
+            await Post.findByIdAndUpdate(post._id, {
+              videoUrl:      null,
+              videoExpiresAt: null
+            });
+            console.log(`Deleted expired video for post ${post._id}`);
+          } catch (err) {
+            console.error(`Failed to delete video for post ${post._id}:`, err.message);
+          }
+        }
+      } catch (err) {
+        console.error('Video expiry cron error:', err.message);
+      }
+    }
+
+    // Run immediately on startup, then every hour
+    deleteExpiredVideos();
+    setInterval(deleteExpiredVideos, 60 * 60 * 1000);
+    console.log('Video expiry cron started ✅');
+
     console.log('Routes registered ✅');
 
     app.get('/api', (req, res) => {
