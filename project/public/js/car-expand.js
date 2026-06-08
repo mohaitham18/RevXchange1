@@ -1,14 +1,16 @@
-/* RevXChange — Backend car expand card + Save button */
+/* RevXChange — Car Expand Card + Save Button + Cara's AI Take */
 (function () {
   if (window.location.pathname.toLowerCase().includes('login')) return;
 
   document.body.insertAdjacentHTML('beforeend', `
     <div id="rxCarOverlay"></div>
     <div id="rxCarShadow"></div>
+
     <div id="rxCarCard">
       <button id="rxCarClose" aria-label="Close">✕</button>
       <div id="rxCarContent"></div>
     </div>
+
     <div id="rxLightboxOverlay"></div>
     <div id="rxLightboxImg"><img src="" alt=""></div>
     <button id="rxLightboxClose" aria-label="Close image">✕</button>
@@ -19,23 +21,36 @@
   const card = document.getElementById('rxCarCard');
   const closeBtn = document.getElementById('rxCarClose');
   const content = document.getElementById('rxCarContent');
+
   const lbOverlay = document.getElementById('rxLightboxOverlay');
   const lbImg = document.getElementById('rxLightboxImg');
   const lbImgInner = lbImg.querySelector('img');
   const lbClose = document.getElementById('rxLightboxClose');
 
   let isOpen = false;
+  let isFullscreen = false;
   let currentOrigin = null;
   let currentOriginEl = null;
   let galleryIndex = 0;
   let savedIds = new Set();
-  let isFullscreen = false;
+  let caraTakeRequestId = 0;
 
-  const formatPrice = value => Number(value || 0).toLocaleString() + ' EGP';
-  const displayPrice = car => car.listingType === 'rent'
-    ? Number(car.rentPricePerDay || car.price || 0).toLocaleString() + ' EGP / day'
-    : formatPrice(car.price);
-  const formatKm = value => Number(value || 0).toLocaleString() + ' km';
+  const formatPrice = value => `${Number(value || 0).toLocaleString()} EGP`;
+  const formatKm = value => `${Number(value || 0).toLocaleString()} km`;
+
+  function escapeHTML(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function cssEscape(value) {
+    if (window.CSS && CSS.escape) return CSS.escape(String(value));
+    return String(value).replace(/"/g, '\\"');
+  }
 
   function token() {
     return localStorage.getItem('rxToken');
@@ -47,6 +62,105 @@
     } catch {
       return { message: 'Invalid server response' };
     }
+  }
+
+  function displayPrice(car) {
+    if (car.listingType === 'rent') {
+      return `${Number(car.rentPricePerDay || car.price || 0).toLocaleString()} EGP / day`;
+    }
+
+    return formatPrice(car.price);
+  }
+
+  function niceText(value) {
+    if (!value) return 'Not specified';
+
+    const text = String(value);
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  function normalizeCar(car) {
+    const fallbackImg =
+      typeof brandImages !== 'undefined' && car.brand
+        ? brandImages?.[car.brand]
+        : '';
+
+    return {
+      ...car,
+
+      id: String(car._id || car.id),
+
+      brand: car.brand || 'Unknown',
+      model: car.model || 'Car',
+      year: Number(car.year || new Date().getFullYear()),
+      price: Number(car.price || 0),
+
+      listingType: car.listingType || 'sale',
+      rentPricePerDay: car.rentPricePerDay || null,
+      rentPricePerMonth: car.rentPricePerMonth || null,
+      rentDeposit: car.rentDeposit || null,
+
+      mileage: Number(car.mileage || 0),
+      city: car.city || 'Not specified',
+      condition: car.condition || 'used',
+      transmission: niceText(car.transmission || 'automatic'),
+      fuel: niceText(car.fuel || 'petrol'),
+      color: car.color || 'Not specified',
+      fabrika: car.fabrika === true,
+
+      body: car.body || 'Sedan',
+      drivetrain: car.drivetrain || 'FWD',
+      doors: car.doors || 4,
+      seats: car.seats || 5,
+      engine: car.engine || 'Not specified',
+      owners: car.owners || car.owner || 'Not specified',
+      service: car.service || 'Not specified',
+
+      phone: String(car.phone || '').replace(/\D/g, ''),
+
+      description: car.description || '',
+
+      highlights: Array.isArray(car.highlights) && car.highlights.length
+        ? car.highlights
+        : [
+            'Seller description available',
+            'Contact seller for inspection details',
+            'Check service history before purchase'
+          ],
+
+      included: Array.isArray(car.included) && car.included.length
+        ? car.included
+        : [
+            'Documents available from seller',
+            'Contact seller for included accessories'
+          ],
+
+      images: Array.isArray(car.images) && car.images.length
+        ? car.images
+        : fallbackImg
+          ? [fallbackImg]
+          : []
+    };
+  }
+
+  async function getCar(id) {
+    if (typeof mostViewedCars !== 'undefined' && Array.isArray(mostViewedCars)) {
+      const local = mostViewedCars.find(c => String(c.id) === String(id));
+      if (local) return normalizeCar(local);
+    }
+
+    try {
+      const res = await fetch('/api/cars/' + encodeURIComponent(id));
+      const data = await safeJson(res);
+
+      if (res.ok && data.car) {
+        return normalizeCar(data.car);
+      }
+    } catch (err) {
+      console.error('Fetch expanded car error:', err);
+    }
+
+    return null;
   }
 
   async function loadSavedIds() {
@@ -69,7 +183,6 @@
       savedIds = res.ok
         ? new Set((data.savedCarIds || []).map(String))
         : new Set();
-
     } catch {
       savedIds = new Set();
     }
@@ -85,7 +198,7 @@
     }
 
     document
-      .querySelectorAll(`[data-id="${CSS.escape(id)}"]`)
+      .querySelectorAll(`[data-id="${cssEscape(id)}"]`)
       .forEach(el => {
         if (
           el.classList.contains('save-car-btn') ||
@@ -123,92 +236,12 @@
       }
 
       updateSaveButtons(carId, data.saved);
-
     } catch (err) {
       console.error('Save from expanded card error:', err);
       alert('Server error. Please try again.');
     } finally {
       btn.disabled = false;
     }
-  }
-
-  function niceText(value) {
-    if (!value) return 'Not specified';
-
-    const text = String(value);
-    return text.charAt(0).toUpperCase() + text.slice(1);
-  }
-
-  function normalizeCar(car) {
-    const fallbackImg =
-      typeof brandImages !== 'undefined' && car.brand
-        ? brandImages?.[car.brand]
-        : '';
-
-    return {
-      ...car,
-      id: String(car._id || car.id),
-      brand: car.brand || 'Unknown',
-      model: car.model || 'Car',
-      year: Number(car.year || new Date().getFullYear()),
-      price: Number(car.price || 0),
-      listingType: car.listingType || 'sale',
-      rentPricePerDay: car.rentPricePerDay || null,
-      rentPricePerMonth: car.rentPricePerMonth || null,
-      rentDeposit: car.rentDeposit || null,
-      mileage: Number(car.mileage || 0),
-      city: car.city || 'Not specified',
-      transmission: niceText(car.transmission || 'automatic'),
-      fuel: niceText(car.fuel || 'petrol'),
-      color: car.color || 'Not specified',
-      fabrika: car.fabrika === true,
-      body: car.body || 'Sedan',
-      drivetrain: car.drivetrain || 'FWD',
-      doors: car.doors || 4,
-      seats: car.seats || 5,
-      engine: car.engine || 'Not specified',
-      owners: car.owners || car.owner || 'Not specified',
-      service: car.service || 'Not specified',
-      phone: String(car.phone || '').replace(/\D/g, ''),
-      highlights: Array.isArray(car.highlights) && car.highlights.length
-        ? car.highlights
-        : [
-            'Seller description available',
-            'Contact seller for inspection details',
-            'Check service history before purchase'
-          ],
-      included: Array.isArray(car.included) && car.included.length
-        ? car.included
-        : [
-            'Documents available from seller',
-            'Contact seller for included accessories'
-          ],
-      images: Array.isArray(car.images) && car.images.length
-        ? car.images
-        : fallbackImg
-          ? [fallbackImg]
-          : []
-    };
-  }
-
-  async function getCar(id) {
-    if (typeof mostViewedCars !== 'undefined' && Array.isArray(mostViewedCars)) {
-      const local = mostViewedCars.find(c => String(c.id) === String(id));
-      if (local) return normalizeCar(local);
-    }
-
-    try {
-      const res = await fetch('/api/cars/' + encodeURIComponent(id));
-      const data = await safeJson(res);
-
-      if (res.ok && data.car) {
-        return normalizeCar(data.car);
-      }
-    } catch (err) {
-      console.error('Fetch expanded car error:', err);
-    }
-
-    return null;
   }
 
   function targetRect() {
@@ -242,9 +275,130 @@
     });
   }
 
+  function localCaraFallback(car) {
+    const currentYear = new Date().getFullYear();
+    const age = currentYear - Number(car.year || currentYear);
+    const mileage = Number(car.mileage || 0);
+
+    const notes = [];
+
+    if (age >= 12) {
+      notes.push('it is an older car, so inspection is very important');
+    }
+
+    if (mileage >= 180000) {
+      notes.push('the mileage is high, so check engine, gearbox, suspension, and cooling system carefully');
+    } else if (mileage <= 70000) {
+      notes.push('the mileage is relatively low for its age, but still verify it with service records');
+    } else {
+      notes.push('the mileage is normal depending on condition and service history');
+    }
+
+    if (!car.service || String(car.service).toLowerCase().includes('no')) {
+      notes.push('service history is weak or missing');
+    }
+
+    if (car.owners && String(car.owners).toLowerCase().includes('more')) {
+      notes.push('multiple owners means papers and inspection matter more');
+    }
+
+    return `Cara's take: ${car.brand} ${car.model} ${car.year} at ${displayPrice(car)} can be considered, but ${notes.join(', ')}. Final advice: inspect it with a mechanic, compare it with similar listings, and negotiate if service history or condition is not strong.`;
+  }
+
+  function buildCaraTakePrompt(car) {
+    return `
+Give a smart buyer evaluation for this exact RevXChange listing.
+
+Rules:
+- Do not introduce yourself.
+- Keep it short and practical.
+- Mention price, mileage, age, owners, and service history if relevant.
+- Say what the buyer should check before buying.
+- End with clear final advice.
+- Do not invent information not shown below.
+
+Listing:
+Brand: ${car.brand}
+Model: ${car.model}
+Year: ${car.year}
+Price: ${displayPrice(car)}
+Mileage: ${formatKm(car.mileage)}
+City: ${car.city}
+Condition: ${car.condition}
+Transmission: ${car.transmission}
+Fuel: ${car.fuel}
+Body: ${car.body}
+Drivetrain: ${car.drivetrain}
+Doors: ${car.doors}
+Seats: ${car.seats}
+Engine: ${car.engine}
+Owners: ${car.owners}
+Service history: ${car.service}
+Color: ${car.color}
+Seller description: ${car.description || 'No seller description'}
+`;
+  }
+
+  async function loadCaraTake(car) {
+    const takeEl = document.getElementById('rxCaraTakeText');
+    if (!takeEl) return;
+
+    const requestId = ++caraTakeRequestId;
+    const cacheKey = 'rxCaraTake_' + car.id;
+
+    takeEl.classList.remove('rx-done');
+    takeEl.textContent = 'Cara is checking price, mileage, age, and service history...';
+
+    const cached = sessionStorage.getItem(cacheKey);
+
+    if (cached) {
+      takeEl.innerHTML = escapeHTML(cached).replace(/\n/g, '<br>');
+      takeEl.classList.add('rx-done');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/cara/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: buildCaraTakePrompt(car),
+          history: []
+        })
+      });
+
+      const data = await safeJson(res);
+
+      if (requestId !== caraTakeRequestId) return;
+
+      if (!res.ok || !data.reply) {
+        throw new Error(data.error || data.message || 'Cara take failed');
+      }
+
+      const reply = String(data.reply).trim();
+
+      sessionStorage.setItem(cacheKey, reply);
+
+      takeEl.innerHTML = escapeHTML(reply).replace(/\n/g, '<br>');
+      takeEl.classList.add('rx-done');
+    } catch (err) {
+      console.error('Cara take error:', err);
+
+      if (requestId !== caraTakeRequestId) return;
+
+      const fallback = localCaraFallback(car);
+
+      takeEl.innerHTML = escapeHTML(fallback).replace(/\n/g, '<br>');
+      takeEl.classList.add('rx-done');
+    }
+  }
+
   function contentHTML(car) {
     const imgs = car.images.length ? car.images : [''];
     const saved = savedIds.has(String(car.id));
+
     const phone = car.phone;
     const whatsappHref = phone ? `https://wa.me/${phone}` : '#';
     const callHref = phone ? `tel:+${phone}` : '#';
@@ -260,7 +414,7 @@
             <div class="rx-gallery-slide ${i === 0 ? 'active' : ''}" data-index="${i}">
               ${
                 src
-                  ? `<img src="${src}" alt="${car.brand} ${car.model}">`
+                  ? `<img src="${escapeHTML(src)}" alt="${escapeHTML(`${car.brand} ${car.model}`)}">`
                   : `<span style="font-size:5rem">🚗</span>`
               }
             </div>
@@ -274,43 +428,43 @@
         </div>
 
         <div class="rx-info">
-          <div class="rx-info-title">${car.brand} ${car.model} ${car.year}</div>
-          <div class="rx-info-price">${displayPrice(car)}</div>
+          <div class="rx-info-title">${escapeHTML(`${car.brand} ${car.model} ${car.year}`)}</div>
+          <div class="rx-info-price">${escapeHTML(displayPrice(car))}</div>
 
           <div class="rx-info-pills">
-            <span class="rx-pill">📅 ${car.year}</span>
-            <span class="rx-pill">🛣️ ${formatKm(car.mileage)}</span>
-            <span class="rx-pill">⚙️ ${car.transmission}</span>
-            <span class="rx-pill">⛽ ${car.fuel}</span>
-            <span class="rx-pill">📍 ${car.city}</span>
+            <span class="rx-pill">📅 ${escapeHTML(car.year)}</span>
+            <span class="rx-pill">🛣️ ${escapeHTML(formatKm(car.mileage))}</span>
+            <span class="rx-pill">⚙️ ${escapeHTML(car.transmission)}</span>
+            <span class="rx-pill">⛽ ${escapeHTML(car.fuel)}</span>
+            <span class="rx-pill">📍 ${escapeHTML(car.city)}</span>
             ${car.fabrika ? `<span class="rx-pill fabrika">⭐ Fabrika</span>` : ''}
           </div>
 
           <div class="rx-spec-grid">
-            <div class="rx-spec-row"><span class="rx-spec-key">Body</span><span class="rx-spec-val">${car.body}</span></div>
-            <div class="rx-spec-row"><span class="rx-spec-key">Drivetrain</span><span class="rx-spec-val">${car.drivetrain}</span></div>
-            <div class="rx-spec-row"><span class="rx-spec-key">Doors</span><span class="rx-spec-val">${car.doors}</span></div>
-            <div class="rx-spec-row"><span class="rx-spec-key">Seats</span><span class="rx-spec-val">${car.seats}</span></div>
-            <div class="rx-spec-row"><span class="rx-spec-key">Engine</span><span class="rx-spec-val">${car.engine}</span></div>
-            <div class="rx-spec-row"><span class="rx-spec-key">Owners</span><span class="rx-spec-val">${car.owners}</span></div>
-            <div class="rx-spec-row"><span class="rx-spec-key">Service</span><span class="rx-spec-val">${car.service}</span></div>
-            <div class="rx-spec-row"><span class="rx-spec-key">Color</span><span class="rx-spec-val">${car.color}</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Body</span><span class="rx-spec-val">${escapeHTML(car.body)}</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Drivetrain</span><span class="rx-spec-val">${escapeHTML(car.drivetrain)}</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Doors</span><span class="rx-spec-val">${escapeHTML(car.doors)}</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Seats</span><span class="rx-spec-val">${escapeHTML(car.seats)}</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Engine</span><span class="rx-spec-val">${escapeHTML(car.engine)}</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Owners</span><span class="rx-spec-val">${escapeHTML(car.owners)}</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Service</span><span class="rx-spec-val">${escapeHTML(car.service)}</span></div>
+            <div class="rx-spec-row"><span class="rx-spec-key">Color</span><span class="rx-spec-val">${escapeHTML(car.color)}</span></div>
           </div>
 
           <div class="rx-info-actions">
             <button
               type="button"
               class="rx-action-btn rx-save-btn ${saved ? 'saved' : ''}"
-              data-id="${car.id}"
+              data-id="${escapeHTML(car.id)}"
             >
               ${saved ? '♥ Saved' : '♡ Save'}
             </button>
 
-            <a href="${whatsappHref}" target="_blank" class="rx-action-btn rx-action-whatsapp">
+            <a href="${escapeHTML(whatsappHref)}" target="_blank" class="rx-action-btn rx-action-whatsapp">
               WhatsApp
             </a>
 
-            <a href="${callHref}" class="rx-action-btn rx-action-call">
+            <a href="${escapeHTML(callHref)}" class="rx-action-btn rx-action-call">
               Call
             </a>
           </div>
@@ -318,19 +472,19 @@
 
         <div class="rx-desc-box">
           <div class="rx-desc-label">About this car</div>
-          <div class="rx-desc-text">${desc}</div>
+          <div class="rx-desc-text">${escapeHTML(desc)}</div>
 
           <div class="rx-desc-section">
             <div class="rx-desc-label">Key Highlights</div>
             <div class="rx-desc-list">
-              ${car.highlights.map(item => `<div class="rx-desc-list-item">${item}</div>`).join('')}
+              ${car.highlights.map(item => `<div class="rx-desc-list-item">${escapeHTML(item)}</div>`).join('')}
             </div>
           </div>
 
           <div class="rx-desc-section">
             <div class="rx-desc-label">What's Included</div>
             <div class="rx-desc-list">
-              ${car.included.map(item => `<div class="rx-desc-list-item">${item}</div>`).join('')}
+              ${car.included.map(item => `<div class="rx-desc-list-item">${escapeHTML(item)}</div>`).join('')}
             </div>
           </div>
         </div>
@@ -338,6 +492,7 @@
         <div class="rx-cara-box">
           <div class="rx-cara-head">
             <div class="rx-cara-avatar">✦</div>
+
             <div class="rx-cara-title-block">
               <span class="rx-cara-label">Cara's Take</span>
               <span class="rx-cara-sub">AI assistant · evaluating this listing</span>
@@ -345,8 +500,8 @@
           </div>
 
           <div class="rx-cara-verdict rx-show">
-            <p class="rx-cara-verdict-text rx-done">
-              This listing is ready to inspect. Compare price, mileage, and service history before buying.
+            <p class="rx-cara-verdict-text" id="rxCaraTakeText">
+              Cara is checking this listing...
             </p>
           </div>
         </div>
@@ -364,7 +519,6 @@
 
     function show(i) {
       const slides = gallery.querySelectorAll('.rx-gallery-slide');
-
       if (!slides.length) return;
 
       slides[galleryIndex]?.classList.remove('active');
@@ -392,7 +546,6 @@
       if (e.target.closest('.rx-gallery-arrow')) return;
 
       const img = e.target.closest('.rx-gallery-slide img');
-
       if (!img) return;
 
       lbImgInner.src = img.src;
@@ -409,14 +562,14 @@
     card.classList.toggle('rx-fullscreen', on);
 
     const navbar = document.querySelector('.navbar');
+
     if (navbar) {
       navbar.classList.toggle('rx-above-card', on);
+
       if (on) {
         navbar.classList.add('scrolled');
-      } else {
-        if (window.scrollY <= 80) {
-          navbar.classList.remove('scrolled');
-        }
+      } else if (window.scrollY <= 80) {
+        navbar.classList.remove('scrolled');
       }
     }
 
@@ -427,6 +580,7 @@
     } else {
       const body = card.querySelector('.rx-card-body');
       if (body) body.scrollTop = 0;
+
       card.style.transform = expandedTransform();
     }
   }
@@ -451,6 +605,30 @@
     }
   }
 
+  async function countView(id) {
+    const viewedKey = 'rxViewed_' + id;
+    const t = token();
+
+    if (t) {
+      fetch('/api/cars/' + encodeURIComponent(id) + '/view', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + t
+        }
+      }).catch(() => {});
+
+      return;
+    }
+
+    if (!localStorage.getItem(viewedKey)) {
+      fetch('/api/cars/' + encodeURIComponent(id) + '/view', {
+        method: 'POST'
+      })
+        .then(() => localStorage.setItem(viewedKey, '1'))
+        .catch(() => {});
+    }
+  }
+
   async function openCard(cardEl, id) {
     if (isOpen) return;
 
@@ -461,27 +639,13 @@
       return;
     }
 
-    // Increment view count — server deduplicates for logged-in users, localStorage for guests
-    const viewedKey = 'rxViewed_' + id;
-    const token = localStorage.getItem('rxToken');
-
-    if (token) {
-      // Logged-in: server handles deduplication via viewedCars array
-      fetch('/api/cars/' + encodeURIComponent(id) + '/view', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token }
-      }).catch(() => {});
-    } else if (!localStorage.getItem(viewedKey)) {
-      // Guest: use localStorage to deduplicate
-      fetch('/api/cars/' + encodeURIComponent(id) + '/view', { method: 'POST' })
-        .then(() => localStorage.setItem(viewedKey, '1'))
-        .catch(() => {});
-    }
-
+    countView(id);
     await loadSavedIds();
 
     isOpen = true;
+    isFullscreen = false;
     galleryIndex = 0;
+
     currentOriginEl = cardEl;
     currentOrigin = cardEl.getBoundingClientRect();
 
@@ -493,8 +657,9 @@
 
     card.style.display = 'block';
     shadow.style.display = 'block';
-    isFullscreen = false;
+
     document.querySelector('.navbar')?.classList.remove('rx-above-card');
+
     card.classList.remove('rx-closing', 'rx-fullscreen');
     card.style.transform = originTransform(currentOrigin, target);
 
@@ -508,10 +673,13 @@
     });
 
     wireGallery(car.images.length || 1);
+    loadCaraTake(car);
   }
 
   function closeCard() {
     if (!isOpen) return;
+
+    caraTakeRequestId++;
 
     const target = targetRect();
 
@@ -520,19 +688,31 @@
     }
 
     isFullscreen = false;
+
     document.querySelector('.navbar')?.classList.remove('rx-above-card');
+
     card.classList.add('rx-closing');
     card.classList.remove('rx-open', 'rx-fullscreen');
+
     shadow.classList.remove('rx-visible');
     overlay.classList.remove('rx-visible');
+
     card.style.transform = originTransform(currentOrigin, target);
 
     setTimeout(() => {
       card.style.display = 'none';
       shadow.style.display = 'none';
       content.innerHTML = '';
-      card.classList.remove('rx-animating', 'rx-visible-fade', 'rx-content-ready', 'rx-closing');
+
+      card.classList.remove(
+        'rx-animating',
+        'rx-visible-fade',
+        'rx-content-ready',
+        'rx-closing'
+      );
+
       document.body.classList.remove('rx-card-lock');
+
       isOpen = false;
       currentOrigin = null;
       currentOriginEl = null;
@@ -547,7 +727,6 @@
       e.stopPropagation();
 
       const carId = expandedSaveBtn.dataset.id;
-
       if (!carId) return;
 
       toggleSave(carId, expandedSaveBtn);
@@ -559,11 +738,9 @@
     if (e.target.closest('.rx-action-btn')) return;
 
     const cardEl = e.target.closest('.car-card-placeholder');
-
     if (!cardEl) return;
 
     const id = cardEl.dataset.id;
-
     if (!id) return;
 
     openCard(cardEl, id);
@@ -579,7 +756,9 @@
     lbImg.style.display = 'none';
   });
 
-  lbClose.addEventListener('click', () => lbOverlay.click());
+  lbClose.addEventListener('click', () => {
+    lbOverlay.click();
+  });
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeCard();
@@ -589,6 +768,7 @@
     if (!isOpen) return;
 
     applyTarget(targetRect());
+
     card.style.transform = isFullscreen
       ? 'translate(0px, 0px) scale(1, 1)'
       : expandedTransform();
@@ -596,14 +776,13 @@
 
   function tryOpenDeepLink() {
     const match = window.location.pathname.match(/^\/car\/([^/]+)/);
-
     if (!match) return;
 
     const id = match[1];
     let tries = 0;
 
     const timer = setInterval(() => {
-      const cardEl = document.querySelector(`.car-card-placeholder[data-id="${CSS.escape(id)}"]`);
+      const cardEl = document.querySelector(`.car-card-placeholder[data-id="${cssEscape(id)}"]`);
 
       if (cardEl) {
         clearInterval(timer);

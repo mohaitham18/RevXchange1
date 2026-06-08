@@ -400,47 +400,62 @@
     }
 
     async function handleInput() {
-        const text = input.value.trim();
-        if (!text) return;
-        input.value = '';
-        addBubble(text, 'user');
+    const text = input.value.trim();
+    if (!text) return;
 
-        const lower = text.toLowerCase();
+    input.value = '';
 
-        if (/broke|breakdown|broken|noise|issue|problem|won.t start|مشكلة|عطل|صوت/.test(lower)) {
-            await speak('Let\'s diagnose that. 🔧', 650);
-            flowBreakdown();
-        } else if (/buy|find|looking|search|want|need a car|أشتري|عايز|دور|ابحث/.test(lower)) {
-            await speak('Let\'s find you the perfect car! 🔍', 600);
-            flowBuy();
-        } else if (/sell|price|value|list|بيع|سعر|اعرض/.test(lower)) {
-            await speak('Let\'s get your car listed! 🏷️', 600);
-            flowSell();
-        } else if (/mechanic|garage|repair|workshop|ميكانيكي|ورشة|صيانة/.test(lower)) {
-            await speak('I\'ll help you find the right mechanic!', 600);
-            flowMechanic();
-        } else {
-      addTyping();
-      try {
-        const res = await fetch('/api/cara/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
+    const history = messageLog
+        .filter(msg => msg.type === 'bubble')
+        .slice(-8)
+        .map(msg => {
+            const temp = document.createElement('div');
+            temp.innerHTML = msg.html || '';
+            return {
+                role: msg.from === 'cara' ? 'model' : 'user',
+                text: temp.textContent || temp.innerText || ''
+            };
         });
-        const data = await res.json();
+
+    addBubble(text, 'user');
+    addTyping();
+
+    try {
+        const res = await fetch('/api/cara/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: text,
+                history
+            })
+        });
+
+        const data = await res.json().catch(() => ({}));
         removeTyping();
-        if (data.reply) {
-          addBubble(data.reply, 'cara');
-        } else {
-          addBubble('I\'m not sure about that. Let me show you what I can help with:', 'cara');
-          addQuickActions();
+
+        if (!res.ok) {
+            throw new Error(data.error || data.message || 'Cara API request failed');
         }
-      } catch (err) {
+
+        if (data.reply) {
+            const safeReply = String(data.reply)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>')
+                .replace(/(\/car\/[a-f0-9]{24})/gi, '<a href="$1"><strong>Open listing</strong></a>')
+                .replace(/(\/(?:used-cars|buy-cars|rent-cars|sell-car|communities)\.html)/g, '<a href="$1">$1</a>');
+
+            addBubble(safeReply, 'cara');
+        } else {
+            addBubble('I could not find a clear answer. Try asking with a brand, budget, city, or model.', 'cara');
+        }
+    } catch (err) {
         removeTyping();
-        addBubble('Sorry, I\'m having trouble connecting. Please try again!', 'cara');
-      }
+        console.error('Cara frontend error:', err);
+        addBubble('Cara AI is connected, but the request failed. Check the server terminal for the exact error.', 'cara');
     }
-    }
+}
 
     sendBtn.addEventListener('click', handleInput);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleInput(); });
