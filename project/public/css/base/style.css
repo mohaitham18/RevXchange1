@@ -8,3 +8,13 @@
 .section {
   padding: var(--section-padding) 0;
 }
+
+/* Hide Google Translate toolbar */
+.goog-te-banner-frame,
+.skiptranslate {
+    display: none !important;
+}
+
+body {
+    top: 0 !important;
+}

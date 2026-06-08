@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="/css/base/footer.css">
     <link rel="stylesheet" href="/css/components/car-expand.css">
     <link rel="stylesheet" href="/css/components/footer-melt.css">
-</head
+</head>
 
 <body>
 
@@ -33,7 +33,7 @@
             <ul class="nav-links">
                 <li><a href="/used-cars.html">Used Cars</a></li>
                 <li><a href="/buy-cars.html">New Cars</a></li>
-                <li><a href="rent-cars.html">Rent Cars</a></li>
+                <li><a href="/rent-cars.html">Rent Cars</a></li>
                 <li>
                     <a href="#" class="cara-nav-link" id="caraNavBtn">
                         <svg class="cara-icon" viewBox="0 0 24 24" fill="none" width="15" height="15">
@@ -113,55 +113,44 @@
                 <div class="car-shadow"></div>
             </div>
         </div>
-    
-    <!-- Melt border -->
-      <div class="rx-melt-wrap">
-        <svg viewBox="0 0 1440 74" preserveAspectRatio="none"
-             xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <!-- Main wine-red drip gradient -->
-            <linearGradient id="meltMain" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stop-color="#5a0f1c" stop-opacity="1"/>
-              <stop offset="55%"  stop-color="#6b1222" stop-opacity="0.80"/>
-              <stop offset="100%" stop-color="#3e0a13" stop-opacity="0"/>
-            </linearGradient>
-            <!-- Glow bloom behind the drip -->
-            <linearGradient id="meltBloom" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stop-color="#8b1a2a" stop-opacity="0.45"/>
-              <stop offset="70%"  stop-color="#5a0f1c" stop-opacity="0.15"/>
-              <stop offset="100%" stop-color="#5a0f1c" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
 
-          <!-- Bloom layer — sits behind, bleeds further down -->
-          <path fill="url(#meltBloom)">
-            <animate attributeName="d"
-              dur="9s" repeatCount="indefinite"
-              calcMode="spline"
-              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
-              values="
-                M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z;
-                M0,0 L1440,0 L1440,44 C1260,68 1020,14 840,50 C640,72 440,10 270,48 C120,68 40,24 0,44 Z;
-                M0,0 L1440,0 L1440,68 C1320,40 1060,72 840,38 C620,8  380,68 180,36 C80,18 30,52 0,30 Z;
-                M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z
-              "/>
-          </path>
-
-          <!-- Main drip — sharp wave edge -->
-          <path fill="url(#meltMain)">
-            <animate attributeName="d"
-              dur="9s" repeatCount="indefinite"
-              calcMode="spline"
-              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
-              values="
-                M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z;
-                M0,0 L1440,0 L1440,28 C1260,50 1020,2  840,34 C640,58 440,0  270,32 C120,52 40,10 0,28 Z;
-                M0,0 L1440,0 L1440,52 C1320,24 1060,56 840,22 C620,0  380,52 180,20 C80,4  30,38 0,14 Z;
-                M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z
-              "/>
-          </path>
-        </svg>
-      </div>
+        <!-- Melt border -->
+        <div class="rx-melt-wrap">
+            <svg viewBox="0 0 1440 74" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="meltMain" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stop-color="#5a0f1c" stop-opacity="1"/>
+                        <stop offset="55%"  stop-color="#6b1222" stop-opacity="0.80"/>
+                        <stop offset="100%" stop-color="#3e0a13" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="meltBloom" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stop-color="#8b1a2a" stop-opacity="0.45"/>
+                        <stop offset="70%"  stop-color="#5a0f1c" stop-opacity="0.15"/>
+                        <stop offset="100%" stop-color="#5a0f1c" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <path fill="url(#meltBloom)">
+                    <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+                        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+                        values="
+                            M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z;
+                            M0,0 L1440,0 L1440,44 C1260,68 1020,14 840,50 C640,72 440,10 270,48 C120,68 40,24 0,44 Z;
+                            M0,0 L1440,0 L1440,68 C1320,40 1060,72 840,38 C620,8  380,68 180,36 C80,18 30,52 0,30 Z;
+                            M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z
+                        "/>
+                </path>
+                <path fill="url(#meltMain)">
+                    <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+                        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+                        values="
+                            M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z;
+                            M0,0 L1440,0 L1440,28 C1260,50 1020,2  840,34 C640,58 440,0  270,32 C120,52 40,10 0,28 Z;
+                            M0,0 L1440,0 L1440,52 C1320,24 1060,56 840,22 C620,0  380,52 180,20 C80,4  30,38 0,14 Z;
+                            M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z
+                        "/>
+                </path>
+            </svg>
+        </div>
     </section>
 
     <!-- ── Top Brands / Models / Cities / Prices ─────────────── -->
@@ -230,50 +219,42 @@
 
     <!-- ── Footer ────────────────────────────────────────────── -->
     <footer class="main-footer">
-      <!-- BG → Footer melt (mirror of hero melt) -->
-      <div class="rx-footer-melt-wrap">
-        <svg viewBox="0 0 1440 74" preserveAspectRatio="none"
-             xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="footerMeltMain" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="1"/>
-              <stop offset="55%"  stop-color="#1a1a1a" stop-opacity="0.80"/>
-              <stop offset="100%" stop-color="#1a1a1a" stop-opacity="0"/>
-            </linearGradient>
-            <linearGradient id="footerMeltBloom" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="0.55"/>
-              <stop offset="70%"  stop-color="#0d0d0d" stop-opacity="0.18"/>
-              <stop offset="100%" stop-color="#0d0d0d" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-
-          <path fill="url(#footerMeltBloom)">
-            <animate attributeName="d"
-              dur="9s" repeatCount="indefinite"
-              calcMode="spline"
-              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
-              values="
-                M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z;
-                M0,74 L1440,74 L1440,30 C1260,6  1020,60 840,24 C640,2  440,64 270,26 C120,6  40,50 0,30 Z;
-                M0,74 L1440,74 L1440,6  C1320,34 1060,2  840,36 C620,66 380,6  180,38 C80,56 30,22 0,44 Z;
-                M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z
-              "/>
-          </path>
-
-          <path fill="url(#footerMeltMain)">
-            <animate attributeName="d"
-              dur="9s" repeatCount="indefinite"
-              calcMode="spline"
-              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
-              values="
-                M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z;
-                M0,74 L1440,74 L1440,46 C1260,24 1020,72 840,40 C640,16 440,74 270,42 C120,22 40,64 0,46 Z;
-                M0,74 L1440,74 L1440,22 C1320,50 1060,18 840,52 C620,74 380,22 180,54 C80,70 30,36 0,60 Z;
-                M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z
-              "/>
-          </path>
-        </svg>
-      </div>
+        <div class="rx-footer-melt-wrap">
+            <svg viewBox="0 0 1440 74" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="footerMeltMain" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="1"/>
+                        <stop offset="55%"  stop-color="#1a1a1a" stop-opacity="0.80"/>
+                        <stop offset="100%" stop-color="#1a1a1a" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="footerMeltBloom" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="0.55"/>
+                        <stop offset="70%"  stop-color="#0d0d0d" stop-opacity="0.18"/>
+                        <stop offset="100%" stop-color="#0d0d0d" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <path fill="url(#footerMeltBloom)">
+                    <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+                        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+                        values="
+                            M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z;
+                            M0,74 L1440,74 L1440,30 C1260,6  1020,60 840,24 C640,2  440,64 270,26 C120,6  40,50 0,30 Z;
+                            M0,74 L1440,74 L1440,6  C1320,34 1060,2  840,36 C620,66 380,6  180,38 C80,56 30,22 0,44 Z;
+                            M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z
+                        "/>
+                </path>
+                <path fill="url(#footerMeltMain)">
+                    <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+                        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+                        values="
+                            M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z;
+                            M0,74 L1440,74 L1440,46 C1260,24 1020,72 840,40 C640,16 440,74 270,42 C120,22 40,64 0,46 Z;
+                            M0,74 L1440,74 L1440,22 C1320,50 1060,18 840,52 C620,74 380,22 180,54 C80,70 30,36 0,60 Z;
+                            M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z
+                        "/>
+                </path>
+            </svg>
+        </div>
 
         <div class="container footer-grid">
             <div class="footer-col">
@@ -323,13 +304,25 @@
         </div>
     </footer>
 
+    <!-- Google Translate -->
+    <div id="google_translate_element" style="display:none"></div>
+    <script>
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'ar',
+            autoDisplay: false
+        }, 'google_translate_element');
+    }
+    </script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
     <script src="/js/ambient.js"></script>
     <script src="/js/cars.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/car-expand.js"></script>
     <script src="/js/navbar.js"></script>
     <script src="/js/cara.js"></script>
-
 
 </body>
 

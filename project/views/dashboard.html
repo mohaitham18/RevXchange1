@@ -408,7 +408,18 @@
         </main>
       </div>
     </div>
-
+        <!-- Google Translate -->
+<div id="google_translate_element" style="display:none"></div>
+<script>
+function googleTranslateElementInit() {
+    new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'ar',
+        autoDisplay: false
+    }, 'google_translate_element');
+}
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <script src="/js/navbar.js"></script>
     <script src="/js/cara.js"></script>
     <script src="/js/dashboard.js"></script>
