@@ -93,12 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function(e) {
             e.preventDefault();
-        localStorage.removeItem('rxUser');
-        localStorage.removeItem('rxEmail');
-        localStorage.removeItem('role');
-        localStorage.removeItem('rxToken');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+            localStorage.removeItem('rxUser');
+            localStorage.removeItem('rxEmail');
+            localStorage.removeItem('role');
+            localStorage.removeItem('rxToken');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
             updateAuthUI();
             window.location.href = '/';
         });
@@ -106,129 +106,132 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateAuthUI();
 
-});
-
-/* ── Car Communities mega-menu ──────────────────────────────── */
-(function initCommMega() {
-
-  const allNavLinks = document.querySelectorAll('.nav-links a');
-  let commNavLink = null;
-  allNavLinks.forEach(a => {
-    const href = a.getAttribute('href') || '';
-    if (a.textContent.trim() === 'Car Communities' ||
-        href.includes('communities') || href.includes('feed')) {
-      commNavLink = a;
-    }
-  });
-
-  if (!commNavLink) return;
-
-  const wrap = document.createElement('span');
-  wrap.className = 'comm-nav-wrap';
-  commNavLink.parentNode.insertBefore(wrap, commNavLink);
-  wrap.appendChild(commNavLink);
-
-  commNavLink.setAttribute('href', '/feed.html');
-
-  const userName = localStorage.getItem('rxUser');
-  const feedLabel = userName
-    ? `${userName.split(' ')[0]}'s Feed`
-    : 'Your Feed';
-  const feedIcon = userName ? '👤' : '🏠';
-
-  const mega = document.createElement('div');
-  mega.className = 'comm-mega';
-  mega.innerHTML = `
-    <a class="comm-mega-item" href="/feed.html">
-      <div class="comm-mega-icon">${feedIcon}</div>
-      <div class="comm-mega-item-text">
-        <div class="comm-mega-item-title">${feedLabel}</div>
-        <div class="comm-mega-item-sub">Posts from your communities</div>
-      </div>
-    </a>
-    <div class="comm-mega-divider"></div>
-    <a class="comm-mega-item" href="/communities.html">
-      <div class="comm-mega-icon">🔍</div>
-      <div class="comm-mega-item-text">
-        <div class="comm-mega-item-title">Explore Communities</div>
-        <div class="comm-mega-item-sub">Browse and join car communities</div>
-      </div>
-    </a>
-  `;
-  wrap.appendChild(mega);
-
-  let closeTimer = null;
-
-  let openTimer = null;
-
-  function openMega() {
-    clearTimeout(closeTimer);
-    clearTimeout(openTimer);
-    openTimer = setTimeout(() => {
-      mega.classList.add('rx-open');
-    }, 900);
-  }
-
-  function cancelOpen() {
-    clearTimeout(openTimer);
-  }
-
-  function schedulClose() {
-    closeTimer = setTimeout(() => {
-      mega.classList.remove('rx-open');
-    }, 120);
-  }
-
-  wrap.addEventListener('mouseenter', openMega);
-  wrap.addEventListener('mouseleave', () => { cancelOpen(); schedulClose(); });
-  mega.addEventListener('mouseenter', () => { clearTimeout(closeTimer); });
-  mega.addEventListener('mouseleave', schedulClose);
-
-  document.addEventListener('click', (e) => {
-    if (!wrap.contains(e.target)) {
-      mega.classList.remove('rx-open');
-    }
-  });
-
-  document.addEventListener('caraOpen', () => mega.classList.remove('rx-open'));
-
-
-  // ─── Language Toggle ──────────────────────────────────────
+    // ─── Language Toggle ──────────────────────────────────────
     const langBtn = document.getElementById('langToggleBtn');
+
+    function clearGoogleTranslateCookie() {
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
+    }
+
+    function triggerGoogleTranslate(lang) {
+        const select = document.querySelector('.goog-te-combo');
+        if (select) {
+            select.value = lang;
+            select.dispatchEvent(new Event('change'));
+        }
+    }
+
     if (langBtn) {
         const currentLang = localStorage.getItem('rxLang') || 'en';
         langBtn.textContent = currentLang === 'ar' ? '🌐 English' : '🌐 العربية';
 
-langBtn.addEventListener('click', function() {
+        if (currentLang === 'ar') {
+            document.documentElement.dir = 'rtl';
+            document.documentElement.lang = 'ar';
+            setTimeout(() => triggerGoogleTranslate('ar'), 1500);
+        } else {
+            clearGoogleTranslateCookie();
+        }
+
+        langBtn.addEventListener('click', function() {
             const lang = localStorage.getItem('rxLang') || 'en';
             if (lang === 'en') {
                 localStorage.setItem('rxLang', 'ar');
                 langBtn.textContent = '🌐 English';
                 document.documentElement.dir = 'rtl';
                 document.documentElement.lang = 'ar';
-                if (window.applyTranslations) applyTranslations('ar');
+                triggerGoogleTranslate('ar');
             } else {
                 localStorage.setItem('rxLang', 'en');
-                langBtn.textContent = '🌐 العربية';
+                clearGoogleTranslateCookie();
                 document.documentElement.dir = 'ltr';
                 document.documentElement.lang = 'en';
-                if (window.applyTranslations) applyTranslations('en');
+                window.location.reload();
             }
         });
-
-        // Apply on page load
-        if (currentLang === 'ar') {
-            document.documentElement.dir = 'rtl';
-            document.documentElement.lang = 'ar';
-            langBtn.textContent = '🌐 English';
-            if (window.applyTranslations) applyTranslations('ar');
-        }
-        // Apply saved language on page load
-        if (currentLang === 'ar') {
-            document.documentElement.dir = 'rtl';
-            document.documentElement.lang = 'ar';
-            langBtn.textContent = '🌐 English';
-        }
     }
+
+});
+
+/* ── Car Communities mega-menu ──────────────────────────────── */
+(function initCommMega() {
+
+    const allNavLinks = document.querySelectorAll('.nav-links a');
+    let commNavLink = null;
+    allNavLinks.forEach(a => {
+        const href = a.getAttribute('href') || '';
+        if (a.textContent.trim() === 'Car Communities' ||
+            href.includes('communities') || href.includes('feed')) {
+            commNavLink = a;
+        }
+    });
+
+    if (!commNavLink) return;
+
+    const wrap = document.createElement('span');
+    wrap.className = 'comm-nav-wrap';
+    commNavLink.parentNode.insertBefore(wrap, commNavLink);
+    wrap.appendChild(commNavLink);
+
+    commNavLink.setAttribute('href', '/feed.html');
+
+    const userName = localStorage.getItem('rxUser');
+    const feedLabel = userName ? `${userName.split(' ')[0]}'s Feed` : 'Your Feed';
+    const feedIcon = userName ? '👤' : '🏠';
+
+    const mega = document.createElement('div');
+    mega.className = 'comm-mega';
+    mega.innerHTML = `
+        <a class="comm-mega-item" href="/feed.html">
+            <div class="comm-mega-icon">${feedIcon}</div>
+            <div class="comm-mega-item-text">
+                <div class="comm-mega-item-title">${feedLabel}</div>
+                <div class="comm-mega-item-sub">Posts from your communities</div>
+            </div>
+        </a>
+        <div class="comm-mega-divider"></div>
+        <a class="comm-mega-item" href="/communities.html">
+            <div class="comm-mega-icon">🔍</div>
+            <div class="comm-mega-item-text">
+                <div class="comm-mega-item-title">Explore Communities</div>
+                <div class="comm-mega-item-sub">Browse and join car communities</div>
+            </div>
+        </a>
+    `;
+    wrap.appendChild(mega);
+
+    let closeTimer = null;
+    let openTimer = null;
+
+    function openMega() {
+        clearTimeout(closeTimer);
+        clearTimeout(openTimer);
+        openTimer = setTimeout(() => {
+            mega.classList.add('rx-open');
+        }, 900);
+    }
+
+    function cancelOpen() {
+        clearTimeout(openTimer);
+    }
+
+    function schedulClose() {
+        closeTimer = setTimeout(() => {
+            mega.classList.remove('rx-open');
+        }, 120);
+    }
+
+    wrap.addEventListener('mouseenter', openMega);
+    wrap.addEventListener('mouseleave', () => { cancelOpen(); schedulClose(); });
+    mega.addEventListener('mouseenter', () => { clearTimeout(closeTimer); });
+    mega.addEventListener('mouseleave', schedulClose);
+
+    document.addEventListener('click', (e) => {
+        if (!wrap.contains(e.target)) mega.classList.remove('rx-open');
+    });
+
+    document.addEventListener('caraOpen', () => mega.classList.remove('rx-open'));
 
 }());
