@@ -103,7 +103,6 @@ mongoose.connect(process.env.MONGO_URI)
     app.get('/login.html',         (_, res) => res.sendFile(path.join(views, 'login.html')));
     app.get('/dashboard.html',     (_, res) => res.sendFile(path.join(views, 'dashboard.html')));
     app.get('/admin.html',         (_, res) => res.sendFile(path.join(views, 'admin.html')));
-    app.get('/Auctioned-cars.html',(_, res) => res.sendFile(path.join(views, 'Auctioned-cars.html')));
     app.get('/car/:id',            (_, res) => res.sendFile(path.join(views, 'used-cars.html')));
 
     const PORT = process.env.PORT || 3000;

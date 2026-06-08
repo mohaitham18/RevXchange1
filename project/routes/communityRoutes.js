@@ -13,7 +13,8 @@ const Post = require('../models/Post');
 const Vote = require('../models/Vote');
 
 // Register referenced models for populate()
-require('../models/CarVariant');
+const CarVariant = require('../models/CarVariant');
+
 
 const optionalAuth = async (req, res, next) => {
   try {
@@ -126,6 +127,39 @@ router.post('/suggest', optionalAuth, async (req, res) => {
   } catch (err) {
     console.error('POST /api/communities/suggest error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+
+// GET /api/communities/:slug/variants
+router.get('/:slug/variants', optionalAuth, async (req, res) => {
+  try {
+    const community = await Community.findOne({
+      slug: req.params.slug
+    }).lean();
+
+    if (!community) {
+      return res.status(404).json({
+        message: 'Community not found'
+      });
+    }
+
+    const variants = await CarVariant.find({
+      communityId: community._id
+    })
+      .sort({ order: 1, yearStart: 1, label: 1 })
+      .lean();
+
+    res.json({
+      variants
+    });
+  } catch (err) {
+    console.error('GET /api/communities/:slug/variants error:', err);
+
+    res.status(500).json({
+      message: 'Server error',
+      error: err.message
+    });
   }
 });
 
