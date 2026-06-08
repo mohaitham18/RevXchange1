@@ -225,6 +225,7 @@ async function signIn() {
         localStorage.setItem('rxUser', data.user.name);
         localStorage.setItem('rxEmail', data.user.email);
         localStorage.setItem('role', data.user.role);
+        localStorage.setItem('rxUserId', data.user._id || data.user.id || '');
 
         if (data.user.role === 'admin') {
             window.location.href = '/admin.html';
@@ -309,6 +310,7 @@ async function registerUser() {
         localStorage.setItem('rxUser', data.user.name);
         localStorage.setItem('rxEmail', data.user.email);
         localStorage.setItem('role', data.user.role);
+        localStorage.setItem('rxUserId', data.user._id || data.user.id || '');
 
         if (data.user.role === 'admin') {
             window.location.href = '/admin.html';

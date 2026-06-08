@@ -736,6 +736,7 @@ Seller description: ${car.description || 'No seller description'}
     if (e.target.closest('.save-car-btn')) return;
     if (e.target.closest('.car-action-btn')) return;
     if (e.target.closest('.rx-action-btn')) return;
+    if (e.target.closest('.carousel-arrow')) return;
 
     const cardEl = e.target.closest('.car-card-placeholder');
     if (!cardEl) return;
