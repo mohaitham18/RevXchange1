@@ -230,6 +230,12 @@
 
       const res  = await fetch(url, { headers });
 
+      if (res.status === 503) {
+        const data = await res.json().catch(() => ({}));
+        showMaintenanceBanner(container, data);
+        return;
+      }
+
       // Fall back to unified feed if per-community endpoint not yet available
       if (!res.ok && currentCommId) {
         const fallback = await fetch(
@@ -1343,8 +1349,13 @@
           insertPendingPost(postData.post);
         }
       } else {
-        console.error('Submit failed:', data?.message);
-        alert(data?.message || 'Failed to submit post. Please try again.');
+        if (res.status === 403 && data?.suspendedUntil) {
+          const until = new Date(data.suspendedUntil).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          showReportToast(`You are suspended until ${until}`);
+        } else {
+          console.error('Submit failed:', data?.message);
+          alert(data?.message || 'Failed to submit post. Please try again.');
+        }
       }
     } catch (e) {
       console.error('Submit error:', e);
@@ -1700,7 +1711,173 @@
   }
 
   function handleReportPost(postId) {
-    alert('Thank you for your report. Our team will review this post.');
+    if (!isLoggedIn()) {
+      window.location.href = '/login.html?returnTo=%2Ffeed.html';
+      return;
+    }
+
+    document.getElementById('feedReportModal')?.remove();
+
+    const reasons = [
+      { value: 'spam',           label: 'Spam' },
+      { value: 'misinformation', label: 'Misinformation' },
+      { value: 'inappropriate',  label: 'Inappropriate content' },
+      { value: 'harassment',     label: 'Harassment' },
+      { value: 'other',          label: 'Other' }
+    ];
+
+    const modal = document.createElement('div');
+    modal.id        = 'feedReportModal';
+    modal.className = 'feed-modal-overlay rx-open';
+    modal.innerHTML = `
+      <div class="feed-modal-card feed-report-card">
+        <div class="feed-modal-header">
+          <h3 class="feed-modal-title">Report Post</h3>
+          <button class="feed-modal-close" id="reportModalClose">✕</button>
+        </div>
+        <div class="feed-modal-body">
+          <div class="feed-report-reason-list">
+            ${reasons.map(r => `
+              <label class="feed-report-reason-item">
+                <input type="radio" name="reportReason" value="${r.value}">
+                <span class="feed-report-reason-label">${r.label}</span>
+              </label>`).join('')}
+          </div>
+          <div class="feed-modal-field" style="margin-top:14px;">
+            <label class="feed-modal-label">
+              Additional details
+              <span style="font-size:0.75rem;color:var(--text-light);font-weight:400;">(optional)</span>
+            </label>
+            <textarea class="feed-modal-textarea"
+                      id="reportDetails"
+                      placeholder="Describe the issue..."
+                      maxlength="300"
+                      rows="3"
+                      style="min-height:80px;"></textarea>
+            <div class="feed-modal-counter" id="reportDetailsCounter">0 / 300</div>
+          </div>
+        </div>
+        <div class="feed-modal-footer">
+          <button class="feed-modal-cancel" id="reportModalCancel">Cancel</button>
+          <button class="feed-modal-submit feed-report-submit" id="reportModalSubmit" disabled>
+            <span id="reportSubmitLabel">Submit Report</span>
+            <span id="reportSubmitSpinner" style="display:none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5"
+                   style="animation:feedSpin 0.8s linear infinite;">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+
+    const close = () => {
+      modal.remove();
+      document.body.style.overflow = '';
+    };
+
+    document.getElementById('reportModalClose')?.addEventListener('click', close);
+    document.getElementById('reportModalCancel')?.addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape' && document.getElementById('feedReportModal')) {
+        close();
+        document.removeEventListener('keydown', escHandler);
+      }
+    });
+
+    const submitBtn = document.getElementById('reportModalSubmit');
+    const textarea  = document.getElementById('reportDetails');
+    const counter   = document.getElementById('reportDetailsCounter');
+
+    modal.querySelectorAll('input[name="reportReason"]').forEach(radio => {
+      radio.addEventListener('change', () => { submitBtn.disabled = false; });
+    });
+
+    textarea?.addEventListener('input', () => {
+      if (counter) counter.textContent = `${textarea.value.length} / 300`;
+    });
+
+    submitBtn?.addEventListener('click', async () => {
+      const selected = modal.querySelector('input[name="reportReason"]:checked');
+      if (!selected) return;
+
+      const reason  = selected.value;
+      const details = textarea?.value.trim() || '';
+
+      submitBtn.disabled = true;
+      document.getElementById('reportSubmitLabel').style.display   = 'none';
+      document.getElementById('reportSubmitSpinner').style.display = 'flex';
+
+      try {
+        const res = await fetch(`/api/posts/${postId}/report`, {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + getToken()
+          },
+          body: JSON.stringify({ reason, details })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          close();
+          showReportToast('Report submitted. Our team will review it.');
+        } else if (res.status === 409) {
+          close();
+          showReportToast('You have already reported this post.');
+        } else {
+          alert(data.message || 'Failed to submit report.');
+          submitBtn.disabled = false;
+          document.getElementById('reportSubmitLabel').style.display   = '';
+          document.getElementById('reportSubmitSpinner').style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Report error:', err);
+        submitBtn.disabled = false;
+        document.getElementById('reportSubmitLabel').style.display   = '';
+        document.getElementById('reportSubmitSpinner').style.display = 'none';
+      }
+    });
+  }
+
+  function showMaintenanceBanner(container, data) {
+    const endsAt = data.endsAt
+      ? new Date(data.endsAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      : null;
+    container.innerHTML = `
+      <div class="feed-maintenance-banner">
+        <div class="feed-maint-icon">⚡</div>
+        <div class="feed-maint-title">Communities are temporarily unavailable</div>
+        ${data.message ? `<div class="feed-maint-message">${data.message}</div>` : ''}
+        ${endsAt ? `<div class="feed-maint-back">Back at ${endsAt}</div>` : ''}
+      </div>`;
+  }
+
+  function showReportToast(message) {
+    const existing = document.getElementById('rxReportToast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id        = 'rxReportToast';
+    toast.className = 'feed-report-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => toast.classList.add('rx-visible'));
+    });
+
+    setTimeout(() => {
+      toast.classList.remove('rx-visible');
+      setTimeout(() => toast.remove(), 350);
+    }, 3000);
   }
 
   // ── Vote handler ─────────────────────────────────────────
@@ -2725,7 +2902,12 @@
       const data = await res.json();
       if (res.ok) return data.comment;
 
-      console.error('Post comment failed:', data.message);
+      if (res.status === 403 && data?.suspendedUntil) {
+        const until = new Date(data.suspendedUntil).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        showReportToast(`You are suspended until ${until}`);
+      } else {
+        console.error('Post comment failed:', data.message);
+      }
       return null;
     } catch (e) {
       console.error('Post comment error:', e);
@@ -2792,6 +2974,7 @@
               if (res.ok) {
                 editImgUrls.splice(idx, 1);
                 renderCommentEditMedia();
+                showReportToast('Image removed');
                 // Update the live images section in the comment DOM
                 if (commentImgsEl) {
                   if (editImgUrls.length === 0) {
@@ -2882,7 +3065,6 @@
       const newBody = bodyEl.textContent.trim();
       if (!newBody) return;
       if (newBody === original) {
-        // No change — just cancel
         bodyEl.contentEditable = 'false';
         bodyEl.style.cssText   = '';
         btn.textContent        = 'Edit';
@@ -2890,6 +3072,7 @@
         cancelBtn.remove();
         btn.removeEventListener('click', saveHandler);
         cleanupEditMedia();
+        showReportToast('Done');
         return;
       }
 
@@ -2929,12 +3112,12 @@
             metaEl.appendChild(tag);
           }
         } else {
-          console.error('Edit comment failed:', data.message);
+          showReportToast(data.message || 'Failed to save comment');
           btn.textContent = 'Save';
           btn.disabled    = false;
         }
       } catch (err) {
-        console.error('Edit comment error:', err);
+        showReportToast('Failed to save comment');
         btn.textContent = 'Save';
         btn.disabled    = false;
       }

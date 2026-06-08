@@ -34,7 +34,13 @@ const currentPages = {
   rejected: 1,
   users: 1,
   'buy-requests': 1,
-  'rent-requests': 1
+  'rent-requests': 1,
+  reports: 1,
+  overview: 1,
+  suggestions: 1,
+  maintenance: 1,
+  'community-reset': 1,
+  'nuclear-reset': 1
 };
 
 const ITEMS_PER_PAGE = 5;
@@ -194,7 +200,13 @@ const sectionTitles = {
   rejected: ['Rejected Cars', 'Cars that were declined by admin review.'],
   users: ['Users', 'Manage all registered accounts.'],
   'buy-requests': ['Buy Requests', 'All purchase requests from users.'],
-  'rent-requests': ['Rent Requests', 'All rental requests from users.']
+  'rent-requests': ['Rent Requests', 'All rental requests from users.'],
+  reports: ['Community Reports', 'Review reported posts and take action.'],
+  overview: ['Community Overview', 'Stats and health of all communities.'],
+  suggestions: ['Community Suggestions', 'Review and approve user-submitted community requests.'],
+  maintenance: ['Maintenance Mode', 'Control platform availability for community features.'],
+  'community-reset': ['Community Reset', 'Permanently remove all content from a community.'],
+  'nuclear-reset': ['Nuclear Reset', 'Full platform content reset — requires all 4 admin passwords.']
 };
 
 // ── Navigation ────────────────────────────────────────────────
@@ -238,7 +250,13 @@ function switchSection(name, page = 1) {
     rejected: () => loadCarsSection('rejected', 'rejectedTableBody', 'rejectedCount', page),
     users: () => loadUsers(page),
     'buy-requests': () => loadRequests('buy', 'buyReqTableBody', 'buyReqCount', page),
-    'rent-requests': () => loadRequests('rent', 'rentReqTableBody', 'rentReqCount', page)
+    'rent-requests': () => loadRequests('rent', 'rentReqTableBody', 'rentReqCount', page),
+    reports:           () => loadReports(1, true),
+    overview:          () => loadCommunityOverview(),
+    suggestions:       () => loadSuggestions(1, true),
+    maintenance:       () => initMaintenance(),
+    'community-reset': () => initCommunityReset(),
+    'nuclear-reset':   () => initNuclearReset()
   };
 
   if (loaders[name]) {
@@ -966,9 +984,863 @@ document.addEventListener('click', async function (e) {
   }
 });
 
+// ── Community Reports ─────────────────────────────────────────
+let reportsCurrentPage   = 1;
+let reportsTotalPages    = 1;
+let reportsCurrentStatus = 'pending';
+
+const REASON_LABELS = {
+  spam:          'Spam',
+  misinformation:'Misinformation',
+  inappropriate: 'Inappropriate',
+  harassment:    'Harassment',
+  other:         'Other'
+};
+
+const REASON_COLORS = {
+  spam:          'rpt-reason-spam',
+  misinformation:'rpt-reason-misinfo',
+  inappropriate: 'rpt-reason-inappropriate',
+  harassment:    'rpt-reason-harassment',
+  other:         'rpt-reason-other'
+};
+
+async function loadReports(page = 1, reset = false) {
+  const list      = document.getElementById('reportsTableBody');
+  const empty     = document.getElementById('reportsEmptyState');
+  const loadMore  = document.getElementById('reportsLoadMore');
+  const countEl   = document.getElementById('reportsCount');
+  if (!list) return;
+
+  if (reset) {
+    list.innerHTML = '<div class="rpt-loading">Loading…</div>';
+    if (empty)    empty.style.display    = 'none';
+    if (loadMore) loadMore.style.display = 'none';
+  }
+
+  try {
+    const data = await apiFetch(`/reports?status=${reportsCurrentStatus}&page=${page}`);
+    reportsCurrentPage = data.page;
+    reportsTotalPages  = data.pages;
+
+    if (reset) list.innerHTML = '';
+
+    if (data.total === 0 && reset) {
+      if (empty) empty.style.display = 'flex';
+    }
+
+    if (countEl) {
+      countEl.textContent = `${data.total} report${data.total !== 1 ? 's' : ''}`;
+    }
+
+    updateReportsBadge(reportsCurrentStatus === 'pending' ? data.total : null);
+
+    data.reports.forEach(report => {
+      list.appendChild(buildReportCard(report));
+    });
+
+    if (loadMore) {
+      loadMore.style.display = reportsCurrentPage < reportsTotalPages ? 'flex' : 'none';
+    }
+  } catch (err) {
+    list.innerHTML = `<div class="rpt-error">Error: ${err.message}</div>`;
+  }
+}
+
+function updateReportsBadge(count) {
+  const badge = document.getElementById('reportsNavBadge');
+  if (!badge) return;
+  if (count && count > 0) {
+    badge.textContent    = count > 99 ? '99+' : count;
+    badge.style.display  = 'inline-block';
+  } else if (count === 0) {
+    badge.style.display  = 'none';
+  }
+}
+
+function buildReportCard(report) {
+  const card = document.createElement('div');
+  card.className    = 'rpt-card';
+  card.dataset.id   = report._id;
+
+  const post       = report.postId;
+  const reporter   = report.reporterId;
+  const postTitle  = post?.title   || '[deleted post]';
+  const postBody   = post?.body    ? post.body.slice(0, 120) + (post.body.length > 120 ? '…' : '') : '';
+  const authorName = post?.authorId?.name    || '—';
+  const commName   = post?.communityId?.name || '—';
+  const repName    = reporter?.name || 'Unknown';
+  const ts         = new Date(report.createdAt).toLocaleDateString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric'
+  });
+  const reasonCls  = REASON_COLORS[report.reason] || 'rpt-reason-other';
+  const reasonLbl  = REASON_LABELS[report.reason] || report.reason;
+  const postDeleted = post?.isDeleted ? '<span class="rpt-deleted-tag">POST DELETED</span>' : '';
+
+  const actionButtons = reportsCurrentStatus === 'pending' ? `
+    <button class="rpt-btn rpt-btn-dismiss"  data-rpt-action="dismiss"      data-id="${report._id}">Dismiss</button>
+    <button class="rpt-btn rpt-btn-delete"   data-rpt-action="delete-post"  data-id="${report._id}" data-post-id="${post?._id || ''}" ${post?.isDeleted ? 'disabled' : ''}>Delete Post</button>
+    <button class="rpt-btn rpt-btn-suspend"  data-rpt-action="suspend-open" data-id="${report._id}" data-user-id="${post?.authorId?._id || ''}" data-user-name="${authorName}">Suspend User</button>
+  ` : `<span class="rpt-resolved-tag">${report.status.toUpperCase()}</span>`;
+
+  card.innerHTML = `
+    <div class="rpt-card-body">
+      <div class="rpt-card-left">
+        <div class="rpt-card-reason-row">
+          <span class="rpt-reason-badge ${reasonCls}">${reasonLbl}</span>
+          ${postDeleted}
+        </div>
+        <div class="rpt-post-title">${postTitle}</div>
+        ${postBody ? `<div class="rpt-post-body">${postBody}</div>` : ''}
+        <div class="rpt-post-meta">
+          <span>in <strong>${commName}</strong></span>
+          <span class="rpt-meta-sep">·</span>
+          <span>by <strong>${authorName}</strong></span>
+        </div>
+      </div>
+      <div class="rpt-card-right">
+        <div class="rpt-reporter-name">${repName}</div>
+        <div class="rpt-timestamp">${ts}</div>
+      </div>
+    </div>
+    <div class="rpt-card-actions">
+      ${actionButtons}
+    </div>
+    <div class="rpt-suspend-panel" id="suspendPanel_${report._id}" style="display:none">
+      <div class="rpt-suspend-row">
+        <span class="rpt-suspend-label">Duration:</span>
+        <div class="rpt-dur-group">
+          ${[1,3,7,14,30].map((d, i) => `<button class="rpt-dur-btn${i === 0 ? ' active' : ''}" data-days="${d}">${d}d</button>`).join('')}
+        </div>
+      </div>
+      <input class="rpt-suspend-reason-input" placeholder="Reason for suspension…" maxlength="300">
+      <div class="rpt-suspend-footer">
+        <button class="rpt-btn rpt-btn-cancel-suspend" data-rpt-action="cancel-suspend" data-report-id="${report._id}">Cancel</button>
+        <button class="rpt-btn rpt-btn-confirm-suspend" data-rpt-action="confirm-suspend" data-report-id="${report._id}" data-user-id="${post?.authorId?._id || ''}">Confirm Suspension</button>
+      </div>
+    </div>
+  `;
+
+  return card;
+}
+
+// ── Reports event delegation ──────────────────────────────────
+document.addEventListener('click', async function(e) {
+  // Filter buttons
+  const filterBtn = e.target.closest('.rpt-filter-btn');
+  if (filterBtn) {
+    document.querySelectorAll('.rpt-filter-btn').forEach(b => b.classList.remove('active'));
+    filterBtn.classList.add('active');
+    reportsCurrentStatus = filterBtn.dataset.status;
+    loadReports(1, true);
+    return;
+  }
+
+  // Load More
+  if (e.target.id === 'reportsLoadMoreBtn') {
+    loadReports(reportsCurrentPage + 1, false);
+    return;
+  }
+
+  // Duration selector inside suspend panel
+  const durBtn = e.target.closest('.rpt-dur-btn');
+  if (durBtn) {
+    const panel = durBtn.closest('.rpt-suspend-panel');
+    if (panel) {
+      panel.querySelectorAll('.rpt-dur-btn').forEach(b => b.classList.remove('active'));
+      durBtn.classList.add('active');
+    }
+    return;
+  }
+
+  const rptBtn = e.target.closest('[data-rpt-action]');
+  if (!rptBtn) return;
+
+  const action   = rptBtn.dataset.rptAction;
+  const reportId = rptBtn.dataset.id;
+  const orig     = rptBtn.textContent;
+
+  if (action === 'dismiss') {
+    rptBtn.disabled    = true;
+    rptBtn.textContent = '…';
+    try {
+      await apiFetch(`/reports/${reportId}/dismiss`, { method: 'PATCH' });
+      showToast('Report dismissed', 'success');
+      document.querySelector(`.rpt-card[data-id="${reportId}"]`)?.remove();
+      checkReportsEmpty();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+      rptBtn.disabled    = false;
+      rptBtn.textContent = orig;
+    }
+    return;
+  }
+
+  if (action === 'delete-post') {
+    if (!confirm('Soft-delete this post? It will no longer be visible to users.')) return;
+    rptBtn.disabled    = true;
+    rptBtn.textContent = '…';
+    try {
+      await apiFetch(`/reports/${reportId}/delete-post`, { method: 'DELETE' });
+      showToast('Post deleted and report resolved', 'success');
+      document.querySelector(`.rpt-card[data-id="${reportId}"]`)?.remove();
+      checkReportsEmpty();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+      rptBtn.disabled    = false;
+      rptBtn.textContent = orig;
+    }
+    return;
+  }
+
+  if (action === 'suspend-open') {
+    const panel = document.getElementById(`suspendPanel_${reportId}`);
+    if (panel) {
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+    return;
+  }
+
+  if (action === 'cancel-suspend') {
+    const panel = document.getElementById(`suspendPanel_${rptBtn.dataset.reportId}`);
+    if (panel) panel.style.display = 'none';
+    return;
+  }
+
+  if (action === 'confirm-suspend') {
+    const panel    = document.getElementById(`suspendPanel_${rptBtn.dataset.reportId}`);
+    const userId   = rptBtn.dataset.userId;
+    const durActive = panel?.querySelector('.rpt-dur-btn.active');
+    const days     = durActive ? parseInt(durActive.dataset.days) : 1;
+    const reason   = panel?.querySelector('.rpt-suspend-reason-input')?.value.trim();
+
+    if (!reason) {
+      showToast('Please enter a suspension reason', 'error');
+      return;
+    }
+    if (!userId) {
+      showToast('Cannot identify post author', 'error');
+      return;
+    }
+
+    rptBtn.disabled    = true;
+    rptBtn.textContent = '…';
+
+    try {
+      await apiFetch(`/users/${userId}/suspend`, {
+        method: 'POST',
+        body: JSON.stringify({ reason, durationDays: days, reportId: rptBtn.dataset.reportId })
+      });
+      showToast(`User suspended for ${days} day${days > 1 ? 's' : ''} ✓`, 'success');
+      document.querySelector(`.rpt-card[data-id="${rptBtn.dataset.reportId}"]`)?.remove();
+      checkReportsEmpty();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+      rptBtn.disabled    = false;
+      rptBtn.textContent = 'Confirm Suspension';
+    }
+    return;
+  }
+});
+
+function checkReportsEmpty() {
+  const list  = document.getElementById('reportsTableBody');
+  const empty = document.getElementById('reportsEmptyState');
+  if (list && empty && list.children.length === 0) {
+    empty.style.display = 'flex';
+    const countEl = document.getElementById('reportsCount');
+    if (countEl) countEl.textContent = '0 reports';
+    updateReportsBadge(0);
+  }
+}
+
+async function loadReportsBadge() {
+  try {
+    const data = await apiFetch('/reports?status=pending&page=1');
+    updateReportsBadge(data.total);
+  } catch {}
+}
+
+// ══════════════════════════════════════════════════════════════
+// COMMUNITY: OVERVIEW
+// ══════════════════════════════════════════════════════════════
+
+async function loadCommunityOverview() {
+  const statIds = ['ovr-totalPosts','ovr-totalComm','ovr-totalMembers','ovr-postsToday','ovr-pendingReports','ovr-pendingSugg'];
+  statIds.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '…'; });
+
+  const topList = document.getElementById('ovrTopCommList');
+  const maintEl = document.getElementById('ovrMaintStatus');
+  if (topList) topList.innerHTML = '<div class="rpt-loading">Loading…</div>';
+
+  try {
+    const data = await apiFetch('/community-stats');
+
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = (val ?? 0).toLocaleString();
+    };
+
+    set('ovr-totalPosts',     data.totalPosts);
+    set('ovr-totalComm',      data.totalCommunities);
+    set('ovr-totalMembers',   data.totalMembers);
+    set('ovr-postsToday',     data.postsToday);
+    set('ovr-pendingReports', data.pendingReports);
+    set('ovr-pendingSugg',    data.pendingSuggestions);
+
+    if (topList) {
+      topList.innerHTML = '';
+      const top = data.topCommunities || [];
+      if (!top.length) {
+        topList.innerHTML = '<div class="rpt-empty"><span>No communities yet</span></div>';
+      } else {
+        top.forEach(c => {
+          const row = document.createElement('div');
+          row.className = 'term-table-row';
+          row.innerHTML = `
+            <span>${c.name || '—'}</span>
+            <span>${(c.memberCount || 0).toLocaleString()}</span>
+            <span>${(c.postCount   || 0).toLocaleString()}</span>
+          `;
+          topList.appendChild(row);
+        });
+      }
+    }
+
+    if (maintEl) {
+      if (data.maintenanceMode?.active) {
+        const endsAt = data.maintenanceMode.endsAt
+          ? new Date(data.maintenanceMode.endsAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+          : 'no end time';
+        maintEl.textContent = `ACTIVE — ends at ${endsAt}`;
+        maintEl.style.color = '#f59e0b';
+      } else {
+        maintEl.textContent = 'INACTIVE — All community services operational';
+        maintEl.style.color = '#22c55e';
+      }
+    }
+
+    updateSuggBadge(data.pendingSuggestions);
+  } catch (err) {
+    statIds.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = 'err'; });
+    if (maintEl) { maintEl.textContent = 'Error: ' + err.message; maintEl.style.color = '#ef4444'; }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// COMMUNITY: SUGGESTIONS
+// ══════════════════════════════════════════════════════════════
+
+let suggCurrentPage   = 1;
+let suggTotalPages    = 1;
+let suggCurrentStatus = 'pending';
+
+function updateSuggBadge(count) {
+  const badge = document.getElementById('suggNavBadge');
+  if (!badge) return;
+  if (count && count > 0) {
+    badge.textContent   = count > 99 ? '99+' : count;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+async function loadSuggestions(page = 1, reset = false) {
+  const list     = document.getElementById('suggTableBody');
+  const empty    = document.getElementById('suggEmpty');
+  const loadMore = document.getElementById('suggLoadMore');
+  const countEl  = document.getElementById('suggCount');
+  if (!list) return;
+
+  if (reset) {
+    list.innerHTML = '<div class="rpt-loading">Loading…</div>';
+    if (empty)    empty.style.display    = 'none';
+    if (loadMore) loadMore.style.display = 'none';
+  }
+
+  try {
+    const data = await apiFetch(`/community-suggestions?status=${suggCurrentStatus}&page=${page}`);
+    suggCurrentPage = data.page;
+    suggTotalPages  = data.pages;
+
+    if (reset) list.innerHTML = '';
+
+    if (countEl) countEl.textContent = `${data.total} suggestion${data.total !== 1 ? 's' : ''}`;
+
+    if (data.total === 0 && reset) {
+      if (empty) { empty.style.display = 'flex'; empty.querySelector('span:last-child').textContent = `No ${suggCurrentStatus} suggestions`; }
+    }
+
+    (data.suggestions || []).forEach(sugg => list.appendChild(buildSuggestionCard(sugg)));
+
+    if (loadMore) loadMore.style.display = suggCurrentPage < suggTotalPages ? 'flex' : 'none';
+
+    if (suggCurrentStatus === 'pending') updateSuggBadge(data.total);
+  } catch (err) {
+    list.innerHTML = `<div class="rpt-error">Error: ${err.message}</div>`;
+  }
+}
+
+function buildSuggestionCard(sugg) {
+  const card      = document.createElement('div');
+  card.className  = 'rpt-card';
+  card.dataset.id = sugg._id;
+
+  const brand     = sugg.brandId?.name || '—';
+  const model     = sugg.model         || '—';
+  const yearStart = sugg.yearStart      || '';
+  const yearEnd   = sugg.yearEnd        || '';
+  const yearRange = yearStart ? (yearEnd ? `${yearStart}–${yearEnd}` : `${yearStart}+`) : '';
+  const details   = sugg.details        || '';
+  const requester = sugg.userId?.name   || 'Anonymous';
+  const ts        = new Date(sugg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const statusBadge = {
+    pending:  '<span class="status pending">pending</span>',
+    approved: '<span class="status approved">approved</span>',
+    rejected: '<span class="status rejected">rejected</span>'
+  }[sugg.status] || '';
+
+  const actionButtons = sugg.status === 'pending'
+    ? `
+        <button class="rpt-btn rpt-btn-dismiss" data-sugg-action="approve"      data-id="${sugg._id}">Approve</button>
+        <button class="rpt-btn rpt-btn-delete"  data-sugg-action="reject-open"  data-id="${sugg._id}">Reject</button>
+      `
+    : `${statusBadge}${sugg.adminNote ? `<span class="maint-detail" style="margin-left:8px">${sugg.adminNote}</span>` : ''}`;
+
+  card.innerHTML = `
+    <div class="rpt-card-body">
+      <div class="rpt-card-left">
+        <div class="sugg-brand">${brand}</div>
+        <div class="sugg-model">${model} <span class="sugg-year">${yearRange}</span></div>
+        ${details ? `<div class="sugg-details">${details}</div>` : ''}
+        <div class="sugg-requester">Requested by: ${requester}</div>
+      </div>
+      <div class="rpt-card-right">
+        <div class="rpt-timestamp">${ts}</div>
+      </div>
+    </div>
+    <div class="rpt-card-actions">${actionButtons}</div>
+    <div id="suggRejectPanel_${sugg._id}" style="display:none; margin-top:10px; background:#0a0a0a; border:1px solid #1e2130; border-radius:9px; padding:12px 14px; display:none; flex-direction:column; gap:8px;">
+      <input class="term-input" style="font-size:.8rem" placeholder="Reason for rejection (optional)" maxlength="300">
+      <div style="display:flex; justify-content:flex-end; gap:7px; margin-top:4px">
+        <button class="rpt-btn rpt-btn-cancel-suspend" data-sugg-cancel="${sugg._id}">Cancel</button>
+        <button class="rpt-btn rpt-btn-delete" data-sugg-action="reject-confirm" data-id="${sugg._id}">Confirm Reject</button>
+      </div>
+    </div>
+  `;
+
+  return card;
+}
+
+// Suggestions event delegation
+document.addEventListener('click', async function(e) {
+  // Filter buttons
+  const suggFilterBtn = e.target.closest('[data-sugg-status]');
+  if (suggFilterBtn) {
+    document.querySelectorAll('[data-sugg-status]').forEach(b => b.classList.remove('active'));
+    suggFilterBtn.classList.add('active');
+    suggCurrentStatus = suggFilterBtn.dataset.suggStatus;
+    loadSuggestions(1, true);
+    return;
+  }
+
+  // Load more
+  if (e.target.id === 'suggLoadMoreBtn') {
+    loadSuggestions(suggCurrentPage + 1, false);
+    return;
+  }
+
+  // Cancel reject panel
+  const suggCancel = e.target.closest('[data-sugg-cancel]');
+  if (suggCancel) {
+    const panel = document.getElementById(`suggRejectPanel_${suggCancel.dataset.suggCancel}`);
+    if (panel) panel.style.display = 'none';
+    return;
+  }
+
+  const suggBtn = e.target.closest('[data-sugg-action]');
+  if (!suggBtn) return;
+
+  const action = suggBtn.dataset.suggAction;
+  const id     = suggBtn.dataset.id;
+  const orig   = suggBtn.textContent;
+
+  if (action === 'approve') {
+    if (!confirm('Approve this community suggestion? A new community will be created.')) return;
+    suggBtn.disabled    = true;
+    suggBtn.textContent = '…';
+    try {
+      await apiFetch(`/community-suggestions/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'approved' })
+      });
+      showToast('Community suggestion approved ✓', 'success');
+      document.querySelector(`.rpt-card[data-id="${id}"]`)?.remove();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+      suggBtn.disabled    = false;
+      suggBtn.textContent = orig;
+    }
+    return;
+  }
+
+  if (action === 'reject-open') {
+    const panel = document.getElementById(`suggRejectPanel_${id}`);
+    if (panel) panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    return;
+  }
+
+  if (action === 'reject-confirm') {
+    const panel  = document.getElementById(`suggRejectPanel_${id}`);
+    const note   = panel?.querySelector('input')?.value.trim() || '';
+    suggBtn.disabled    = true;
+    suggBtn.textContent = '…';
+    try {
+      await apiFetch(`/community-suggestions/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'rejected', adminNote: note })
+      });
+      showToast('Suggestion rejected', 'success');
+      document.querySelector(`.rpt-card[data-id="${id}"]`)?.remove();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+      suggBtn.disabled    = false;
+      suggBtn.textContent = orig;
+    }
+    return;
+  }
+});
+
+async function loadSuggBadge() {
+  try {
+    const data = await apiFetch('/community-suggestions?status=pending&page=1');
+    updateSuggBadge(data.total);
+  } catch {}
+}
+
+// ══════════════════════════════════════════════════════════════
+// COMMUNITY: MAINTENANCE
+// ══════════════════════════════════════════════════════════════
+
+let maintCurrentActive = false;
+
+async function initMaintenance() {
+  try {
+    const data = await apiFetch('/community-stats');
+    maintCurrentActive = data.maintenanceMode?.active || false;
+    renderMaintStatus(data.maintenanceMode);
+  } catch (err) {
+    const statusText = document.getElementById('maintStatusText');
+    if (statusText) statusText.textContent = 'Error loading status';
+  }
+
+  const toggleBtn = document.getElementById('maintToggleBtn');
+  if (toggleBtn && !toggleBtn._initDone) {
+    toggleBtn._initDone = true;
+    toggleBtn.addEventListener('click', handleMaintToggle);
+  }
+
+  // Duration button selection
+  const durGroup = document.querySelector('#section-maintenance .maint-dur-group');
+  if (durGroup && !durGroup._initDone) {
+    durGroup._initDone = true;
+    durGroup.addEventListener('click', e => {
+      const btn = e.target.closest('.rpt-dur-btn');
+      if (!btn) return;
+      durGroup.querySelectorAll('.rpt-dur-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  }
+}
+
+function renderMaintStatus(maint) {
+  const dot        = document.getElementById('maintDot');
+  const statusText = document.getElementById('maintStatusText');
+  const detail     = document.getElementById('maintDetail');
+  const toggleBtn  = document.getElementById('maintToggleBtn');
+  const durField   = document.getElementById('maintDurationField');
+  const msgField   = document.getElementById('maintMessageField');
+  if (!dot) return;
+
+  if (maint?.active) {
+    dot.classList.add('active');
+    if (statusText) { statusText.textContent = 'MAINTENANCE ACTIVE'; statusText.classList.add('active'); }
+    const endsAt = maint.endsAt
+      ? new Date(maint.endsAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      : null;
+    if (detail) detail.textContent = endsAt ? `Ends at ${endsAt}${maint.message ? ' · ' + maint.message : ''}` : (maint.message || 'Active');
+    if (toggleBtn) { toggleBtn.textContent = 'Deactivate Maintenance'; toggleBtn.className = 'term-btn term-btn-danger'; }
+    if (durField) durField.style.display = 'none';
+    if (msgField) msgField.style.display = 'none';
+  } else {
+    dot.classList.remove('active');
+    if (statusText) { statusText.textContent = 'OPERATIONAL'; statusText.classList.remove('active'); }
+    if (detail) detail.textContent = 'All community services running normally';
+    if (toggleBtn) { toggleBtn.textContent = 'Activate Maintenance'; toggleBtn.className = 'term-btn term-btn-amber'; }
+    if (durField) durField.style.display = '';
+    if (msgField) msgField.style.display = '';
+  }
+}
+
+async function handleMaintToggle() {
+  const password = document.getElementById('maintPassword')?.value.trim();
+  if (!password) { showToast('Enter an admin password', 'error'); return; }
+
+  const toggleBtn = document.getElementById('maintToggleBtn');
+  const origText  = toggleBtn.textContent;
+  toggleBtn.disabled    = true;
+  toggleBtn.textContent = '…';
+
+  try {
+    let body;
+    if (maintCurrentActive) {
+      body = { password };
+    } else {
+      const activeDurBtn  = document.querySelector('#section-maintenance .maint-dur-group .rpt-dur-btn.active');
+      const durationMins  = activeDurBtn ? parseInt(activeDurBtn.dataset.mins) : 60;
+      const message       = document.getElementById('maintMessage')?.value.trim() || '';
+      body = { password, durationMinutes: durationMins, message };
+    }
+
+    const data = await apiFetch('/maintenance/toggle', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+
+    maintCurrentActive = data.active;
+    renderMaintStatus(data.maintenanceMode || { active: data.active, endsAt: data.endsAt, message: data.message });
+    showToast(data.active ? 'Maintenance activated' : 'Maintenance deactivated', 'success');
+    document.getElementById('maintPassword').value = '';
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    toggleBtn.disabled    = false;
+    toggleBtn.textContent = origText;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// COMMUNITY: RESET
+// ══════════════════════════════════════════════════════════════
+
+let resetTargetId   = null;
+let resetTargetName = '';
+
+async function initCommunityReset() {
+  await loadCommunitiesForReset();
+
+  const confirmPanel = document.getElementById('resetConfirmPanel');
+  const resultEl     = document.getElementById('resetResult');
+  if (confirmPanel) confirmPanel.style.display = 'none';
+  if (resultEl) resultEl.style.display = 'none';
+
+  const pass1 = document.getElementById('resetPass1');
+  const pass2 = document.getElementById('resetPass2');
+  if (pass1) pass1.value = '';
+  if (pass2) pass2.value = '';
+
+  const select = document.getElementById('resetCommSelect');
+  if (select && !select._resetInit) {
+    select._resetInit = true;
+    select.addEventListener('change', () => {
+      const opt  = select.options[select.selectedIndex];
+      const info = document.getElementById('resetInfo');
+      if (!info) return;
+      if (!opt.value) { info.style.display = 'none'; resetTargetId = null; resetTargetName = ''; return; }
+      resetTargetId   = opt.value;
+      resetTargetName = opt.textContent;
+      document.getElementById('resetPostCount').textContent   = opt.dataset.posts   || '0';
+      document.getElementById('resetMemberCount').textContent = opt.dataset.members || '0';
+      info.style.display = 'flex';
+    });
+  }
+
+  const resetBtn = document.getElementById('resetCommBtn');
+  if (resetBtn && !resetBtn._resetInit) {
+    resetBtn._resetInit = true;
+    resetBtn.addEventListener('click', () => {
+      if (!resetTargetId) { showToast('Select a community first', 'error'); return; }
+      const p1 = document.getElementById('resetPass1')?.value.trim();
+      const p2 = document.getElementById('resetPass2')?.value.trim();
+      if (!p1 || !p2) { showToast('Enter two admin passwords', 'error'); return; }
+
+      const body = document.getElementById('resetConfirmBody');
+      if (body) body.textContent = `This will permanently soft-delete all posts and comments in "${resetTargetName}".`;
+      const confirmPanel = document.getElementById('resetConfirmPanel');
+      const resultEl     = document.getElementById('resetResult');
+      if (confirmPanel) confirmPanel.style.display = 'block';
+      if (resultEl)     resultEl.style.display     = 'none';
+    });
+  }
+
+  const cancelBtn = document.getElementById('resetConfirmCancelBtn');
+  if (cancelBtn && !cancelBtn._resetInit) {
+    cancelBtn._resetInit = true;
+    cancelBtn.addEventListener('click', () => {
+      document.getElementById('resetConfirmPanel').style.display = 'none';
+    });
+  }
+
+  const execBtn = document.getElementById('resetConfirmExecuteBtn');
+  if (execBtn && !execBtn._resetInit) {
+    execBtn._resetInit = true;
+    execBtn.addEventListener('click', handleCommunityReset);
+  }
+}
+
+async function loadCommunitiesForReset() {
+  const select = document.getElementById('resetCommSelect');
+  if (!select) return;
+  select.innerHTML = '<option value="">Loading...</option>';
+  try {
+    const res  = await fetch('/api/communities', { headers: authHeaders() });
+    const data = await res.json();
+    const communities = data.communities || [];
+    select.innerHTML = '<option value="">— Select a community —</option>';
+    communities.forEach(c => {
+      const opt          = document.createElement('option');
+      opt.value          = c._id;
+      opt.textContent    = c.name;
+      opt.dataset.posts  = c.postCount   || 0;
+      opt.dataset.members = c.memberCount || 0;
+      select.appendChild(opt);
+    });
+  } catch {
+    select.innerHTML = '<option value="">Error loading communities</option>';
+  }
+}
+
+async function handleCommunityReset() {
+  const execBtn = document.getElementById('resetConfirmExecuteBtn');
+  const resultEl = document.getElementById('resetResult');
+  const p1 = document.getElementById('resetPass1')?.value.trim();
+  const p2 = document.getElementById('resetPass2')?.value.trim();
+
+  if (!resetTargetId || !p1 || !p2) { showToast('Missing data — try again', 'error'); return; }
+
+  execBtn.disabled    = true;
+  execBtn.textContent = 'Resetting…';
+
+  try {
+    const data = await apiFetch(`/community/${resetTargetId}/reset`, {
+      method: 'POST',
+      body: JSON.stringify({ passwords: [p1, p2] })
+    });
+
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.textContent   = `✓ Reset complete\n${data.deletedPosts || 0} posts deleted, ${data.deletedComments || 0} comments deleted`;
+    }
+
+    showToast(`Community "${resetTargetName}" has been reset ✓`, 'success');
+
+    document.getElementById('resetPass1').value = '';
+    document.getElementById('resetPass2').value = '';
+    document.getElementById('resetConfirmPanel').style.display = 'none';
+    await loadCommunitiesForReset();
+    resetTargetId = null; resetTargetName = '';
+    document.getElementById('resetInfo').style.display = 'none';
+    document.getElementById('resetCommSelect').value = '';
+    if (resultEl) setTimeout(() => { resultEl.style.display = 'none'; }, 8000);
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+    if (resultEl) { resultEl.style.display = 'block'; resultEl.textContent = '✕ ' + err.message; resultEl.style.color = '#ef4444'; }
+  } finally {
+    execBtn.disabled    = false;
+    execBtn.textContent = 'CONFIRM RESET';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// COMMUNITY: NUCLEAR RESET
+// ══════════════════════════════════════════════════════════════
+
+function initNuclearReset() {
+  const resultEl = document.getElementById('nuclearResult');
+  if (resultEl) resultEl.style.display = 'none';
+
+  const checkReady = () => {
+    const p1  = document.getElementById('nuclearPass1')?.value.trim();
+    const p2  = document.getElementById('nuclearPass2')?.value.trim();
+    const p3  = document.getElementById('nuclearPass3')?.value.trim();
+    const p4  = document.getElementById('nuclearPass4')?.value.trim();
+    const txt = document.getElementById('nuclearConfirmText')?.value.trim();
+    const btn = document.getElementById('nuclearExecuteBtn');
+    if (btn) btn.disabled = !(p1 && p2 && p3 && p4 && txt === 'CONFIRM NUCLEAR RESET');
+  };
+
+  ['nuclearPass1','nuclearPass2','nuclearPass3','nuclearPass4','nuclearConfirmText'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el._nuclearInit) {
+      el._nuclearInit = true;
+      el.addEventListener('input', checkReady);
+    }
+  });
+
+  const execBtn = document.getElementById('nuclearExecuteBtn');
+  if (execBtn && !execBtn._nuclearInit) {
+    execBtn._nuclearInit = true;
+    execBtn.addEventListener('click', handleNuclearReset);
+  }
+
+  checkReady();
+}
+
+async function handleNuclearReset() {
+  const execBtn  = document.getElementById('nuclearExecuteBtn');
+  const resultEl = document.getElementById('nuclearResult');
+
+  const passwords = [
+    document.getElementById('nuclearPass1')?.value.trim(),
+    document.getElementById('nuclearPass2')?.value.trim(),
+    document.getElementById('nuclearPass3')?.value.trim(),
+    document.getElementById('nuclearPass4')?.value.trim()
+  ];
+
+  if (!confirm('FINAL WARNING — This will wipe ALL community posts and comments across the entire platform. This cannot be undone. Continue?')) return;
+
+  execBtn.disabled    = true;
+  execBtn.textContent = 'EXECUTING…';
+  if (resultEl) { resultEl.style.display = 'none'; }
+
+  try {
+    const data = await apiFetch('/nuclear-reset', {
+      method: 'POST',
+      body: JSON.stringify({ passwords })
+    });
+
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.style.color   = '#4ade80';
+      resultEl.textContent   = `✓ NUCLEAR RESET COMPLETE\n${data.deletedPosts || 0} posts deleted\n${data.deletedComments || 0} comments deleted\n${data.communitiesReset || 0} communities reset`;
+    }
+
+    showToast('Nuclear reset executed successfully', 'success');
+
+    ['nuclearPass1','nuclearPass2','nuclearPass3','nuclearPass4','nuclearConfirmText'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    execBtn.disabled = true;
+  } catch (err) {
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.style.color   = '#ef4444';
+      resultEl.textContent   = '✕ FAILED: ' + err.message;
+    }
+    showToast('Nuclear reset failed: ' + err.message, 'error');
+    execBtn.disabled    = false;
+    execBtn.textContent = 'EXECUTE NUCLEAR RESET';
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   guardAdmin();
   initNav();
   switchSection('dashboard', 1);
+  loadReportsBadge();
+  loadSuggBadge();
 });
