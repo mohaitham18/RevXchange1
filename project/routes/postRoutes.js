@@ -171,10 +171,14 @@ router.patch('/:id', protect, async (req, res) => {
     const { title, body } = req.body;
 
     const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    if (post.isDeleted) return res.status(404).json({ message: 'Post not found' });
+    if (!post || post.isDeleted) return res.status(404).json({ message: 'Post not found' });
     if (post.authorId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not your post' });
+    }
+
+    if (title !== undefined) {
+      if (!title.trim()) return res.status(400).json({ message: 'Title is required' });
+      post.title = title.trim();
     }
     if (body !== undefined) post.body = body;
     post.isEdited  = true;
