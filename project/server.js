@@ -30,12 +30,11 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/admin',  adminCommunityRoutes);
     app.use('/api/requests', requestRoutes);
     app.use('/api/communities', communityRoutes);
-    app.use('/api/feed',feedRoutes);
+    app.use('/api/feed', feedRoutes);
     app.use('/api/posts', postRoutes);
     app.use('/api/search', require('./routes/searchRoutes'));
     app.use('/api/cara', caraRoutes);
 
-    
     // ── Video expiry cron job (runs every hour) ───────────────
     const Post = require('./models/Post');
     const cloudinary = require('cloudinary').v2;
@@ -59,14 +58,13 @@ mongoose.connect(process.env.MONGO_URI)
 
         for (const post of expired) {
           try {
-            // Extract public_id from Cloudinary URL
             const match = post.videoUrl.match(/revxchange\/videos\/([^.]+)/);
             if (match) {
               const publicId = 'revxchange/videos/' + match[1];
               await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
             }
             await Post.findByIdAndUpdate(post._id, {
-              videoUrl:      null,
+              videoUrl:       null,
               videoExpiresAt: null
             });
             console.log(`Deleted expired video for post ${post._id}`);
@@ -79,7 +77,6 @@ mongoose.connect(process.env.MONGO_URI)
       }
     }
 
-    // Run immediately on startup, then every hour
     deleteExpiredVideos();
     setInterval(deleteExpiredVideos, 60 * 60 * 1000);
     console.log('Video expiry cron started ✅');
@@ -90,7 +87,6 @@ mongoose.connect(process.env.MONGO_URI)
       res.json({ message: 'RevXChange API is running' });
     });
 
-    // 404 for unknown API routes
     app.use('/api', (req, res) => {
       res.status(404).json({ message: 'API route not found', path: req.originalUrl });
     });

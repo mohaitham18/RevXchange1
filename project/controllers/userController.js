@@ -53,10 +53,10 @@ const register = async (req, res) => {
 
     const user = await User.create({ name, email, password, role });
 
-    // Send welcome email
+    // Send welcome email (non-blocking)
     try {
       const sendMail = require('../utils/mailer');
-      await sendMail({
+      sendMail({
         to: user.email,
         subject: 'Welcome to RevXChange! 🚗',
         html: `
@@ -67,11 +67,11 @@ const register = async (req, res) => {
             <div style="background:#f9fafb;padding:32px;border-radius:0 0 12px 12px">
               <h2 style="color:#1a1a1a">Welcome, ${user.name}! 👋</h2>
               <p style="color:#555;line-height:1.7">Your account has been created successfully. You can now buy, sell and rent cars across Egypt.</p>
-              <a href="http://localhost:3000/used-cars.html" style="display:inline-block;margin-top:16px;background:#5a0f1c;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700">Browse Cars</a>
+              <a href="${process.env.APP_URL || ''}/used-cars.html" style="display:inline-block;margin-top:16px;background:#5a0f1c;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700">Browse Cars</a>
             </div>
           </div>
         `
-      });
+      }).catch(mailErr => console.error('Welcome email failed:', mailErr.message));
     } catch (mailErr) {
       console.error('Welcome email failed:', mailErr.message);
     }

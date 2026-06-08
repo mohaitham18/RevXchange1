@@ -115,5 +115,3 @@ window.RXValidation = (() => {
   return { showError, showSuccess, clearState, validators };
 
 })();
-EOF
-
