@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('rxUser', user.name);
       localStorage.setItem('rxEmail', user.email);
       localStorage.setItem('role', user.role);
+      localStorage.setItem('rxUserId', user._id || user.id || '');
 
       const nameEl = document.getElementById('dashUserName');
       if (nameEl) nameEl.textContent = `Welcome back, ${user.name}`;

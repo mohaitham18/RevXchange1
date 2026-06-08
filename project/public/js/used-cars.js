@@ -225,6 +225,7 @@ function renderCarCard(car) {
           <span class="car-tag">${niceText(car.transmission)}</span>
           <span class="car-tag">${niceText(car.fuel)}</span>
           ${car.color ? `<span class="car-tag">🎨 ${niceText(car.color)}</span>` : ''}
+          ${car.listingType === 'rent' ? `<span class="car-tag car-tag-rent">🔑 For Rent</span>` : ''}
           ${car.fabrika ? `<span class="car-tag car-tag-fabrika">Fabrika</span>` : ''}
         </div>
 

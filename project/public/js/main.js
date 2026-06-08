@@ -330,7 +330,12 @@ function renderCarCard(car) {
       </div>
       <div class="car-card-info">
         <h4>${car.brand} ${car.model} ${car.year}</h4>
-        <div class="car-price">${formatPrice(car.price)}</div>
+        ${car.listingType === 'rent'
+          ? `<div class="car-price rent-price">${formatPrice(car.rentPricePerDay || car.price)} <span>/ day</span></div>
+             ${car.rentPricePerMonth ? `<div class="rent-sub-price">Monthly: ${formatPrice(car.rentPricePerMonth)}</div>` : ''}
+             ${car.rentDeposit ? `<div class="rent-sub-price">Deposit: ${formatPrice(car.rentDeposit)}</div>` : ''}`
+          : `<div class="car-price">${formatPrice(car.price)}</div>`
+        }
         <div class="car-meta">
           <span>📍 ${car.city}</span>
           <span>🛣️ ${formatMileage(car.mileage)}</span>
@@ -339,6 +344,7 @@ function renderCarCard(car) {
           <span class="car-tag">${car.transmission ? car.transmission.charAt(0).toUpperCase() + car.transmission.slice(1) : ''}</span>
           <span class="car-tag">${car.fuel ? car.fuel.charAt(0).toUpperCase() + car.fuel.slice(1) : ''}</span>
           ${car.color ? `<span class="car-tag">🎨 ${car.color.charAt(0).toUpperCase() + car.color.slice(1)}</span>` : ''}
+          ${car.listingType === 'rent' ? `<span class="car-tag car-tag-rent">🔑 For Rent</span>` : ''}
           ${fabrikaTag}
         </div>
         <div class="car-card-actions">
@@ -363,7 +369,7 @@ document.addEventListener('click', function(e) {
 
     e.stopPropagation();
 
-    const carId   = parseInt(btn.dataset.id);
+    const carId   = btn.dataset.id;
     const card    = document.querySelector(`.car-card-placeholder[data-id="${carId}"]`);
     const slides  = card.querySelectorAll('.carousel-slide');
     const counter = card.querySelector('.carousel-counter');
