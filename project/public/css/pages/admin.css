@@ -97,6 +97,46 @@ body {
   border-radius: 20px;
 }
 
+/* ── Admin Pagination ────────────────────────────────────── */
+/* Center alignment wrapper style for the layout grid */
+.admin-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 10px 0;
+}
+
+/* Base button properties for footer items */
+.adm-pg-btn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #4a5568;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.adm-pg-btn:hover:not([disabled]) {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+/* Highlight state for active layout index view */
+.adm-pg-btn.active {
+  background: #800020; /* Matches your beautiful custom wine red UI identity palette */
+  color: #ffffff;
+  border-color: #800020;
+  font-weight: 600;
+}
+
+.adm-pg-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 /* ── Toast ───────────────────────────────────────────────── */
 .admin-toast {
   position: fixed;

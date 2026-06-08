@@ -1,20 +1,9 @@
-/* ═══════════════════════════════════════════════════════════
-   RevXChange — Global Validation Utility (RXValidation)
-   Load order: cars.js → validation.js → page JS → navbar.js → cara.js
-   ═══════════════════════════════════════════════════════════ */
-
 window.RXValidation = (() => {
 
-  // ── Container resolver ──────────────────────────────────────
-  // For inputs inside known wrappers, target the wrapper for border/glow.
-  // The input itself still gets the class for the shake animation.
   function getContainer(input) {
     const p = input.parentElement;
     if (!p) return input;
-    if (
-      p.classList.contains('sell-input-suffix') ||
-      p.classList.contains('sell-phone-row')
-    ) return p;
+    if (p.classList.contains('sell-input-suffix') || p.classList.contains('sell-phone-row')) return p;
     return input;
   }
 
@@ -48,117 +37,83 @@ window.RXValidation = (() => {
     return msg;
   }
 
-  // ── Core state applicator ───────────────────────────────────
   function applyState(input, state) {
     const container = getContainer(input);
-
-    // Strip both from wrapper + input before re-applying
     container.classList.remove('rx-valid', 'rx-invalid');
     input.classList.remove('rx-valid', 'rx-invalid');
-
-    // Force reflow so animations re-trigger on repeat errors
     void container.offsetWidth;
-
     if (state) {
       container.classList.add(state);
-      // Also on the input itself so the shake animation fires
       if (container !== input) input.classList.add(state);
     }
   }
 
-  // ── Public state functions ──────────────────────────────────
   function showError(input, message) {
     applyState(input, 'rx-invalid');
-
     const icon = getIcon(input);
-    if (icon) {
-      icon.className = 'rx-label-icon rx-icon-invalid';
-      icon.textContent = '✕';
-    }
-
+    if (icon) { icon.className = 'rx-label-icon rx-icon-invalid'; icon.textContent = '✕'; }
     const msg = getMsg(input);
-    if (msg) {
-      msg.className = 'rx-msg rx-msg-error rx-msg-visible';
-      msg.textContent = message;
-    }
+    if (msg) { msg.className = 'rx-msg rx-msg-error rx-msg-visible'; msg.textContent = message; }
   }
 
   function showSuccess(input) {
     applyState(input, 'rx-valid');
-
     const icon = getIcon(input);
-    if (icon) {
-      icon.className = 'rx-label-icon rx-icon-valid';
-      icon.textContent = '✓';
-    }
-
+    if (icon) { icon.className = 'rx-label-icon rx-icon-valid'; icon.textContent = '✓'; }
     const msg = getMsg(input);
-    if (msg) {
-      msg.className = 'rx-msg';
-      msg.textContent = '';
-    }
+    if (msg) { msg.className = 'rx-msg'; msg.textContent = ''; }
   }
 
   function clearState(input) {
     applyState(input, null);
-
     const icon = getIcon(input);
-    if (icon) {
-      icon.className = 'rx-label-icon';
-      icon.textContent = '';
-    }
-
+    if (icon) { icon.className = 'rx-label-icon'; icon.textContent = ''; }
     const msg = getMsg(input);
-    if (msg) {
-      msg.className = 'rx-msg';
-      msg.textContent = '';
-    }
+    if (msg) { msg.className = 'rx-msg'; msg.textContent = ''; }
   }
 
-  // ── Validators ──────────────────────────────────────────────
   const validators = {
 
-    required: (val) =>
-      val.trim().length > 0,
+    required: (val) => val.trim().length > 0,
 
-    /**
-     * Egyptian mobile number (entered after the +20 prefix shown in UI).
-     * 10 digits, starting with 10, 11, 12, or 15.
-     * e.g. 1012345678 → Vodafone (010)
-     */
-    egyptianPhone: (val) =>
-      /^(10|11|12|15)\d{8}$/.test(val.replace(/\D/g, '')),
-
-    /** Brand + model minimum: at least 2 words, 5+ chars */
-    carInfo: (val) =>
-      val.trim().length >= 5 && /\s/.test(val.trim()),
-
-    email: (val) =>
-      /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val.trim()),
-    
-    positiveNumber: (val) => {
-      const n = parseFloat(val);
-      return !isNaN(n) && n > 0;
+    // Letters only (English + Arabic), first + last name, min 3 chars
+    name: (val) => {
+      const t = val.trim();
+      return t.length >= 3
+        && /^[a-zA-Z\u0600-\u06FF\s]+$/.test(t)
+        && t.includes(' ');
     },
 
-    /** 0 is valid (new car with 0 km) */
-    nonNegativeNumber: (val) => {
-      const n = parseFloat(val);
-      return !isNaN(n) && n >= 0;
+    // Email: letters, numbers, dots, underscores, hyphens only
+    // Blocks: + # $ % ^ & * ( ) and other special chars
+    email: (val) => {
+      const t = val.trim();
+      return /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(t);
     },
 
-    /** Select: a real value is chosen */
-    select: (val) =>
-      typeof val === 'string' && val.trim() !== '',
+    // Egyptian mobile: exactly 11 digits, starts with 010/011/012/015
+    egyptianPhone: (val) => {
+      const digits = String(val).replace(/\D/g, '');
+      return /^(010|011|012|015)\d{8}$/.test(digits);
+    },
 
-    /** Optional but if provided must be long enough */
+    // Car info: brand + model minimum
+    carInfo: (val) => val.trim().length >= 5 && /\s/.test(val.trim()),
+
+    positiveNumber: (val) => { const n = parseFloat(val); return !isNaN(n) && n > 0; },
+
+    nonNegativeNumber: (val) => { const n = parseFloat(val); return !isNaN(n) && n >= 0; },
+
+    select: (val) => typeof val === 'string' && val.trim() !== '',
+
     optionalMinLength: (val, min = 20) => {
       const t = val.trim();
       return t.length === 0 || t.length >= min;
     },
   };
 
-  // ── Public API ──────────────────────────────────────────────
   return { showError, showSuccess, clearState, validators };
 
 })();
+EOF
+

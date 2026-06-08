@@ -169,6 +169,11 @@ const carSchema = new mongoose.Schema({
     default: 'pending'
   },
 
+  rejectionReason: {
+  type: String,
+  trim: true,
+  default: ''
+},
   createdAt: {
     type: Date,
     default: Date.now
