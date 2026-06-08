@@ -21,7 +21,6 @@ mongoose.connect(process.env.MONGO_URI)
     const feedRoutes = require('./routes/feedRoutes');
     const postRoutes = require('./routes/postRoutes');
     const caraRoutes = require('./routes/caraRoutes');
-    
 
     app.use('/api/auth', userRoutes);
     app.use('/api/users', userRoutes);
@@ -29,12 +28,11 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/admin',  adminRoutes);
     app.use('/api/requests', requestRoutes);
     app.use('/api/communities', communityRoutes);
-    app.use('/api/feed',feedRoutes);
+    app.use('/api/feed', feedRoutes);
     app.use('/api/posts', postRoutes);
     app.use('/api/search', require('./routes/searchRoutes'));
     app.use('/api/cara', caraRoutes);
 
-    
     // ── Video expiry cron job (runs every hour) ───────────────
     const Post = require('./models/Post');
     const cloudinary = require('cloudinary').v2;
@@ -64,7 +62,7 @@ mongoose.connect(process.env.MONGO_URI)
               await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
             }
             await Post.findByIdAndUpdate(post._id, {
-              videoUrl:      null,
+              videoUrl:       null,
               videoExpiresAt: null
             });
             console.log(`Deleted expired video for post ${post._id}`);
@@ -109,11 +107,6 @@ mongoose.connect(process.env.MONGO_URI)
     app.get('/car/:id',            (_, res) => res.sendFile(path.join(views, 'used-cars.html')));
 
     const PORT = process.env.PORT || 3000;
-
-    if (process.env.NODE_ENV !== 'production') {
-      app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-    }
+    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
   })
   .catch(err => console.error('MongoDB connection failed ❌', err));
-
-module.exports = app;
