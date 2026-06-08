@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('rxToken');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            localStorage.removeItem('rxUserId');
             updateAuthUI();
             window.location.href = '/';
         });

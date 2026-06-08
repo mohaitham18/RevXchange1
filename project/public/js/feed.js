@@ -958,15 +958,20 @@
       document.getElementById('feedPostTitle')?.focus();
     }
 
+    // Reset media button state on every open
+    renderVideoPreview();
+
     // Wire image input
+    // Wire image/video inputs only once
     const imageInput  = document.getElementById('feedImageInput');
     const imageAddBtn = document.getElementById('feedImageAddBtn');
     const videoInput  = document.getElementById('feedVideoInput');
     const videoAddBtn = document.getElementById('feedVideoAddBtn');
 
-    imageAddBtn?.addEventListener('click', () => imageInput?.click());
-
-    imageInput?.addEventListener('change', () => {
+    if (imageAddBtn && !imageAddBtn._wired) {
+      imageAddBtn._wired = true;
+      imageAddBtn.addEventListener('click', () => imageInput?.click());
+      imageInput?.addEventListener('change', () => {
       // Can't add images if video selected
       if (selectedPostVideo) return;
       const files = Array.from(imageInput.files || []);
@@ -985,24 +990,25 @@
         if (vBtn) vBtn.style.display = 'none';
       }
       renderModalPreviews();
-    });
+      });
 
-    videoAddBtn?.addEventListener('click', () => videoInput?.click());
+      videoAddBtn?.addEventListener('click', () => videoInput?.click());
 
-    videoInput?.addEventListener('change', () => {
-      const file = videoInput.files?.[0];
-      if (!file) return;
-      if (file.size > 25 * 1024 * 1024) {
-        alert('Video too large. Max 25MB.');
-        videoInput.value = '';
-        return;
-      }
-      // Clear images if any
-      selectedPostImages = [];
-      renderModalPreviews();
-      selectedPostVideo = file;
-      renderVideoPreview();
-    });
+      videoInput?.addEventListener('change', () => {
+        const file = videoInput.files?.[0];
+        if (!file) return;
+        if (file.size > 25 * 1024 * 1024) {
+          alert('Video too large. Max 25MB.');
+          videoInput.value = '';
+          return;
+        }
+        // Clear images if any
+        selectedPostImages = [];
+        renderModalPreviews();
+        selectedPostVideo = file;
+        renderVideoPreview();
+      });
+    } // end if (!imageAddBtn._wired)
   }
 
   // Close modal
