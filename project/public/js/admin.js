@@ -1,7 +1,3 @@
-/* ============================================================
-   admin.js — RevXChange Admin Panel
-   ============================================================ */
-
 const API = '/api/admin';
 
 // ── Token: works with both key names ─────────────────────────
@@ -21,6 +17,18 @@ async function apiFetch(path, opts = {}) {
   if (!res.ok) throw new Error(data.message || 'Request failed');
   return data;
 }
+
+// Global object to track the current page state for every section smoothly
+const currentPages = {
+  'dashboard': 1,
+  'pending': 1,
+  'all-cars': 1,
+  'rejected': 1,
+  'users': 1,
+  'buy-requests': 1,
+  'rent-requests': 1
+};
+const ITEMS_PER_PAGE = 5;
 
 // ── Toast ─────────────────────────────────────────────────────
 function showToast(msg, type = 'success') {
@@ -45,12 +53,39 @@ function removeRow(id) {
   });
 }
 
+// ── Global Pagination UI Renderer ─────────────────────────────
+function renderPaginationFooter(sectionName, totalItems, currentPage, targetContainerId) {
+  const targetSection = document.getElementById('section-' + sectionName);
+  if (!targetSection) return;
+
+  let pagContainer = targetSection.querySelector('.admin-pagination');
+  if (!pagContainer) {
+    pagContainer = document.createElement('div');
+    pagContainer.className = 'admin-pagination';
+    targetSection.appendChild(pagContainer);
+  }
+
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  if (totalPages <= 1) {
+    pagContainer.innerHTML = '';
+    return;
+  }
+
+  let html = `<button class="adm-pg-btn" data-section="${sectionName}" data-pg="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹ Prev</button>`;
+  
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button class="adm-pg-btn ${i === currentPage ? 'active' : ''}" data-section="${sectionName}" data-pg="${i}">${i}</button>`;
+  }
+  
+  html += `<button class="adm-pg-btn" data-section="${sectionName}" data-pg="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Next ›</button>`;
+  pagContainer.innerHTML = html;
+}
+
 // ── Auth Guard ────────────────────────────────────────────────
 function guardAdmin() {
   const t = getToken();
   if (!t) { window.location.href = '/login.html'; return; }
 
-  // Try full user object first, then fall back to role key
   const raw  = localStorage.getItem('user');
   const role = raw
     ? (JSON.parse(raw).role || '').toLowerCase()
@@ -62,7 +97,6 @@ function guardAdmin() {
     return;
   }
 
-  // Set avatar initials
   const name = raw
     ? JSON.parse(raw).name
     : localStorage.getItem('rxUser') || 'A';
@@ -82,79 +116,62 @@ const sectionTitles = {
   'rent-requests': ['Rent Requests',     'All rental requests from users.']
 };
 
-// ── Navigation ────────────────────────────────────────────────
-// ── Navigation Toggle Machine (Fixed UI Overlapping) ───────────
-function switchSection(name) {
-  // 1. Manage active state design classes on the sidebar buttons
+// ── Navigation Toggle Machine ───────────────────────────
+function switchSection(name, page = 1) {
+  currentPages[name] = page;
+
   document.querySelectorAll('.admin-menu a[data-section]').forEach(l =>
     l.classList.toggle('active', l.dataset.section === name)
   );
 
-  // 2. Hide ALL data collection table sections across the entire document layout first
   document.querySelectorAll('.admin-section').forEach(s => {
     s.classList.remove('active');
-    s.style.display = 'none'; // Forces it completely off the page layer
+    s.style.display = 'none';
   });
 
-  // 3. TARGET THE STAT CARDS: "Total Users", "Total Listings", "Pending Approvals", "Active Listings"
   const statsOverviewContainer = document.getElementById('adminDashboardStats');
   if (statsOverviewContainer) {
-    if (name === 'dashboard') {
-      // If clicking the main dashboard link, make the 4 stat cards visible
-      statsOverviewContainer.style.display = 'grid'; 
-    } else {
-      // CRITICAL: Hide the 4 stat blocks completely when viewing any specific left sidebar category!
-      statsOverviewContainer.style.display = 'none'; 
-    }
+    statsOverviewContainer.style.display = (name === 'dashboard') ? 'grid' : 'none';
   }
 
-  // 4. Reveal the isolated table list block that was chosen
   const targetSection = document.getElementById('section-' + name);
   if (targetSection) {
     targetSection.classList.add('active');
-    targetSection.style.display = 'block'; // Renders only this dynamic view list
+    targetSection.style.display = 'block';
   }
 
-  // 5. Update Topbar Header Text Context smoothly
   const [title, sub] = sectionTitles[name] || ['Admin', ''];
   const titleEl = document.getElementById('topbarTitle');
   const subEl   = document.getElementById('topbarSub');
   if (titleEl) titleEl.textContent = title;
   if (subEl)   subEl.textContent   = sub;
 
-  // 6. Request backend data exclusively for the chosen panel screen
   const loaders = {
     'dashboard':     loadDashboard,
-    'pending':       () => loadCarsSection('pending',  'pendingFullTableBody', 'pendingCount'),
-    'all-cars':      () => loadCarsSection('active',   'allCarsTableBody',    'allCarsCount'),
-    'rejected':      () => loadCarsSection('rejected', 'rejectedTableBody',   'rejectedCount'),
-    'users':         loadUsers,
-    'buy-requests':  () => loadRequests('buy',  'buyReqTableBody',  'buyReqCount'),
-    'rent-requests': () => loadRequests('rent', 'rentReqTableBody', 'rentReqCount')
+    'pending':       () => loadCarsSection('pending',  'pendingFullTableBody', 'pendingCount', page),
+    'all-cars':      () => loadCarsSection('active',   'allCarsTableBody',    'allCarsCount', page),
+    'rejected':      () => loadCarsSection('rejected', 'rejectedTableBody',   'rejectedCount', page),
+    'users':         () => loadUsers(page),
+    'buy-requests':  () => loadRequests('buy',  'buyReqTableBody',  'buyReqCount', page),
+    'rent-requests': () => loadRequests('rent', 'rentReqTableBody', 'rentReqCount', page)
   };
   if (loaders[name]) loaders[name]();
 }
 
-// ── Updated Dashboard Landing
 function initNav() {
-  // Sidebar link clicks
   document.querySelectorAll('.admin-menu a[data-section]').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
-      switchSection(link.dataset.section);
+      switchSection(link.dataset.section, 1);
     });
   });
 
-  // Logout — clears ALL possible key names
   document.getElementById('logoutBtn')?.addEventListener('click', e => {
     e.preventDefault();
-    ['token','rxToken','user','rxUser','rxEmail','role'].forEach(k =>
-      localStorage.removeItem(k)
-    );
+    ['token','rxToken','user','rxUser','rxEmail','role'].forEach(k => localStorage.removeItem(k));
     window.location.href = '/login.html';
   });
 
-  // Search — filters visible rows live
   document.getElementById('adminSearch')?.addEventListener('input', function () {
     const q = this.value.toLowerCase();
     document.querySelectorAll('.admin-section.active .table-row:not(.table-head)').forEach(row => {
@@ -186,12 +203,9 @@ async function loadPendingPreview() {
   if (!tbody) return;
   tbody.innerHTML = loadingRow();
   try {
-    const data = await apiFetch('/cars?status=pending&limit=5');
+    const data = await apiFetch(`/cars?status=pending&limit=${ITEMS_PER_PAGE}`);
     tbody.innerHTML = '';
-    
-    // Safely parse out the car array envelope
     const cars = Array.isArray(data) ? data : data.cars || [];
-    
     if (!cars.length) { tbody.innerHTML = emptyRow('No pending listings — all clear ✓'); return; }
     cars.forEach(car => tbody.appendChild(buildCarRow(car, true)));
   } catch (err) { tbody.innerHTML = errorRow(err.message); }
@@ -200,39 +214,32 @@ async function loadPendingPreview() {
 async function loadSidePreviews() {
   try {
     const [usersData, rejData] = await Promise.all([
-      apiFetch('/users?limit=5'),
-      apiFetch('/cars?status=rejected&limit=5')
+      apiFetch(`/users?limit=${ITEMS_PER_PAGE}`),
+      apiFetch(`/cars?status=rejected&limit=${ITEMS_PER_PAGE}`)
     ]);
 
-    // Safely extract fallback arrays from potential API wrapper formats
     const users = Array.isArray(usersData) ? usersData : usersData.users || [];
     const rejectedCars = Array.isArray(rejData) ? rejData : rejData.cars || [];
 
     const ul = document.getElementById('recentUsersList');
     if (ul) ul.innerHTML = users.length
-      ? users.map(u =>
-          `<li><strong>${u.name}</strong> <span style="opacity:.5;font-size:.8rem">${u.email}</span></li>`
-        ).join('')
+      ? users.map(u => `<li><strong>${u.name}</strong> <span style="opacity:.5;font-size:.8rem">${u.email}</span></li>`).join('')
       : '<li style="opacity:.5">No users yet.</li>';
 
     const rl = document.getElementById('rejectedPreviewList');
     if (rl) rl.innerHTML = rejectedCars.length
-      ? rejectedCars.map(c =>
-          `<li>${c.brand} ${c.model} ${c.year} — <span style="opacity:.5">${c.user?.name || '—'}</span></li>`
-        ).join('')
+      ? rejectedCars.map(c => `<li>${c.brand} ${c.model} ${c.year} — <span style="opacity:.5">${c.user?.name || '—'}</span></li>`).join('')
       : '<li style="opacity:.5">No rejected cars.</li>';
   } catch (err) { console.error('Side previews error:', err); }
 }
 
-// ── Cars Sections ─────────────────────────────────────────────
-async function loadCarsSection(status, tbodyId, countId) {
+// ── Cars Sections ──
+async function loadCarsSection(status, tbodyId, countId, page = 1) {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
   tbody.innerHTML = loadingRow();
   try {
-    const data = await apiFetch(`/cars?status=${status}&limit=100`);
-    
-    // Unpack data whether returned as { cars: [], total: X } or a direct array
+    const data = await apiFetch(`/cars?status=${status}&limit=${ITEMS_PER_PAGE}&page=${page}`);
     const cars = Array.isArray(data) ? data : data.cars || [];
     const totalCount = data.total !== undefined ? data.total : cars.length;
 
@@ -242,6 +249,9 @@ async function loadCarsSection(status, tbodyId, countId) {
     tbody.innerHTML = '';
     if (!cars.length) { tbody.innerHTML = emptyRow('No cars found.'); return; }
     cars.forEach(car => tbody.appendChild(buildCarRow(car, false)));
+
+    const mappedSectionKey = status === 'pending' ? 'pending' : (status === 'active' ? 'all-cars' : 'rejected');
+    renderPaginationFooter(mappedSectionKey, totalCount, page, tbodyId);
   } catch (err) { tbody.innerHTML = errorRow(err.message); }
 }
 
@@ -266,22 +276,23 @@ function buildCarRow(car, compact) {
 }
 
 // ── Users Section ─────────────────────────────────────────────
-async function loadUsers() {
+async function loadUsers(page = 1) {
   const tbody = document.getElementById('usersTableBody');
   if (!tbody) return;
   tbody.innerHTML = loadingRow();
   try {
-    const data = await apiFetch('/users?limit=100');
-    
-    const users = Array.isArray(data) ? data : data.users || [];
+    const data       = await apiFetch(`/users?limit=${ITEMS_PER_PAGE}&page=${page}`);
+    const users      = Array.isArray(data) ? data : data.users || [];
     const totalCount = data.total !== undefined ? data.total : users.length;
 
     const countEl = document.getElementById('usersCount');
     if (countEl) countEl.textContent = `${totalCount} user${totalCount !== 1 ? 's' : ''}`;
-    
+
     tbody.innerHTML = '';
     if (!users.length) { tbody.innerHTML = emptyRow('No users found.'); return; }
     users.forEach(u => tbody.appendChild(buildUserRow(u)));
+
+    renderPaginationFooter('users', totalCount, page, 'usersTableBody');
   } catch (err) { tbody.innerHTML = errorRow(err.message); }
 }
 
@@ -312,14 +323,12 @@ function buildUserRow(user) {
 }
 
 // ── Requests Section ──────────────────────────────────────────
-async function loadRequests(type, tbodyId, countId) {
+async function loadRequests(type, tbodyId, countId, page = 1) {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
   tbody.innerHTML = loadingRow();
   try {
-    const data = await apiFetch(`/requests?type=${type}&limit=100`);
-    
-    // Safely read payload items whether raw list array or nested wrapper envelope
+    const data = await apiFetch(`/requests?type=${type}&limit=${ITEMS_PER_PAGE}&page=${page}`);
     const requestsList = Array.isArray(data) ? data : data.requests || [];
     const totalCount = data.total !== undefined ? data.total : requestsList.length;
 
@@ -355,71 +364,136 @@ async function loadRequests(type, tbodyId, countId) {
         </span>`;
       tbody.appendChild(row);
     });
+
+    renderPaginationFooter(type === 'buy' ? 'buy-requests' : 'rent-requests', totalCount, page, tbodyId);
   } catch (err) { tbody.innerHTML = errorRow(err.message); }
 }
 
-// ── Single event dispatcher for ALL buttons ───────────────────
+// ── Admin Rejection Modal Management ──────────────────────────
+// ── Admin Rejection Modal Management ──────────────────────────
+let targetCarIdForRejection = null;
+
+const adminRejectModal = document.getElementById('adminRejectModal');
+const adminRejectReasonInput = document.getElementById('adminRejectReasonInput');
+const adminRejectConfirmBtn = document.getElementById('adminRejectConfirmBtn');
+const adminRejectCancelBtn = document.getElementById('adminRejectCancelBtn');
+
+function openRejectModal(carId) {
+  targetCarIdForRejection = carId;
+  if (adminRejectReasonInput) adminRejectReasonInput.value = '';
+  if (adminRejectModal) adminRejectModal.style.display = 'flex';
+}
+
+function closeAdminRejectModal() {
+  targetCarIdForRejection = null;
+  if (adminRejectModal) adminRejectModal.style.display = 'none';
+}
+
+adminRejectCancelBtn?.addEventListener('click', closeAdminRejectModal);
+
+adminRejectConfirmBtn?.addEventListener('click', async () => {
+  if (!targetCarIdForRejection) return;
+
+  const reasonText = adminRejectReasonInput.value.trim();
+  if (!reasonText) {
+    alert('Please provide a reason for the rejection so the user knows why.');
+    return;
+  }
+
+  try {
+    // 🔥 FIXED: Standardized to use the exact same /status route layout
+    await apiFetch(`/cars/${targetCarIdForRejection}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        status: 'rejected',
+        rejectionReason: reasonText
+      })
+    });
+
+    showToast('Listing has been rejected and user notified.', 'success');
+    closeAdminRejectModal();
+    
+    // Smoothly reload the current section view state instead of full window reloads
+    const currentSectionName = document.querySelector('.admin-menu a.active')?.dataset.section || 'pending';
+    switchSection(currentSectionName, currentPages[currentSectionName]);
+    loadStats();
+  } catch (err) {
+    console.error('Rejection system submission execution error:', err);
+    alert(err.message || 'Failed to complete listing decline sequence.');
+  }
+});
+
+// ── Unified Event Dispatcher for Data Actions & Pagination Clicks ──
 document.addEventListener('click', async function (e) {
+  const pgBtn = e.target.closest('.adm-pg-btn');
+  if (pgBtn) {
+    const section = pgBtn.dataset.section;
+    const nextPage = parseInt(pgBtn.dataset.pg);
+    switchSection(section, nextPage);
+    return;
+  }
+
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
 
   const action = btn.dataset.action;
   const id     = btn.dataset.id;
   const orig   = btn.textContent;
+  const currentSectionName = document.querySelector('.admin-menu a.active')?.dataset.section || 'dashboard';
+  
   btn.disabled = true;
   btn.textContent = '…';
 
   try {
-    // Car approve / reject
-    if (action === 'active' || action === 'rejected') {
-      await apiFetch(`/cars/${id}/status`, { method:'PUT', body: JSON.stringify({ status: action }) });
-      showToast(action === 'active' ? 'Car approved ✓' : 'Car rejected', action === 'active' ? 'success' : 'error');
+    // Car status operations
+    if (action === 'active') {
+      // 🔥 FIXED: Aligned Approve to route to /status as well, keeping your backend route completely happy
+      await apiFetch(`/cars/${id}/status`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ status: 'active' }) 
+      });
+      showToast('Car approved ✓', 'success');
       removeRow(id);
       loadStats();
+    } 
+    else if (action === 'rejected') {
+      btn.disabled = false;
+      btn.textContent = orig;
+      openRejectModal(id); 
+      return; 
     }
-
-    // Delete car
     else if (action === 'delete-car') {
       if (!confirm('Delete this listing permanently?')) { btn.disabled = false; btn.textContent = orig; return; }
       await apiFetch(`/cars/${id}`, { method:'DELETE' });
       showToast('Listing deleted');
-      removeRow(id);
+      switchSection(currentSectionName, currentPages[currentSectionName]);
       loadStats();
     }
-
-    // Make admin
     else if (action === 'make-admin') {
       if (!confirm('Promote this user to admin?')) { btn.disabled = false; btn.textContent = orig; return; }
       await apiFetch(`/users/${id}/role`, { method:'PUT', body: JSON.stringify({ role:'admin' }) });
       showToast('User promoted ✓');
-      loadUsers();
+      loadUsers(currentPages['users']);
     }
-
-    // Revoke admin
     else if (action === 'revoke-admin') {
       if (!confirm("Revoke admin role?")) { btn.disabled = false; btn.textContent = orig; return; }
       await apiFetch(`/users/${id}/role`, { method:'PUT', body: JSON.stringify({ role:'user' }) });
       showToast('Admin role revoked');
-      loadUsers();
+      loadUsers(currentPages['users']);
     }
-
-    // Delete user
     else if (action === 'delete-user') {
       if (!confirm('Delete user and ALL their listings? Cannot be undone.')) { btn.disabled = false; btn.textContent = orig; return; }
       await apiFetch(`/users/${id}`, { method:'DELETE' });
       showToast('User deleted');
-      removeRow(id);
+      loadUsers(currentPages['users']);
       loadStats();
     }
-
-     // Delete request
     else if (action === 'req-delete') {
       if (!confirm('Delete this request permanently?')) { btn.disabled = false; btn.textContent = orig; return; }
       await apiFetch(`/requests/${id}`, { method:'DELETE' });
       showToast('Request deleted');
-      removeRow(id);
+      switchSection(currentSectionName, currentPages[currentSectionName]);
     }
-
   } catch (err) {
     btn.disabled = false;
     btn.textContent = orig;
@@ -431,5 +505,5 @@ document.addEventListener('click', async function (e) {
 document.addEventListener('DOMContentLoaded', () => {
   guardAdmin();
   initNav();
-  switchSection('dashboard'); // Ensures initial state tracking triggers smoothly
+  switchSection('dashboard', 1);
 });

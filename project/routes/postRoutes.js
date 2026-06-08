@@ -171,13 +171,15 @@ router.patch('/:id', protect, async (req, res) => {
     const { title, body } = req.body;
 
     const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    if (post.isDeleted) return res.status(404).json({ message: 'Post not found' });
-    if (post.authorId.toString() !== req.user.id) {
+    if (!post || post.isDeleted) return res.status(404).json({ message: 'Post not found' });
+    if (post.authorId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not your post' });
     }
 
-    if (title) post.title = title.trim();
+    if (title !== undefined) {
+      if (!title.trim()) return res.status(400).json({ message: 'Title is required' });
+      post.title = title.trim();
+    }
     if (body !== undefined) post.body = body;
     post.isEdited  = true;
     post.editedAt  = new Date();
@@ -197,7 +199,7 @@ router.delete('/:id', protect, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
-    if (post.authorId.toString() !== req.user.id) {
+    if (post.authorId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not your post' });
     }
 
@@ -330,7 +332,7 @@ router.post('/:id/video', protect, uploadVideo.single('video'), async (req, res)
     if (!post || post.isDeleted) {
       return res.status(404).json({ message: 'Post not found' });
     }
-    if (post.authorId.toString() !== req.user.id) {
+    if (post.authorId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not your post' });
     }
     if (!req.file) {
@@ -438,6 +440,66 @@ router.post('/:id/share', protect, async (req, res) => {
   }
 });
 
+// ── GET /api/posts/my-posts ───────────────────────────────────
+router.get('/my-posts', protect, async (req, res) => {
+  try {
+    const page  = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = 20;
+    const skip  = (page - 1) * limit;
+
+    const filter = { authorId: req.user.id, isDeleted: false };
+    const total  = await Post.countDocuments(filter);
+
+    const posts = await Post.find(filter)
+      .populate({
+        path: 'communityId',
+        select: 'name slug isCentral brandId',
+        populate: { path: 'brandId', select: 'name slug logoUrl glowColor' }
+      })
+      .populate('variantId', 'label')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const formatted = posts.map(p => ({
+      _id:          p._id,
+      title:        p.title,
+      body:         p.body,
+      imageUrls:    p.imageUrls  || [],
+      videoUrl:     p.videoUrl   || null,
+      isShare:      p.isShare    || false,
+      upvotes:      p.upvotes    || 0,
+      downvotes:    p.downvotes  || 0,
+      score:        p.score      || 0,
+      commentCount: p.commentCount || 0,
+      isEdited:     p.isEdited,
+      createdAt:    p.createdAt,
+      community: p.communityId ? {
+        _id:      p.communityId._id,
+        name:     p.communityId.name,
+        slug:     p.communityId.slug,
+        isCentral: p.communityId.isCentral,
+        brand:    p.communityId.brandId || null
+      } : null,
+      variant: p.variantId ? { label: p.variantId.label } : null
+    }));
+
+    res.json({
+      success:     true,
+      posts:       formatted,
+      page,
+      total,
+      totalPages:  Math.ceil(total / limit),
+      hasNextPage: page * limit < total
+    });
+  } catch (err) {
+    console.error('GET /api/posts/my-posts error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+
 // ── GET /api/posts/:id ───────────────────────────────────────
 router.get('/:id', async (req, res) => {
   try {
@@ -511,64 +573,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ── GET /api/posts/my-posts ───────────────────────────────────
-router.get('/my-posts', protect, async (req, res) => {
-  try {
-    const page  = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = 20;
-    const skip  = (page - 1) * limit;
-
-    const filter = { authorId: req.user.id, isDeleted: false };
-    const total  = await Post.countDocuments(filter);
-
-    const posts = await Post.find(filter)
-      .populate({
-        path: 'communityId',
-        select: 'name slug isCentral brandId',
-        populate: { path: 'brandId', select: 'name slug logoUrl glowColor' }
-      })
-      .populate('variantId', 'label')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const formatted = posts.map(p => ({
-      _id:          p._id,
-      title:        p.title,
-      body:         p.body,
-      imageUrls:    p.imageUrls  || [],
-      videoUrl:     p.videoUrl   || null,
-      isShare:      p.isShare    || false,
-      upvotes:      p.upvotes    || 0,
-      downvotes:    p.downvotes  || 0,
-      score:        p.score      || 0,
-      commentCount: p.commentCount || 0,
-      isEdited:     p.isEdited,
-      createdAt:    p.createdAt,
-      community: p.communityId ? {
-        _id:      p.communityId._id,
-        name:     p.communityId.name,
-        slug:     p.communityId.slug,
-        isCentral: p.communityId.isCentral,
-        brand:    p.communityId.brandId || null
-      } : null,
-      variant: p.variantId ? { label: p.variantId.label } : null
-    }));
-
-    res.json({
-      success:     true,
-      posts:       formatted,
-      page,
-      total,
-      totalPages:  Math.ceil(total / limit),
-      hasNextPage: page * limit < total
-    });
-  } catch (err) {
-    console.error('GET /api/posts/my-posts error:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-});
 
 // ── GET /api/posts/:id/comments ──────────────────────────────
 router.get('/:id/comments', async (req, res) => {
@@ -730,7 +734,7 @@ router.patch('/comments/:id', protect, async (req, res) => {
     if (!comment || comment.isDeleted) {
       return res.status(404).json({ message: 'Comment not found' });
     }
-    if (comment.authorId.toString() !== req.user.id) {
+    if (comment.authorId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not your comment' });
     }
 
@@ -763,7 +767,7 @@ router.delete('/comments/:id', protect, async (req, res) => {
     if (!comment || comment.isDeleted) {
       return res.status(404).json({ message: 'Comment not found' });
     }
-    if (comment.authorId.toString() !== req.user.id) {
+    if (comment.authorId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not your comment' });
     }
 

@@ -1,15 +1,19 @@
-// ── Dirty tracking ─────────────────────────────────────────
+/* ============================================================
+   auth.js — RevXChange Authentication & Validation Engine
+   ============================================================ */
+
+// ── Dirty tracking sets for inline validation ──────────────
 const dirtyLogin = new Set();
 const dirtyReg = new Set();
 
-// ── Card flip ─────────────────────────────────────────────
+// ── Card flip interaction ─────────────────────────────────
 function flipCard() {
     const card = document.getElementById('card');
     if (!card) return;
     card.classList.toggle('flipped');
 }
 
-// ── Password strength bar ─────────────────────────────────
+// ── Password strength indicator bar ───────────────────────
 function checkStrength(val) {
     const segs = ['s1', 's2', 's3', 's4']
         .map(id => document.getElementById(id))
@@ -35,13 +39,12 @@ function checkStrength(val) {
     }
 
     const regPass = document.getElementById('regPassword');
-
     if (regPass && dirtyReg.has('regPassword')) {
         validateRegPassword();
     }
 }
 
-// ── Safe JSON parser ──────────────────────────────────────
+// ── Safe JSON parser utility ──────────────────────────────
 async function readJsonSafe(res) {
     try {
         return await res.json();
@@ -84,7 +87,13 @@ function validateRegName() {
 
     const val = el.value.trim();
 
-    if (val.length < 3 || !val.includes(' ')) {
+    // Check against global helper if available, otherwise apply safe fallback validation
+    if (typeof RXValidation.validators.name === 'function') {
+        if (!RXValidation.validators.name(val)) {
+            RXValidation.showError(el, 'Name must be letters only, first and last name');
+            return false;
+        }
+    } else if (val.length < 3 || !val.includes(' ')) {
         RXValidation.showError(el, 'Enter your first and last name');
         return false;
     }
@@ -110,7 +119,7 @@ function validateRegPassword() {
     const el = document.getElementById('regPassword');
     if (!el) return false;
 
-    if (el.value.length < 6) {
+    if (el.value.trim().length < 6) {
         RXValidation.showError(el, 'Password must be at least 6 characters');
         return false;
     }
@@ -119,7 +128,7 @@ function validateRegPassword() {
     return true;
 }
 
-// ── Real-time listeners ───────────────────────────────────
+// ── Real-time input synchronization wiring ────────────────
 function wire(id, validateFn, dirtySet) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -136,24 +145,22 @@ function wire(id, validateFn, dirtySet) {
     });
 }
 
-// ── Show/hide password ────────────────────────────────────
+// ── Show/hide password view logic ─────────────────────────
 function togglePassword(inputId, btnId) {
     const input = document.getElementById(inputId);
     const btn = document.getElementById(btnId);
 
     if (!input || !btn) return;
 
-    btn.addEventListener('click', function () {
-        const isPassword = input.type === 'password';
-        input.type = isPassword ? 'text' : 'password';
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
 
-        btn.innerHTML = isPassword
-            ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
-            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-    });
+    btn.innerHTML = isPassword
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 }
 
-// ── Sign In submit ────────────────────────────────────────
+// ── Sign In Submission handler ────────────────────────────
 async function signIn() {
     dirtyLogin.add('loginEmail');
     dirtyLogin.add('loginPassword');
@@ -165,7 +172,6 @@ async function signIn() {
 
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
-
     const btn = document.querySelector('.card-front .btn-primary');
 
     if (btn) {
@@ -199,7 +205,6 @@ async function signIn() {
                 btn.disabled = false;
                 btn.textContent = 'Sign In';
             }
-
             return;
         }
 
@@ -213,7 +218,6 @@ async function signIn() {
                 btn.disabled = false;
                 btn.textContent = 'Sign In';
             }
-
             return;
         }
 
@@ -221,16 +225,16 @@ async function signIn() {
         localStorage.setItem('rxUser', data.user.name);
         localStorage.setItem('rxEmail', data.user.email);
         localStorage.setItem('role', data.user.role);
+        localStorage.setItem('rxUserId', data.user._id || data.user.id || '');
 
         if (data.user.role === 'admin') {
             window.location.href = '/admin.html';
         } else {
-            window.location.href = '/';
+            window.location.href = '/dashboard.html';
         }
 
     } catch (err) {
         console.error('Login error:', err);
-
         RXValidation.showError(
             document.getElementById('loginEmail'),
             'Server error. Please try again.'
@@ -243,7 +247,7 @@ async function signIn() {
     }
 }
 
-// ── Register submit ───────────────────────────────────────
+// ── Register Submission handler ───────────────────────────
 async function registerUser() {
     dirtyReg.add('regName');
     dirtyReg.add('regEmail');
@@ -258,7 +262,6 @@ async function registerUser() {
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const password = document.getElementById('regPassword').value.trim();
-
     const btn = document.querySelector('.card-back .btn-primary');
 
     if (btn) {
@@ -287,7 +290,6 @@ async function registerUser() {
                 btn.disabled = false;
                 btn.textContent = 'Create Account';
             }
-
             return;
         }
 
@@ -301,7 +303,6 @@ async function registerUser() {
                 btn.disabled = false;
                 btn.textContent = 'Create Account';
             }
-
             return;
         }
 
@@ -309,16 +310,16 @@ async function registerUser() {
         localStorage.setItem('rxUser', data.user.name);
         localStorage.setItem('rxEmail', data.user.email);
         localStorage.setItem('role', data.user.role);
+        localStorage.setItem('rxUserId', data.user._id || data.user.id || '');
 
         if (data.user.role === 'admin') {
             window.location.href = '/admin.html';
         } else {
-            window.location.href = '/';
+            window.location.href = '/dashboard.html';
         }
 
     } catch (err) {
         console.error('Register error:', err);
-
         RXValidation.showError(
             document.getElementById('regEmail'),
             'Server error. Please try again.'
@@ -331,8 +332,9 @@ async function registerUser() {
     }
 }
 
-// ── Init after page loads ─────────────────────────────────
+// ── Initialization Hook after DOM content builds ──────────
 document.addEventListener('DOMContentLoaded', () => {
+    // Input state synchronization wiring
     wire('loginEmail', validateLoginEmail, dirtyLogin);
     wire('loginPassword', validateLoginPassword, dirtyLogin);
 
@@ -340,6 +342,15 @@ document.addEventListener('DOMContentLoaded', () => {
     wire('regEmail', validateRegEmail, dirtyReg);
     wire('regPassword', validateRegPassword, dirtyReg);
 
+    // Eye-icon toggle binders
+    document.getElementById('toggleLoginPass')?.addEventListener('click', () => {
+        togglePassword('loginPassword', 'toggleLoginPass');
+    });
+    document.getElementById('toggleRegPass')?.addEventListener('click', () => {
+        togglePassword('regPassword', 'toggleRegPass');
+    });
+
+    // Primary action button event interceptors
     const loginBtn = document.querySelector('.card-front .btn-primary');
     const registerBtn = document.querySelector('.card-back .btn-primary');
 
@@ -351,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
         registerBtn.addEventListener('click', registerUser);
     }
 
+    // Full Form submit bindings (Handles native enter key triggers)
     const loginForm = document.querySelector('.card-front form');
     const registerForm = document.querySelector('.card-back form');
 
@@ -369,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ── Expose functions for inline HTML onclick/oninput ───────
+// ── Global Context Exposing for Markup Bindings ───────────
 window.flipCard = flipCard;
 window.checkStrength = checkStrength;
 window.signIn = signIn;
