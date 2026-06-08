@@ -21,11 +21,13 @@ mongoose.connect(process.env.MONGO_URI)
     const feedRoutes = require('./routes/feedRoutes');
     const postRoutes = require('./routes/postRoutes');
     const caraRoutes = require('./routes/caraRoutes');
+    const adminCommunityRoutes = require('./routes/adminCommunityRoutes');
 
     app.use('/api/auth', userRoutes);
     app.use('/api/users', userRoutes);
     app.use('/api/cars', carRoutes);
     app.use('/api/admin',  adminRoutes);
+    app.use('/api/admin',  adminCommunityRoutes);
     app.use('/api/requests', requestRoutes);
     app.use('/api/communities', communityRoutes);
     app.use('/api/feed', feedRoutes);

@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin - RevXChange</title>
+  <title>Admin — RevXChange</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="/css/base/reset.css" />
   <link rel="stylesheet" href="/css/base/variables.css" />
@@ -14,27 +18,48 @@
 <body>
   <div class="admin-layout">
 
+    <!-- ── Sidebar ─────────────────────────────────────────── -->
     <aside class="admin-sidebar">
       <div class="admin-brand">
         <div class="brand-mark">RX</div>
         <div>
           <h2>RevXChange</h2>
-          <span>Admin Panel</span>
+          <span>Control Terminal</span>
         </div>
       </div>
 
       <nav class="admin-menu">
+        <div class="admin-menu-group">PLATFORM</div>
         <a href="#" class="active" data-section="dashboard">Dashboard</a>
-        <a href="#"                data-section="pending">Pending Listings</a>
-        <a href="#"                data-section="all-cars">Approved Cars</a>
-        <a href="#"                data-section="rejected">Rejected Cars</a>
-        <a href="#"                data-section="users">Users</a>
-        <a href="#"                data-section="buy-requests">Buy Requests</a>
-        <a href="#"                data-section="rent-requests">Rent Requests</a>
-        <a href="#" id="logoutBtn">Logout</a>
+        <a href="#"               data-section="pending">Pending Listings</a>
+        <a href="#"               data-section="all-cars">Approved Cars</a>
+        <a href="#"               data-section="rejected">Rejected Cars</a>
+        <a href="#"               data-section="users">Users</a>
+        <a href="#"               data-section="buy-requests">Buy Requests</a>
+        <a href="#"               data-section="rent-requests">Rent Requests</a>
+
+        <div class="admin-menu-group" style="margin-top:18px">COMMUNITY</div>
+        <a href="#"               data-section="overview">
+          Overview
+        </a>
+        <a href="#"               data-section="reports" id="reportsNavLink">
+          Reports
+          <span class="admin-nav-badge" id="reportsNavBadge" style="display:none"></span>
+        </a>
+        <a href="#"               data-section="suggestions" id="suggNavLink">
+          Suggestions
+          <span class="admin-nav-badge admin-nav-badge-amber" id="suggNavBadge" style="display:none"></span>
+        </a>
+        <a href="#"               data-section="maintenance">Maintenance</a>
+        <a href="#"               data-section="community-reset">Community Reset</a>
+        <a href="#"               data-section="nuclear-reset" class="admin-nav-nuclear">⚠ Nuclear</a>
+
+        <div class="admin-menu-sep"></div>
+        <a href="#" id="logoutBtn" class="admin-nav-logout">Logout</a>
       </nav>
     </aside>
 
+    <!-- ── Main ───────────────────────────────────────────── -->
     <main class="admin-main">
 
       <header class="admin-topbar">
@@ -48,6 +73,7 @@
         </div>
       </header>
 
+      <!-- ── PLATFORM: Dashboard ──────────────────────────── -->
       <div class="admin-section active" id="section-dashboard">
         <section class="stats-grid">
           <div class="stat-card">
@@ -67,7 +93,6 @@
             <p>Active Listings</p>
           </div>
         </section>
-
         <section class="admin-panel">
           <div class="panel-header">
             <h2>Pending Listings</h2>
@@ -75,16 +100,11 @@
           </div>
           <div class="admin-table">
             <div class="table-row table-head">
-              <span>Car</span>
-              <span>Seller</span>
-              <span>Price</span>
-              <span>Status</span>
-              <span>Actions</span>
+              <span>Car</span><span>Seller</span><span>Price</span><span>Status</span><span>Actions</span>
             </div>
             <div id="pendingTableBody"></div>
           </div>
         </section>
-
         <section class="admin-lower-grid">
           <div class="admin-panel">
             <div class="panel-header"><h2>Recent Users</h2></div>
@@ -97,6 +117,7 @@
         </section>
       </div>
 
+      <!-- ── PLATFORM: Pending ─────────────────────────────── -->
       <div class="admin-section" id="section-pending">
         <section class="admin-panel">
           <div class="panel-header">
@@ -112,6 +133,7 @@
         </section>
       </div>
 
+      <!-- ── PLATFORM: Approved Cars ──────────────────────── -->
       <div class="admin-section" id="section-all-cars">
         <section class="admin-panel">
           <div class="panel-header">
@@ -127,6 +149,7 @@
         </section>
       </div>
 
+      <!-- ── PLATFORM: Rejected ───────────────────────────── -->
       <div class="admin-section" id="section-rejected">
         <section class="admin-panel">
           <div class="panel-header">
@@ -142,6 +165,7 @@
         </section>
       </div>
 
+      <!-- ── PLATFORM: Users ──────────────────────────────── -->
       <div class="admin-section" id="section-users">
         <section class="admin-panel">
           <div class="panel-header">
@@ -158,6 +182,7 @@
         </section>
       </div>
 
+      <!-- ── PLATFORM: Buy Requests ───────────────────────── -->
       <div class="admin-section" id="section-buy-requests">
         <section class="admin-panel">
           <div class="panel-header">
@@ -173,6 +198,7 @@
         </section>
       </div>
 
+      <!-- ── PLATFORM: Rent Requests ──────────────────────── -->
       <div class="admin-section" id="section-rent-requests">
         <section class="admin-panel">
           <div class="panel-header">
@@ -188,34 +214,295 @@
         </section>
       </div>
 
+      <!-- ══════════════════════════════════════════════════════
+           COMMUNITY: Overview
+           ══════════════════════════════════════════════════ -->
+      <div class="admin-section" id="section-overview">
+        <div class="term-header">
+          <span class="term-prompt">admin@revxchange:~$</span>
+          <span class="term-cmd">community_stats</span>
+        </div>
+
+        <div class="comm-stats-grid">
+          <div class="comm-stat-card">
+            <div class="comm-stat-value" id="ovr-totalPosts">—</div>
+            <div class="comm-stat-label">Total Posts</div>
+          </div>
+          <div class="comm-stat-card">
+            <div class="comm-stat-value" id="ovr-totalComm">—</div>
+            <div class="comm-stat-label">Communities</div>
+          </div>
+          <div class="comm-stat-card">
+            <div class="comm-stat-value" id="ovr-totalMembers">—</div>
+            <div class="comm-stat-label">Total Members</div>
+          </div>
+          <div class="comm-stat-card">
+            <div class="comm-stat-value comm-stat-green" id="ovr-postsToday">—</div>
+            <div class="comm-stat-label">Posts Today</div>
+          </div>
+          <div class="comm-stat-card comm-stat-clickable" onclick="switchSection('reports')">
+            <div class="comm-stat-value comm-stat-amber" id="ovr-pendingReports">—</div>
+            <div class="comm-stat-label">Pending Reports ↗</div>
+          </div>
+          <div class="comm-stat-card comm-stat-clickable" onclick="switchSection('suggestions')">
+            <div class="comm-stat-value comm-stat-amber" id="ovr-pendingSugg">—</div>
+            <div class="comm-stat-label">Pending Suggestions ↗</div>
+          </div>
+        </div>
+
+        <div class="term-panel">
+          <div class="term-panel-title">Top 5 Communities by Posts</div>
+          <div class="term-table">
+            <div class="term-table-head">
+              <span>Community</span>
+              <span>Members</span>
+              <span>Posts</span>
+            </div>
+            <div id="ovrTopCommList"></div>
+          </div>
+        </div>
+
+        <div class="term-panel" style="margin-top:16px">
+          <div class="term-panel-title">Maintenance Status</div>
+          <div id="ovrMaintStatus" class="ovr-maint-status">Checking...</div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           COMMUNITY: Reports
+           ══════════════════════════════════════════════════ -->
+      <div class="admin-section" id="section-reports">
+        <div class="rpt-panel">
+          <div class="rpt-panel-header">
+            <div class="rpt-panel-title">
+              <span class="rpt-terminal-prompt">admin@revxchange:~$</span>
+              <span>community_reports</span>
+            </div>
+            <span class="rpt-panel-count" id="reportsCount"></span>
+          </div>
+
+          <div class="rpt-filter-bar">
+            <button class="rpt-filter-btn active" data-status="pending">Pending</button>
+            <button class="rpt-filter-btn" data-status="reviewed">Reviewed</button>
+            <button class="rpt-filter-btn" data-status="dismissed">Dismissed</button>
+          </div>
+
+          <div id="reportsTableBody" class="rpt-list"></div>
+
+          <div id="reportsLoadMore" class="rpt-load-more" style="display:none">
+            <button class="rpt-load-more-btn" id="reportsLoadMoreBtn">Load More</button>
+          </div>
+
+          <div id="reportsEmptyState" class="rpt-empty" style="display:none">
+            <span class="rpt-empty-icon">✓</span>
+            <span>No pending reports</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           COMMUNITY: Suggestions
+           ══════════════════════════════════════════════════ -->
+      <div class="admin-section" id="section-suggestions">
+        <div class="rpt-panel">
+          <div class="rpt-panel-header">
+            <div class="rpt-panel-title">
+              <span class="rpt-terminal-prompt">admin@revxchange:~$</span>
+              <span>community_suggestions</span>
+            </div>
+            <span class="rpt-panel-count" id="suggCount"></span>
+          </div>
+
+          <div class="rpt-filter-bar">
+            <button class="rpt-filter-btn active" data-sugg-status="pending">Pending</button>
+            <button class="rpt-filter-btn" data-sugg-status="approved">Approved</button>
+            <button class="rpt-filter-btn" data-sugg-status="rejected">Rejected</button>
+          </div>
+
+          <div id="suggTableBody" class="rpt-list"></div>
+
+          <div id="suggLoadMore" class="rpt-load-more" style="display:none">
+            <button class="rpt-load-more-btn" id="suggLoadMoreBtn">Load More</button>
+          </div>
+
+          <div id="suggEmpty" class="rpt-empty" style="display:none">
+            <span class="rpt-empty-icon">✓</span>
+            <span>No pending suggestions</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           COMMUNITY: Maintenance
+           ══════════════════════════════════════════════════ -->
+      <div class="admin-section" id="section-maintenance">
+        <div class="term-header">
+          <span class="term-prompt">admin@revxchange:~$</span>
+          <span class="term-cmd">maintenance_control</span>
+        </div>
+
+        <div class="maint-status-panel term-panel">
+          <div class="maint-status-row">
+            <div class="maint-dot-wrap">
+              <span class="maint-dot" id="maintDot"></span>
+              <span class="maint-status-label" id="maintStatusText">Loading...</span>
+            </div>
+            <div class="maint-detail" id="maintDetail"></div>
+          </div>
+        </div>
+
+        <div class="term-panel" style="margin-top:16px">
+          <div class="term-panel-title">Toggle Maintenance Mode</div>
+          <div class="term-form-grid">
+            <div class="term-field">
+              <label class="term-label">Admin Password (any of the 4)</label>
+              <input type="password" id="maintPassword" class="term-input" placeholder="Enter any admin password">
+            </div>
+            <div class="term-field" id="maintDurationField">
+              <label class="term-label">Duration</label>
+              <div class="maint-dur-group">
+                <button class="rpt-dur-btn active" data-mins="15">15m</button>
+                <button class="rpt-dur-btn" data-mins="30">30m</button>
+                <button class="rpt-dur-btn" data-mins="60">1h</button>
+                <button class="rpt-dur-btn" data-mins="120">2h</button>
+                <button class="rpt-dur-btn" data-mins="240">4h</button>
+              </div>
+            </div>
+            <div class="term-field" id="maintMessageField">
+              <label class="term-label">Message (optional)</label>
+              <input type="text" id="maintMessage" class="term-input" placeholder="e.g. Scheduled maintenance in progress">
+            </div>
+          </div>
+          <button class="term-btn term-btn-amber" id="maintToggleBtn">Activate Maintenance</button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           COMMUNITY: Reset
+           ══════════════════════════════════════════════════ -->
+      <div class="admin-section" id="section-community-reset">
+        <div class="term-header">
+          <span class="term-prompt">admin@revxchange:~$</span>
+          <span class="term-cmd">community_reset</span>
+        </div>
+
+        <div class="term-panel">
+          <div class="term-panel-title">Select Community to Reset</div>
+
+          <div class="term-field">
+            <label class="term-label">Community</label>
+            <select id="resetCommSelect" class="term-select">
+              <option value="">— Select a community —</option>
+            </select>
+          </div>
+
+          <div class="reset-info" id="resetInfo" style="display:none">
+            <span class="term-mono"><span id="resetPostCount">—</span> posts</span>
+            <span style="color:#334155">·</span>
+            <span class="term-mono"><span id="resetMemberCount">—</span> members</span>
+          </div>
+
+          <div class="term-form-grid" style="margin-top:16px">
+            <div class="term-field">
+              <label class="term-label">Admin Password 1</label>
+              <input type="password" id="resetPass1" class="term-input" placeholder="First admin password">
+            </div>
+            <div class="term-field">
+              <label class="term-label">Admin Password 2</label>
+              <input type="password" id="resetPass2" class="term-input" placeholder="Second admin password">
+            </div>
+          </div>
+
+          <button class="term-btn term-btn-danger" id="resetCommBtn" style="margin-top:20px">
+            RESET COMMUNITY
+          </button>
+        </div>
+
+        <div class="term-panel reset-confirm-panel" id="resetConfirmPanel" style="display:none; margin-top:16px">
+          <div class="reset-warn-text">
+            <span class="term-danger">⚠ WARNING — IRREVERSIBLE ACTION</span>
+          </div>
+          <div class="reset-warn-body" id="resetConfirmBody">
+            This will permanently soft-delete all posts and comments in the selected community.
+          </div>
+          <div class="reset-confirm-actions">
+            <button class="term-btn term-btn-muted" id="resetConfirmCancelBtn">Cancel</button>
+            <button class="term-btn term-btn-danger" id="resetConfirmExecuteBtn">CONFIRM RESET</button>
+          </div>
+          <div id="resetResult" class="term-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           COMMUNITY: Nuclear Reset
+           ══════════════════════════════════════════════════ -->
+      <div class="admin-section" id="section-nuclear-reset">
+        <div class="nuclear-panel">
+          <div class="nuclear-header">
+            <span class="nuclear-icon">⚠</span>
+            <div>
+              <div class="nuclear-title">NUCLEAR OPTION — FULL COMMUNITY RESET</div>
+              <div class="nuclear-sub">Deletes ALL posts and comments across ALL communities. IRREVERSIBLE.</div>
+            </div>
+          </div>
+
+          <div class="nuclear-passwords">
+            <div class="term-field">
+              <label class="term-label">Admin Password 1 (RX-Alpha)</label>
+              <input type="password" id="nuclearPass1" class="term-input nuclear-input" placeholder="Password 1">
+            </div>
+            <div class="term-field">
+              <label class="term-label">Admin Password 2 (RX-Beta)</label>
+              <input type="password" id="nuclearPass2" class="term-input nuclear-input" placeholder="Password 2">
+            </div>
+            <div class="term-field">
+              <label class="term-label">Admin Password 3 (RX-Gamma)</label>
+              <input type="password" id="nuclearPass3" class="term-input nuclear-input" placeholder="Password 3">
+            </div>
+            <div class="term-field">
+              <label class="term-label">Admin Password 4 (RX-Delta)</label>
+              <input type="password" id="nuclearPass4" class="term-input nuclear-input" placeholder="Password 4">
+            </div>
+          </div>
+
+          <div class="term-field" style="margin-top:8px">
+            <label class="term-label">Type <code>CONFIRM NUCLEAR RESET</code> to proceed</label>
+            <input type="text" id="nuclearConfirmText" class="term-input nuclear-input"
+                   placeholder="CONFIRM NUCLEAR RESET" autocomplete="off">
+          </div>
+
+          <button class="nuclear-btn" id="nuclearExecuteBtn" disabled>
+            EXECUTE NUCLEAR RESET
+          </button>
+
+          <div id="nuclearResult" class="nuclear-result" style="display:none"></div>
+        </div>
+      </div>
+
     </main>
   </div>
 
   <div id="adminToast" class="admin-toast"></div>
 
-  <<div id="adminRejectModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 9999; align-items: center; justify-content: center;">
-  <div style="background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 440px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: sans-serif;">
-    <h3 style="margin-top: 0; margin-bottom: .5rem; color: #111; font-size: 1.3rem;">Reject Car Listing</h3>
-    <p style="opacity: .6; font-size: .85rem; margin-bottom: 1.2rem;">Specify the reason for rejecting this vehicle. The seller will see this in their profile dashboard.</p>
-    
-    <textarea id="adminRejectReasonInput" rows="4" placeholder="e.g., Photos are too blurry, incorrect price estimation, or invalid document details..."
-      style="width: 100%; padding: .75rem; border: 1px solid #ddd; border-radius: 10px; font-size: .9rem; resize: vertical; outline: none; transition: border-color 0.2s; box-sizing: border-box;"
-      onfocus="this.style.borderColor='#722f37'" onblur="this.style.borderColor='#ddd'"></textarea>
-    
-    <div style="display: flex; gap: 10px; margin-top: 1.2rem; justify-content: flex-end;">
-      <button type="button" id="adminRejectCancelBtn"
-        style="padding: 10px 20px; border: 1px solid #e0e0e0; border-radius: 8px; background: #f8f9fa; color: #555; font-weight: 600; cursor: pointer; transition: background 0.2s;"
-        onmouseover="this.style.background='#f1f3f5'" onmouseout="this.style.background='#f8f9fa'">
-        Cancel
-      </button>
-      <button type="button" id="adminRejectConfirmBtn" 
-        style="padding: 10px 20px; border: none; border-radius: 8px; background: #722f37; color: #fff; font-weight: 700; cursor: pointer; transition: background 0.2s;"
-        onmouseover="this.style.background='#5c252c'" onmouseout="this.style.background='#722f37'">
-        Confirm Rejection
-      </button>
+  <div id="adminRejectModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: #1a1a2e; border: 1px solid #2a2f45; border-radius: 16px; padding: 2rem; width: 100%; max-width: 440px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-family: sans-serif;">
+      <h3 style="margin-top: 0; margin-bottom: .5rem; color: #e2e8f0; font-size: 1.3rem;">Reject Car Listing</h3>
+      <p style="color:#64748b; font-size: .85rem; margin-bottom: 1.2rem;">Specify the reason for rejecting this vehicle. The seller will see this in their profile dashboard.</p>
+      <textarea id="adminRejectReasonInput" rows="4" placeholder="e.g., Photos are too blurry, incorrect price estimation, or invalid document details..."
+        style="width: 100%; padding: .75rem; background:#0d0f18; border: 1px solid #2a2f45; border-radius: 10px; font-size: .9rem; resize: vertical; outline: none; color:#e2e8f0; transition: border-color 0.2s; box-sizing: border-box;"
+        onfocus="this.style.borderColor='#5a0f1c'" onblur="this.style.borderColor='#2a2f45'"></textarea>
+      <div style="display: flex; gap: 10px; margin-top: 1.2rem; justify-content: flex-end;">
+        <button type="button" id="adminRejectCancelBtn"
+          style="padding: 10px 20px; border: 1px solid #2a2f45; border-radius: 8px; background: #1a1d2e; color: #64748b; font-weight: 600; cursor: pointer;">
+          Cancel
+        </button>
+        <button type="button" id="adminRejectConfirmBtn"
+          style="padding: 10px 20px; border: none; border-radius: 8px; background: #5a0f1c; color: #fff; font-weight: 700; cursor: pointer;">
+          Confirm Rejection
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
   <script src="/js/admin.js"></script>
 </body>

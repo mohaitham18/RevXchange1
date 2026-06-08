@@ -11,7 +11,9 @@ const Post = require('../models/Post');
 const Vote = require('../models/Vote');
 const Community = require('../models/Community');
 const CommunityMembership = require('../models/CommunityMembership');
-const Comment = require('../models/Comment');
+const Comment    = require('../models/Comment');
+const Report     = require('../models/Report');
+const Suspension = require('../models/Suspension');
 
 // ── Cloudinary config ─────────────────────────────────────────
 cloudinary.config({
@@ -225,6 +227,18 @@ router.post('/', protect, uploadImages.array('images', 5), async (req, res) => {
     if (variantId && !isValidObjectId(variantId)) {
       return res.status(400).json({
         message: 'Invalid variantId'
+      });
+    }
+
+    const activeSuspension = await Suspension.findOne({
+      userId:         req.user.id,
+      isActive:       true,
+      suspendedUntil: { $gt: new Date() }
+    });
+    if (activeSuspension) {
+      return res.status(403).json({
+        message: `You are suspended until ${activeSuspension.suspendedUntil.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+        suspendedUntil: activeSuspension.suspendedUntil
       });
     }
 
@@ -1036,6 +1050,18 @@ router.post('/:id/comments', protect, uploadImages.array('images', 2), async (re
       });
     }
 
+    const commentSuspension = await Suspension.findOne({
+      userId:         req.user.id,
+      isActive:       true,
+      suspendedUntil: { $gt: new Date() }
+    });
+    if (commentSuspension) {
+      return res.status(403).json({
+        message: `You are suspended until ${commentSuspension.suspendedUntil.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+        suspendedUntil: commentSuspension.suspendedUntil
+      });
+    }
+
     const post = await Post.findById(req.params.id);
 
     if (!post || post.isDeleted) {
@@ -1127,6 +1153,50 @@ router.post('/:id/comments', protect, uploadImages.array('images', 2), async (re
       message: 'Server error',
       error: err.message
     });
+  }
+});
+
+// ── POST /api/posts/:id/report ────────────────────────────────
+router.post('/:id/report', protect, async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid post ID' });
+    }
+
+    const validReasons = ['spam', 'misinformation', 'inappropriate', 'harassment', 'other'];
+    const { reason, details } = req.body;
+
+    if (!reason || !validReasons.includes(reason)) {
+      return res.status(400).json({ message: 'Invalid reason' });
+    }
+
+    const post = await Post.findById(req.params.id);
+    if (!post || post.isDeleted) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.authorId.toString() === req.user.id) {
+      return res.status(403).json({ message: 'Cannot report your own post' });
+    }
+
+    try {
+      await Report.create({
+        postId:     post._id,
+        reporterId: req.user.id,
+        reason,
+        details:    details ? details.trim().slice(0, 300) : undefined
+      });
+    } catch (dupErr) {
+      if (dupErr.code === 11000) {
+        return res.status(409).json({ message: 'You have already reported this post' });
+      }
+      throw dupErr;
+    }
+
+    res.json({ success: true, message: 'Post reported' });
+  } catch (err) {
+    console.error('POST /api/posts/:id/report error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 

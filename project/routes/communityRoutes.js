@@ -5,12 +5,13 @@ const router = express.Router();
 
 const protect = require('../middleware/auth');
 
-const Community = require('../models/Community');
+const Community       = require('../models/Community');
 const CommunityMembership = require('../models/CommunityMembership');
-const CommunityRequest = require('../models/CommunityRequest');
-const Brand = require('../models/Brand');
-const Post = require('../models/Post');
-const Vote = require('../models/Vote');
+const CommunityRequest= require('../models/CommunityRequest');
+const Brand           = require('../models/Brand');
+const Post            = require('../models/Post');
+const Vote            = require('../models/Vote');
+const SystemSettings  = require('../models/SystemSettings');
 
 // Register referenced models for populate()
 require('../models/CarVariant');
@@ -266,6 +267,20 @@ router.delete('/:id/leave', protect, async (req, res) => {
 // GET /api/communities/:slug/posts?sort=top|new|hot|controversial&page=N
 router.get('/:slug/posts', optionalAuth, async (req, res) => {
   try {
+    // ── Maintenance mode check ──────────────────────────────
+    const settings = await SystemSettings.get();
+    const maint    = settings.maintenanceMode;
+    if (maint?.active) {
+      if (maint.endsAt && new Date(maint.endsAt) > new Date()) {
+        return res.status(503).json({
+          maintenance: true,
+          message:     maint.message || 'Scheduled maintenance in progress',
+          endsAt:      maint.endsAt
+        });
+      }
+      await SystemSettings.set({ 'maintenanceMode.active': false, 'maintenanceMode.endsAt': null });
+    }
+
     const community = await Community.findOne({
       slug: req.params.slug
     }).lean();

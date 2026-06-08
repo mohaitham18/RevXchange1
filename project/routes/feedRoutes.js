@@ -3,9 +3,10 @@ const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-const Post = require('../models/Post');
-const Vote = require('../models/Vote');
+const Post            = require('../models/Post');
+const Vote            = require('../models/Vote');
 const CommunityMembership = require('../models/CommunityMembership');
+const SystemSettings  = require('../models/SystemSettings');
 
 // Register referenced models for populate()
 require('../models/Brand');
@@ -59,6 +60,21 @@ function cleanSort(sort, isLoggedIn) {
 // GET /api/feed?sort=top|new|hot|controversial&page=N
 router.get('/', optionalAuth, async (req, res) => {
   try {
+    // ── Maintenance mode check ──────────────────────────────
+    const settings = await SystemSettings.get();
+    const maint    = settings.maintenanceMode;
+    if (maint?.active) {
+      if (maint.endsAt && new Date(maint.endsAt) > new Date()) {
+        return res.status(503).json({
+          maintenance: true,
+          message:     maint.message || 'Scheduled maintenance in progress',
+          endsAt:      maint.endsAt
+        });
+      }
+      // Auto-deactivate if expired
+      await SystemSettings.set({ 'maintenanceMode.active': false, 'maintenanceMode.endsAt': null });
+    }
+
     const isLoggedIn = Boolean(req.user && req.user.id);
 
     const sort = cleanSort(req.query.sort, isLoggedIn);
