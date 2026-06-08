@@ -14,7 +14,6 @@
 <body>
   <div class="admin-layout">
 
-    <!-- SIDEBAR -->
     <aside class="admin-sidebar">
       <div class="admin-brand">
         <div class="brand-mark">RX</div>
@@ -36,10 +35,8 @@
       </nav>
     </aside>
 
-    <!-- MAIN -->
     <main class="admin-main">
 
-      <!-- Top Bar -->
       <header class="admin-topbar">
         <div>
           <h1 id="topbarTitle">Admin Dashboard</h1>
@@ -51,9 +48,7 @@
         </div>
       </header>
 
-      <!-- SECTION: Dashboard -->
       <div class="admin-section active" id="section-dashboard">
-
         <section class="stats-grid">
           <div class="stat-card">
             <h3 id="stat-users">—</h3>
@@ -100,10 +95,8 @@
             <ul class="simple-list" id="rejectedPreviewList"></ul>
           </div>
         </section>
-
       </div>
 
-      <!-- SECTION: Pending Listings -->
       <div class="admin-section" id="section-pending">
         <section class="admin-panel">
           <div class="panel-header">
@@ -119,7 +112,6 @@
         </section>
       </div>
 
-      <!-- SECTION: Approved Cars -->
       <div class="admin-section" id="section-all-cars">
         <section class="admin-panel">
           <div class="panel-header">
@@ -135,7 +127,6 @@
         </section>
       </div>
 
-      <!-- SECTION: Rejected Cars -->
       <div class="admin-section" id="section-rejected">
         <section class="admin-panel">
           <div class="panel-header">
@@ -151,7 +142,6 @@
         </section>
       </div>
 
-      <!-- SECTION: Users -->
       <div class="admin-section" id="section-users">
         <section class="admin-panel">
           <div class="panel-header">
@@ -159,15 +149,15 @@
             <span class="panel-count" id="usersCount"></span>
           </div>
           <div class="admin-table">
-            <div class="table-row table-head users-head">
-              <span>Name</span><span>Email</span><span>Role</span><span>Joined</span><span>Actions</span>
+            <div class="table-row table-head">
+              <span>NAME</span><span>EMAIL</span><span>ROLE</span><span>JOINED</span><span>Actions</span>
             </div>
             <div id="usersTableBody"></div>
           </div>
+          <div id="usersPagination" class="admin-pagination"></div>
         </section>
       </div>
 
-      <!-- SECTION: Buy Requests -->
       <div class="admin-section" id="section-buy-requests">
         <section class="admin-panel">
           <div class="panel-header">
@@ -183,7 +173,6 @@
         </section>
       </div>
 
-      <!-- SECTION: Rent Requests -->
       <div class="admin-section" id="section-rent-requests">
         <section class="admin-panel">
           <div class="panel-header">
@@ -203,6 +192,31 @@
   </div>
 
   <div id="adminToast" class="admin-toast"></div>
+
+  <<div id="adminRejectModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 440px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: sans-serif;">
+    <h3 style="margin-top: 0; margin-bottom: .5rem; color: #111; font-size: 1.3rem;">Reject Car Listing</h3>
+    <p style="opacity: .6; font-size: .85rem; margin-bottom: 1.2rem;">Specify the reason for rejecting this vehicle. The seller will see this in their profile dashboard.</p>
+    
+    <textarea id="adminRejectReasonInput" rows="4" placeholder="e.g., Photos are too blurry, incorrect price estimation, or invalid document details..."
+      style="width: 100%; padding: .75rem; border: 1px solid #ddd; border-radius: 10px; font-size: .9rem; resize: vertical; outline: none; transition: border-color 0.2s; box-sizing: border-box;"
+      onfocus="this.style.borderColor='#722f37'" onblur="this.style.borderColor='#ddd'"></textarea>
+    
+    <div style="display: flex; gap: 10px; margin-top: 1.2rem; justify-content: flex-end;">
+      <button type="button" id="adminRejectCancelBtn"
+        style="padding: 10px 20px; border: 1px solid #e0e0e0; border-radius: 8px; background: #f8f9fa; color: #555; font-weight: 600; cursor: pointer; transition: background 0.2s;"
+        onmouseover="this.style.background='#f1f3f5'" onmouseout="this.style.background='#f8f9fa'">
+        Cancel
+      </button>
+      <button type="button" id="adminRejectConfirmBtn" 
+        style="padding: 10px 20px; border: none; border-radius: 8px; background: #722f37; color: #fff; font-weight: 700; cursor: pointer; transition: background 0.2s;"
+        onmouseover="this.style.background='#5c252c'" onmouseout="this.style.background='#722f37'">
+        Confirm Rejection
+      </button>
+    </div>
+  </div>
+</div>
+
   <script src="/js/admin.js"></script>
 </body>
 </html>
