@@ -169,6 +169,8 @@ function googleTranslateElementInit() {
           <div class="comm-grid" id="commGrid">
             <!-- Populated by JS -->
           </div>
+          <!-- Permanent slot — always in DOM so position never shifts -->
+          <div id="commPagination" class="comm-pagination"></div>
         </div>
 
         <!-- RIGHT: Your Communities (40%) -->
@@ -176,6 +178,15 @@ function googleTranslateElementInit() {
           <h2 class="comm-section-title">Your Communities</h2>
           <div class="comm-yours-list" id="commYoursList">
             <!-- Populated by JS -->
+          </div>
+
+          <!-- Suggest a Community box -->
+          <div class="comm-suggest-box">
+            <div class="comm-suggest-box-icon">✦</div>
+            <div class="comm-suggest-box-text">Don't see your car community?</div>
+            <button class="comm-suggest-box-btn" id="commSuggestBtn">
+              Suggest a Community
+            </button>
           </div>
         </div>
 
