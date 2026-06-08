@@ -79,6 +79,155 @@
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
+  function hasRealValue(value) {
+    if (value === null || value === undefined) return false;
+    const text = String(value).trim().toLowerCase();
+    return text !== '' && text !== 'not specified' && text !== 'undefined' && text !== 'null' && text !== '—';
+  }
+
+  function cleanList(value) {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .map(item => String(item || '').trim())
+      .filter(Boolean);
+  }
+
+  function normalizeHistoryDocuments(value) {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .map((doc, index) => {
+        if (typeof doc === 'string') {
+          return {
+            url: doc,
+            originalName: `History document ${index + 1}`,
+            mimeType: ''
+          };
+        }
+
+        return {
+          url: doc?.url || doc?.path || doc?.secure_url || '',
+          originalName: doc?.originalName || doc?.filename || `History document ${index + 1}`,
+          mimeType: doc?.mimeType || doc?.mimetype || ''
+        };
+      })
+      .filter(doc => doc.url);
+  }
+
+  function rentPriceBlock(car) {
+    if (car.listingType !== 'rent') return '';
+
+    const rows = [];
+
+    if (car.rentPricePerDay) {
+      rows.push(`<span>Daily: <strong>${Number(car.rentPricePerDay).toLocaleString()} EGP/day</strong></span>`);
+    }
+
+    if (car.rentPricePerMonth) {
+      rows.push(`<span>Monthly: <strong>${Number(car.rentPricePerMonth).toLocaleString()} EGP/month</strong></span>`);
+    }
+
+    if (car.rentDeposit) {
+      rows.push(`<span>Deposit: <strong>${Number(car.rentDeposit).toLocaleString()} EGP</strong></span>`);
+    }
+
+    if (!rows.length) return '';
+
+    return `<div class="rx-rent-prices">${rows.join('')}</div>`;
+  }
+
+  function buildRealHighlights(car) {
+    const custom = cleanList(car.highlights);
+    if (custom.length) return custom;
+
+    const items = [];
+
+    items.push(`${niceText(car.condition)} condition`);
+    items.push(`${formatKm(car.mileage)} mileage`);
+
+    if (car.fabrika) {
+      items.push('Fabrika / factory condition selected by seller');
+    }
+
+    if (hasRealValue(car.service)) {
+      items.push(`Service history: ${car.service}`);
+    }
+
+    if (hasRealValue(car.engine)) {
+      items.push(`Engine: ${car.engine}`);
+    }
+
+    if (hasRealValue(car.owners)) {
+      items.push(`Owner history: ${car.owners}`);
+    }
+
+    if (car.listingType === 'rent') {
+      if (car.rentPricePerDay) items.push(`Daily rent: ${Number(car.rentPricePerDay).toLocaleString()} EGP/day`);
+      if (car.rentPricePerMonth) items.push(`Monthly rent: ${Number(car.rentPricePerMonth).toLocaleString()} EGP/month`);
+    }
+
+    return items;
+  }
+
+  function buildRealIncluded(car) {
+    const custom = cleanList(car.included);
+    if (custom.length) return custom;
+
+    const items = [];
+
+    if (car.historyDocuments.length) {
+      items.push(`${car.historyDocuments.length} service/history document${car.historyDocuments.length === 1 ? '' : 's'} uploaded`);
+    } else if (String(car.service || '').toLowerCase().includes('history')) {
+      items.push('Service history selected, but no document is uploaded yet');
+    }
+
+    if (car.images.length) {
+      items.push(`${car.images.length} real listing photo${car.images.length === 1 ? '' : 's'} uploaded`);
+    }
+
+    if (hasRealValue(car.body) || car.doors || car.seats) {
+      items.push(`${car.body || 'Body'} body · ${car.doors || '—'} doors · ${car.seats || '—'} seats`);
+    }
+
+    if (hasRealValue(car.drivetrain)) {
+      items.push(`${car.drivetrain} drivetrain`);
+    }
+
+    if (car.listingType === 'rent' && car.rentDeposit) {
+      items.push(`Rental deposit: ${Number(car.rentDeposit).toLocaleString()} EGP`);
+    }
+
+    if (car.phone) {
+      items.push('Seller contact number available');
+    }
+
+    return items.length ? items : ['No included details were added by the seller'];
+  }
+
+  function historyDocumentsHTML(car) {
+    if (!car.historyDocuments.length) return '';
+
+    return `
+      <div class="rx-desc-section">
+        <div class="rx-desc-label">History Documents</div>
+        <div class="rx-doc-list">
+          ${car.historyDocuments.map((doc, index) => `
+            <a
+              class="rx-doc-link"
+              href="${escapeHTML(doc.url)}"
+              target="_blank"
+              rel="noopener"
+            >
+              <span class="rx-doc-icon">📄</span>
+              <span>${escapeHTML(doc.originalName || `History document ${index + 1}`)}</span>
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   function normalizeCar(car) {
     const fallbackImg =
       typeof brandImages !== 'undefined' && car.brand
@@ -120,20 +269,12 @@
 
       description: car.description || '',
 
-      highlights: Array.isArray(car.highlights) && car.highlights.length
-        ? car.highlights
-        : [
-            'Seller description available',
-            'Contact seller for inspection details',
-            'Check service history before purchase'
-          ],
+      historyDocuments: normalizeHistoryDocuments(
+        car.historyDocuments || car.serviceDocuments || car.documents || []
+      ),
 
-      included: Array.isArray(car.included) && car.included.length
-        ? car.included
-        : [
-            'Documents available from seller',
-            'Contact seller for included accessories'
-          ],
+      highlights: cleanList(car.highlights),
+      included: cleanList(car.included),
 
       images: Array.isArray(car.images) && car.images.length
         ? car.images
@@ -405,7 +546,10 @@ Seller description: ${car.description || 'No seller description'}
 
     const desc =
       car.description ||
-      `This ${car.year} ${car.brand} ${car.model} is listed in ${car.city}. It has ${formatKm(car.mileage)}, ${car.transmission} transmission, and ${car.fuel} fuel type.`;
+      `This ${car.year} ${car.brand} ${car.model} is listed in ${car.city}. It has ${formatKm(car.mileage)}, ${car.transmission} transmission, ${car.fuel} fuel type, ${car.engine} engine, and ${car.service} service history.`;
+
+    const realHighlights = buildRealHighlights(car);
+    const realIncluded = buildRealIncluded(car);
 
     return `
       <div class="rx-card-body">
@@ -430,6 +574,7 @@ Seller description: ${car.description || 'No seller description'}
         <div class="rx-info">
           <div class="rx-info-title">${escapeHTML(`${car.brand} ${car.model} ${car.year}`)}</div>
           <div class="rx-info-price">${escapeHTML(displayPrice(car))}</div>
+          ${rentPriceBlock(car)}
 
           <div class="rx-info-pills">
             <span class="rx-pill">📅 ${escapeHTML(car.year)}</span>
@@ -477,16 +622,18 @@ Seller description: ${car.description || 'No seller description'}
           <div class="rx-desc-section">
             <div class="rx-desc-label">Key Highlights</div>
             <div class="rx-desc-list">
-              ${car.highlights.map(item => `<div class="rx-desc-list-item">${escapeHTML(item)}</div>`).join('')}
+              ${realHighlights.map(item => `<div class="rx-desc-list-item">${escapeHTML(item)}</div>`).join('')}
             </div>
           </div>
 
           <div class="rx-desc-section">
             <div class="rx-desc-label">What's Included</div>
             <div class="rx-desc-list">
-              ${car.included.map(item => `<div class="rx-desc-list-item">${escapeHTML(item)}</div>`).join('')}
+              ${realIncluded.map(item => `<div class="rx-desc-list-item">${escapeHTML(item)}</div>`).join('')}
             </div>
           </div>
+
+          ${historyDocumentsHTML(car)}
         </div>
 
         <div class="rx-cara-box">
@@ -736,7 +883,6 @@ Seller description: ${car.description || 'No seller description'}
     if (e.target.closest('.save-car-btn')) return;
     if (e.target.closest('.car-action-btn')) return;
     if (e.target.closest('.rx-action-btn')) return;
-    if (e.target.closest('.carousel-arrow')) return;
 
     const cardEl = e.target.closest('.car-card-placeholder');
     if (!cardEl) return;

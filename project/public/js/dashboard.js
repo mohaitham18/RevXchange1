@@ -846,11 +846,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Edit post modal ───────────────────────────────────────
   function dpOpenEditModal(post) {
     document.getElementById('dashEditPostOverlay')?.remove();
+
+    const hasImages = Array.isArray(post.imageUrls) && post.imageUrls.length > 0;
+    const hasVideo  = !!post.videoUrl;
+    const hasMedia  = hasImages || hasVideo;
+
     const overlay = document.createElement('div');
     overlay.id = 'dashEditPostOverlay';
     overlay.className = 'dash-edit-post-overlay';
     const safeTitle = (post.title || '').replace(/"/g, '&quot;');
     const safeBody = post.body || '';
+
     overlay.innerHTML = `
       <div class="dash-edit-post-card">
         <div class="dash-edit-header">
@@ -859,44 +865,127 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="dash-edit-body">
           <div class="dash-edit-field">
-            <label class="dash-edit-label"> Title <span class="dash-edit-required">*</span> </label>
-            <input type="text" class="dash-edit-input" id="dashEditTitleInput" value="${safeTitle}" maxlength="300" >
+            <label class="dash-edit-label">Title <span class="dash-edit-required">*</span></label>
+            <input type="text" class="dash-edit-input" id="dashEditTitleInput" value="${safeTitle}" maxlength="300">
           </div>
           <div class="dash-edit-field">
             <label class="dash-edit-label">Body</label>
-            <textarea class="dash-edit-textarea" id="dashEditBodyInput" maxlength="10000" rows="6" >${safeBody}</textarea>
+            <textarea class="dash-edit-textarea" id="dashEditBodyInput" maxlength="10000" rows="6">${safeBody}</textarea>
           </div>
+          ${hasMedia ? `
+          <div class="dash-edit-field" id="dashEditMediaField">
+            <label class="dash-edit-label">Current media</label>
+            <div class="dash-edit-media-grid" id="dashEditMediaGrid"></div>
+          </div>` : ''}
         </div>
         <div class="dash-edit-footer">
           <button class="dash-edit-cancel" id="dashEditCancelBtn">Cancel</button>
           <button class="dash-edit-save" id="dashEditSaveBtn">
             <span id="dashEditSaveLabel">Save Changes</span>
             <span id="dashEditSaveSpinner" style="display:none;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:dashSpin 0.8s linear infinite;" >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:dashSpin 0.8s linear infinite;">
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
               </svg>
             </span>
           </button>
         </div>
       </div>`;
+
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        overlay.classList.add('rx-open');
-      });
+      requestAnimationFrame(() => overlay.classList.add('rx-open'));
     });
 
     const titleInput = document.getElementById('dashEditTitleInput');
-    const bodyInput = document.getElementById('dashEditBodyInput');
+    const bodyInput  = document.getElementById('dashEditBodyInput');
     if (titleInput) titleInput.dir = dpIsRTL(titleInput.value) ? 'rtl' : 'ltr';
-    if (bodyInput) bodyInput.dir = dpIsRTL(bodyInput.value) ? 'rtl' : 'ltr';
+    if (bodyInput)  bodyInput.dir  = dpIsRTL(bodyInput.value)  ? 'rtl' : 'ltr';
     titleInput?.addEventListener('input', () => {
       titleInput.dir = dpIsRTL(titleInput.value) ? 'rtl' : 'ltr';
     });
     bodyInput?.addEventListener('input', () => {
       bodyInput.dir = dpIsRTL(bodyInput.value) ? 'rtl' : 'ltr';
     });
+
+    // ── Media preview logic ───────────────────────────────
+    let editImages   = hasImages ? [...post.imageUrls] : [];
+    let editVideoUrl = hasVideo  ? post.videoUrl       : null;
+    let mediaWorking = false;
+
+    function renderDashEditMedia() {
+      const grid  = document.getElementById('dashEditMediaGrid');
+      const field = document.getElementById('dashEditMediaField');
+      if (!grid) return;
+
+      if (editImages.length === 0 && !editVideoUrl) {
+        if (field) field.style.display = 'none';
+        return;
+      }
+      if (field) field.style.display = '';
+
+      grid.innerHTML =
+        editImages.map((url, i) => `
+          <div class="dash-edit-media-item">
+            <img src="${url}" alt="Image ${i + 1}" loading="lazy">
+            <button class="dash-edit-media-remove" data-img-idx="${i}" title="Remove image">✕</button>
+          </div>`).join('') +
+        (editVideoUrl ? `
+          <div class="dash-edit-media-item dash-edit-video-item">
+            <video src="${editVideoUrl}" muted preload="metadata"></video>
+            <button class="dash-edit-media-remove" data-type="video" title="Remove video">✕</button>
+          </div>` : '');
+
+      grid.querySelectorAll('.dash-edit-media-remove').forEach(xBtn => {
+        xBtn.addEventListener('click', async () => {
+          if (mediaWorking) return;
+          mediaWorking     = true;
+          xBtn.disabled    = true;
+          xBtn.textContent = '…';
+
+          try {
+            if (xBtn.dataset.type === 'video') {
+              const res = await fetch(`/api/posts/${post._id}/video`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (res.ok) {
+                editVideoUrl = null;
+              } else {
+                xBtn.textContent = '✕';
+                xBtn.disabled    = false;
+                mediaWorking = false;
+                return;
+              }
+            } else {
+              const idx = parseInt(xBtn.dataset.imgIdx, 10);
+              const res = await fetch(`/api/posts/${post._id}/images/${idx}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (res.ok) {
+                editImages.splice(idx, 1);
+              } else {
+                xBtn.textContent = '✕';
+                xBtn.disabled    = false;
+                mediaWorking = false;
+                return;
+              }
+            }
+          } catch {
+            xBtn.textContent = '✕';
+            xBtn.disabled    = false;
+            mediaWorking = false;
+            return;
+          }
+
+          mediaWorking = false;
+          renderDashEditMedia();
+        });
+      });
+    }
+
+    if (hasMedia) renderDashEditMedia();
 
     const close = () => {
       overlay.classList.remove('rx-open');
@@ -907,22 +996,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     document.getElementById('dashEditClose')?.addEventListener('click', close);
     document.getElementById('dashEditCancelBtn')?.addEventListener('click', close);
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) close();
+    overlay.addEventListener('click', ev => {
+      if (ev.target === overlay) close();
     });
 
     document.getElementById('dashEditSaveBtn')?.addEventListener('click', async () => {
       const title = titleInput?.value.trim();
-      const body = bodyInput?.value.trim() || '';
+      const body  = bodyInput?.value.trim() || '';
       if (!title) {
         showToast('Title is required');
         return;
       }
       const saveBtn = document.getElementById('dashEditSaveBtn');
-      const label = document.getElementById('dashEditSaveLabel');
+      const label   = document.getElementById('dashEditSaveLabel');
       const spinner = document.getElementById('dashEditSaveSpinner');
       saveBtn.disabled = true;
-      if (label) label.style.display = 'none';
+      if (label)   label.style.display   = 'none';
       if (spinner) spinner.style.display = 'flex';
       try {
         const res = await fetch(`/api/posts/${post._id}`, {
@@ -938,14 +1027,14 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = await safeJson(res);
           showToast(data.message || 'Failed to update post');
           saveBtn.disabled = false;
-          if (label) label.style.display = '';
+          if (label)   label.style.display   = '';
           if (spinner) spinner.style.display = 'none';
         }
       } catch (err) {
         console.error('Edit post error:', err);
         showToast('Server error. Please try again.');
         saveBtn.disabled = false;
-        if (label) label.style.display = '';
+        if (label)   label.style.display   = '';
         if (spinner) spinner.style.display = 'none';
       }
     });

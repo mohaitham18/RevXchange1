@@ -16,18 +16,7 @@
 </head>
 
 
-<!-- Google Translate -->
-<div id="google_translate_element" style="display:none"></div>
-<script>
-function googleTranslateElementInit() {
-    new google.translate.TranslateElement({
-        pageLanguage: 'en',
-        includedLanguages: 'ar',
-        autoDisplay: false
-    }, 'google_translate_element');
-}
-</script>
-<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
 <body>
 
   <!-- ── Universal Navbar ──────────────────────────────────── -->
@@ -169,6 +158,8 @@ function googleTranslateElementInit() {
           <div class="comm-grid" id="commGrid">
             <!-- Populated by JS -->
           </div>
+          <!-- Permanent slot — always in DOM so position never shifts -->
+          <div id="commPagination" class="comm-pagination"></div>
         </div>
 
         <!-- RIGHT: Your Communities (40%) -->
@@ -177,11 +168,33 @@ function googleTranslateElementInit() {
           <div class="comm-yours-list" id="commYoursList">
             <!-- Populated by JS -->
           </div>
+
+          <!-- Suggest a Community box -->
+          <div class="comm-suggest-box">
+            <div class="comm-suggest-box-icon">✦</div>
+            <div class="comm-suggest-box-text">Don't see your car community?</div>
+            <button class="comm-suggest-box-btn" id="commSuggestBtn">
+              Suggest a Community
+            </button>
+          </div>
         </div>
 
       </div>
     </div>
   </section>
+
+  <!-- Google Translate -->
+<div id="google_translate_element" style="display:none"></div>
+<script>
+function googleTranslateElementInit() {
+    new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'ar',
+        autoDisplay: false
+    }, 'google_translate_element');
+}
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
   <script src="/js/ambient.js"></script>
   <script src="/js/communities.js"></script>
