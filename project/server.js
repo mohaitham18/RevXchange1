@@ -112,6 +112,12 @@ mongoose.connect(process.env.MONGO_URI)
     app.get('/car/:id',            (_, res) => res.sendFile(path.join(views, 'used-cars.html')));
 
     const PORT = process.env.PORT || 3000;
+    if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+    }
+
+    
   })
   .catch(err => console.error('MongoDB connection failed ❌', err));
+
+  module.exports = app;
