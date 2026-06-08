@@ -141,6 +141,25 @@ const carSchema = new mongoose.Schema({
     default: 'Not specified'
   },
 
+  historyDocuments: [
+    {
+      url: {
+        type: String,
+        required: true
+      },
+      originalName: {
+        type: String,
+        trim: true,
+        default: ''
+      },
+      mimeType: {
+        type: String,
+        trim: true,
+        default: ''
+      }
+    }
+  ],
+
   highlights: [
     {
       type: String,

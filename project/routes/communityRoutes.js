@@ -7,6 +7,7 @@ const protect = require('../middleware/auth');
 
 const Community = require('../models/Community');
 const CommunityMembership = require('../models/CommunityMembership');
+const CommunityRequest = require('../models/CommunityRequest');
 const Brand = require('../models/Brand');
 const Post = require('../models/Post');
 const Vote = require('../models/Vote');
@@ -97,6 +98,34 @@ router.get('/', optionalAuth, async (req, res) => {
       message: 'Server error',
       error: err.message
     });
+  }
+});
+
+// POST /api/communities/suggest
+// MUST be declared before any /:slug or /:id wildcard routes
+router.post('/suggest', optionalAuth, async (req, res) => {
+  try {
+    const { brandId, model, yearStart, yearEnd, details } = req.body;
+
+    if (!brandId || !model || !String(model).trim()) {
+      return res.status(400).json({ message: 'brandId and model are required' });
+    }
+
+    const userId = req.user?.id || null;
+
+    await CommunityRequest.create({
+      userId,
+      brandId,
+      model: String(model).trim(),
+      yearStart: yearStart ? Number(yearStart) : null,
+      yearEnd:   yearEnd   ? Number(yearEnd)   : null,
+      details:   details   ? String(details).trim().slice(0, 500) : null,
+    });
+
+    res.json({ success: true, message: 'Request submitted successfully' });
+  } catch (err) {
+    console.error('POST /api/communities/suggest error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 

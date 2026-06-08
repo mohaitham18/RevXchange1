@@ -308,6 +308,44 @@ router.post('/', protect, uploadImages.array('images', 5), async (req, res) => {
   }
 });
 
+// ── DELETE /api/posts/comments/:id/images/:index ─────────────
+router.delete('/comments/:id/images/:index', protect, async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid comment ID' });
+    }
+
+    const idx = parseInt(req.params.index, 10);
+    if (isNaN(idx) || idx < 0) {
+      return res.status(400).json({ message: 'Invalid image index' });
+    }
+
+    const comment = await Comment.findById(req.params.id);
+
+    if (!comment || comment.isDeleted) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    if (comment.authorId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not your comment' });
+    }
+
+    if (!comment.imageUrls || idx >= comment.imageUrls.length) {
+      return res.status(400).json({ message: 'Image index out of range' });
+    }
+
+    comment.imageUrls.splice(idx, 1);
+    comment.isEdited = true;
+    comment.editedAt = new Date();
+    await comment.save();
+
+    res.json({ success: true, imageUrls: comment.imageUrls });
+  } catch (err) {
+    console.error('DELETE /api/posts/comments/:id/images/:index error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 // ── PATCH /api/posts/comments/:id ─────────────────────────────
 router.patch('/comments/:id', protect, async (req, res) => {
   try {
@@ -526,6 +564,78 @@ router.delete('/:id', protect, async (req, res) => {
       message: 'Server error',
       error: err.message
     });
+  }
+});
+
+// ── DELETE /api/posts/:id/images/:index ──────────────────────
+router.delete('/:id/images/:index', protect, async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid post ID' });
+    }
+
+    const idx = parseInt(req.params.index, 10);
+    if (isNaN(idx) || idx < 0) {
+      return res.status(400).json({ message: 'Invalid image index' });
+    }
+
+    const post = await Post.findById(req.params.id);
+
+    if (!post || post.isDeleted) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.authorId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not your post' });
+    }
+
+    if (!post.imageUrls || idx >= post.imageUrls.length) {
+      return res.status(400).json({ message: 'Image index out of range' });
+    }
+
+    post.imageUrls.splice(idx, 1);
+    post.isEdited = true;
+    post.editedAt = new Date();
+    await post.save();
+
+    res.json({ success: true, imageUrls: post.imageUrls });
+  } catch (err) {
+    console.error('DELETE /api/posts/:id/images/:index error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ── DELETE /api/posts/:id/video ───────────────────────────────
+router.delete('/:id/video', protect, async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid post ID' });
+    }
+
+    const post = await Post.findById(req.params.id);
+
+    if (!post || post.isDeleted) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.authorId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not your post' });
+    }
+
+    if (!post.videoUrl) {
+      return res.status(400).json({ message: 'No video to remove' });
+    }
+
+    post.videoUrl = null;
+    post.videoExpiresAt = null;
+    post.isEdited = true;
+    post.editedAt = new Date();
+    await post.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /api/posts/:id/video error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
