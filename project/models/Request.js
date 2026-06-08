@@ -3,45 +3,54 @@ const mongoose = require('mongoose');
 const requestSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['buy', 'rent'],
+    enum: ['buy', 'rent', 'appointment'],
     required: true
   },
 
-  // The car being requested
+  // The car asset being requested
   car: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Car',
     required: true
   },
 
-  // The user making the request (null if guest)
+  // The authenticated user submitting the request (null if an unauthenticated guest)
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: null
   },
 
-  // Contact info (pre-filled from profile, editable)
+  // Direct contact information (pre-filled from user profile layers)
   name:    { type: String, required: true, trim: true },
   phone:   { type: String, required: true, trim: true },
   contact: { type: String, enum: ['call', 'whatsapp'], default: 'call' },
   message: { type: String, trim: true, default: '' },
 
-  // Buy-specific
-  offerPrice: { type: Number, default: null },
+  // Buy-specific & Appointment-specific unified single-date records
+  offerPrice:      { type: Number, default: null },
+  appointmentDate: { type: Date, default: null },
 
-  // Rent-specific
+  // Rent-specific date tracking parameters
   rentFrom: { type: Date, default: null },
   rentTo:   { type: Date, default: null },
 
-    // Car owner
+  // The corresponding publishing merchant account
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: null
   },
 
-  // Admin workflow
+  // Peer-to-Peer negotiation status (Direct User-to-User workspace flow)
+  ownerStatus: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected'],
+    default: 'pending'
+  },
+  ownerNote: { type: String, default: '' },
+
+  // Admin workflow tracker records
   status: {
     type: String,
     enum: ['pending', 'contacted', 'closed', 'accepted', 'rejected'],
