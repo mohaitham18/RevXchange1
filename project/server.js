@@ -58,7 +58,6 @@ mongoose.connect(process.env.MONGO_URI)
 
         for (const post of expired) {
           try {
-            // Extract public_id from Cloudinary URL
             const match = post.videoUrl.match(/revxchange\/videos\/([^.]+)/);
             if (match) {
               const publicId = 'revxchange/videos/' + match[1];
@@ -78,7 +77,6 @@ mongoose.connect(process.env.MONGO_URI)
       }
     }
 
-    // Run immediately on startup, then every hour
     deleteExpiredVideos();
     setInterval(deleteExpiredVideos, 60 * 60 * 1000);
     console.log('Video expiry cron started ✅');
@@ -89,7 +87,6 @@ mongoose.connect(process.env.MONGO_URI)
       res.json({ message: 'RevXChange API is running' });
     });
 
-    // 404 for unknown API routes
     app.use('/api', (req, res) => {
       res.status(404).json({ message: 'API route not found', path: req.originalUrl });
     });
@@ -112,12 +109,11 @@ mongoose.connect(process.env.MONGO_URI)
     app.get('/car/:id',            (_, res) => res.sendFile(path.join(views, 'used-cars.html')));
 
     const PORT = process.env.PORT || 3000;
-    if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-    }
 
-    
+    if (process.env.NODE_ENV !== 'production') {
+      app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+    }
   })
   .catch(err => console.error('MongoDB connection failed ❌', err));
 
-  module.exports = app;
+module.exports = app;
