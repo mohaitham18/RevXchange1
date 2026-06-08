@@ -1220,147 +1220,490 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ── Incoming Requests Engine ──────────────────────────────
+  // ── Requests Engine ───────────────────────────────────────
+
+  function reqEscape(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function reqStatus(req) {
+    return req.ownerStatus || req.status || 'pending';
+  }
+
+  function reqCarTitle(car) {
+    if (!car) return 'Unknown Car';
+
+    return reqEscape(
+      `${car.brand || ''} ${car.model || ''} ${car.year || ''}`.trim()
+    );
+  }
+
+  function reqTypeLabel(type) {
+    if (type === 'rent') return '🔑 Rent Request';
+    if (type === 'appointment') return '📅 Appointment Request';
+    return '🛒 Buy Request';
+  }
+
+  function reqDateInfo(req) {
+    if (req.rentFrom && req.rentTo) {
+      return `📅 ${new Date(req.rentFrom).toLocaleDateString()} → ${new Date(req.rentTo).toLocaleDateString()}`;
+    }
+
+    if (req.appointmentDate) {
+      return `📅 Visit: ${new Date(req.appointmentDate).toLocaleDateString()}`;
+    }
+
+    return '';
+  }
+
+  function reqOfferInfo(req) {
+    if (!req.offerPrice) return '';
+    return `💰 Offer: ${Number(req.offerPrice).toLocaleString('en-EG')} EGP`;
+  }
+
+  function reqCleanPhone(phone) {
+    return String(phone || '').replace(/\D/g, '');
+  }
+
+  function reqWhatsappNumber(phone) {
+    const digits = reqCleanPhone(phone);
+
+    if (!digits) return '';
+
+    // Egyptian local number: 01281447476 -> 201281447476
+    if (digits.startsWith('0')) {
+      return `20${digits.slice(1)}`;
+    }
+
+    // Already Egyptian international format
+    if (digits.startsWith('20')) {
+      return digits;
+    }
+
+    return digits;
+  }
+
+  function reqBadge(status, mode) {
+    const badgeStyles = {
+      pending: 'background:#fef3c7;color:#d97706;border:1px solid #fcd34d',
+      accepted: 'background:#d1fae5;color:#065f46;border:1px solid #a7f3d0',
+      rejected: 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5'
+    };
+
+    const sentLabels = {
+      pending: 'Waiting for seller',
+      accepted: 'Approved ✓',
+      rejected: 'Rejected ✕'
+    };
+
+    const incomingLabels = {
+      pending: 'Pending',
+      accepted: 'Accepted ✓',
+      rejected: 'Rejected ✕'
+    };
+
+    const labels = mode === 'sent' ? sentLabels : incomingLabels;
+
+    return `
+      <span
+        class="dash-request-status"
+        style="padding:4px 12px;border-radius:20px;font-size:.82rem;font-weight:600;${badgeStyles[status] || badgeStyles.pending}"
+      >
+        ${labels[status] || labels.pending}
+      </span>
+    `;
+  }
+
+  function renderAcceptedSellerContact(req) {
+    const status = reqStatus(req);
+
+    if (status !== 'accepted') {
+      return '';
+    }
+
+    const sellerPhone = req.car?.phone || '';
+    const phoneDigits = reqCleanPhone(sellerPhone);
+    const whatsappNumber = reqWhatsappNumber(sellerPhone);
+
+    if (!phoneDigits) {
+      return `
+        <div class="dash-accepted-contact muted">
+          Seller approved your request, but no seller phone is available.
+        </div>
+      `;
+    }
+
+    const carTitle = req.car
+      ? `${req.car.brand || ''} ${req.car.model || ''} ${req.car.year || ''}`.trim()
+      : 'your car';
+
+    const whatsappText = encodeURIComponent(
+      `Hello, my request for ${carTitle} was approved on RevXChange.`
+    );
+
+    return `
+      <div class="dash-accepted-contact">
+        <a class="dash-contact-link call" href="tel:${phoneDigits}">
+          📞 Call Seller
+        </a>
+
+        <a
+          class="dash-contact-link whatsapp"
+          href="https://wa.me/${whatsappNumber}?text=${whatsappText}"
+          target="_blank"
+          rel="noopener"
+        >
+          💬 WhatsApp Seller
+        </a>
+      </div>
+    `;
+  }
+
+  function renderIncomingContactMethod(req) {
+    const status = reqStatus(req);
+    const phoneDigits = reqCleanPhone(req.phone);
+    const whatsappNumber = reqWhatsappNumber(req.phone);
+    const isWhatsapp = req.contact === 'whatsapp';
+
+    // Before accepted, keep it as normal text only
+    if (status !== 'accepted') {
+      return `<span>${isWhatsapp ? '💬 WhatsApp' : '📞 Call'}</span>`;
+    }
+
+    // After accepted, make it clickable
+    if (!phoneDigits) {
+      return `<span>${isWhatsapp ? '💬 WhatsApp' : '📞 Call'}</span>`;
+    }
+
+    const carTitle = req.car
+      ? `${req.car.brand || ''} ${req.car.model || ''} ${req.car.year || ''}`.trim()
+      : 'your car';
+
+    const whatsappText = encodeURIComponent(
+      `Hello ${req.name || ''}, I accepted your request for ${carTitle} on RevXChange.`
+    );
+
+    if (isWhatsapp) {
+      return `
+        <a
+          class="dash-contact-inline whatsapp"
+          href="https://wa.me/${whatsappNumber}?text=${whatsappText}"
+          target="_blank"
+          rel="noopener"
+        >
+          💬 WhatsApp
+        </a>
+      `;
+    }
+
+    return `
+      <a class="dash-contact-inline call" href="tel:${phoneDigits}">
+        📞 Call
+      </a>
+    `;
+  }
+
+  function renderSentRequestCard(req) {
+    const status = reqStatus(req);
+    const dateInfo = reqDateInfo(req);
+    const offerInfo = reqOfferInfo(req);
+
+    return `
+      <div class="dash-request-card" data-id="${req._id}">
+        <div class="dash-request-top">
+          <div>
+            <div class="dash-request-car">${reqCarTitle(req.car)}</div>
+            <div class="dash-request-type">${reqTypeLabel(req.type)}</div>
+          </div>
+
+          ${reqBadge(status, 'sent')}
+        </div>
+
+        <div class="dash-request-info">
+          <span>👤 ${reqEscape(req.name)}</span>
+          <span>📞 ${reqEscape(req.phone)}</span>
+          <span>${req.contact === 'whatsapp' ? '💬 WhatsApp' : '📞 Call'}</span>
+          ${dateInfo ? `<span>${dateInfo}</span>` : ''}
+          ${offerInfo ? `<span>${offerInfo}</span>` : ''}
+        </div>
+
+        ${
+          req.message
+            ? `<div class="dash-request-message">"${reqEscape(req.message)}"</div>`
+            : ''
+        }
+
+        ${
+          req.ownerNote
+            ? `<div class="dash-request-message"><strong>Seller note:</strong> ${reqEscape(req.ownerNote)}</div>`
+            : ''
+        }
+
+        ${renderAcceptedSellerContact(req)}
+
+        <div class="dash-request-actions">
+          <span style="font-size:.85rem;color:#6b7280;font-style:italic">
+            ${
+              status === 'accepted'
+                ? '✅ Seller approved your request.'
+                : status === 'rejected'
+                ? '❌ Seller rejected your request.'
+                : '⏳ Waiting for seller approval.'
+            }
+          </span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderIncomingRequestCard(req) {
+    const status = reqStatus(req);
+    const dateInfo = reqDateInfo(req);
+    const offerInfo = reqOfferInfo(req);
+
+    return `
+      <div class="dash-request-card" data-id="${req._id}">
+        <div class="dash-request-top">
+          <div>
+            <div class="dash-request-car">${reqCarTitle(req.car)}</div>
+            <div class="dash-request-type">${reqTypeLabel(req.type)}</div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px">
+            ${reqBadge(status, 'incoming')}
+
+            ${
+              status !== 'pending'
+                ? `
+                  <button
+                    class="dash-req-edit"
+                    data-id="${req._id}"
+                    style="padding:4px 10px;font-size:.78rem;background:#f3f4f6;border:1px solid #d1d5db;color:#374151;border-radius:6px;cursor:pointer"
+                  >
+                    ✏️ Edit
+                  </button>
+                `
+                : ''
+            }
+          </div>
+        </div>
+
+        <div class="dash-request-info">
+          <span>👤 ${reqEscape(req.name)}</span>
+          <span>📞 ${reqEscape(req.phone)}</span>
+          ${renderIncomingContactMethod(req)}
+          ${dateInfo ? `<span>${dateInfo}</span>` : ''}
+          ${offerInfo ? `<span>${offerInfo}</span>` : ''}
+        </div>
+
+        ${
+          req.message
+            ? `<div class="dash-request-message">"${reqEscape(req.message)}"</div>`
+            : ''
+        }
+
+        <div class="dash-request-actions">
+          ${
+            status === 'pending'
+              ? `
+                <button class="dash-req-btn accept" data-id="${req._id}">✓ Accept</button>
+                <button class="dash-req-btn reject" data-id="${req._id}">✕ Reject</button>
+              `
+              : `
+                <span style="font-size:.85rem;color:#9ca3af;font-style:italic">
+                  ${
+                    status === 'accepted'
+                      ? '✅ You accepted this request — customer can now see it approved.'
+                      : '❌ You rejected this request.'
+                  }
+                </span>
+              `
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  async function loadMySentRequests() {
+    const list = document.getElementById('mySentRequestsList');
+    if (!list) return;
+
+    try {
+      const res = await fetch('/api/requests/mine', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await safeJson(res);
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Could not load your sent requests');
+      }
+
+      const requests = data.requests || [];
+
+      if (!requests.length) {
+        list.innerHTML = `
+          <div class="dash-empty">
+            <span>📤</span>
+            <p>You have not sent any requests yet.</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = requests.map(req => renderSentRequestCard(req)).join('');
+    } catch (err) {
+      console.error('Load my sent requests error:', err);
+
+      list.innerHTML = `
+        <div class="dash-empty">
+          <span>⚠️</span>
+          <p>Could not load your sent requests.</p>
+        </div>
+      `;
+    }
+  }
+
   async function loadIncomingRequests() {
     const list = document.getElementById('incomingRequestsList');
     if (!list) return;
+
     try {
       const res = await fetch('/api/requests/incoming', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
-      const data = await res.json();
+
+      const data = await safeJson(res);
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Could not load incoming requests');
+      }
+
       const requests = data.requests || [];
-      const pendingCount = requests.filter(r => (r.ownerStatus || r.status) === 'pending').length;
+
+      const pendingCount = requests.filter(r => reqStatus(r) === 'pending').length;
       const badge = document.getElementById('requestsBadge');
+
       if (badge) {
         badge.textContent = pendingCount;
         badge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
       }
+
       if (!requests.length) {
         list.innerHTML = `
           <div class="dash-empty">
             <span>📬</span>
             <p>No incoming requests yet.</p>
-          </div>`;
+          </div>
+        `;
         return;
       }
-      list.innerHTML = requests
-        .map(req => {
-          const status = req.ownerStatus || req.status || 'pending';
-          const badgeStyles = {
-            pending: 'background:#fef3c7;color:#d97706;border:1px solid #fcd34d',
-            accepted: 'background:#d1fae5;color:#065f46;border:1px solid #a7f3d0',
-            rejected: 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5'
-          };
-          const badgeLabels = { pending: 'Pending', accepted: 'Accepted ✓', rejected: 'Rejected ✕' };
-          const badgeStyle = badgeStyles[status] || badgeStyles.pending;
-          const badgeLabel = badgeLabels[status] || 'Pending';
-          const typeLabel =
-            req.type === 'rent'
-              ? '🔑 Rent Request'
-              : req.type === 'appointment'
-              ? '📅 Appointment Request'
-              : '🛒 Buy Request';
-          const dateInfo = req.rentFrom
-            ? `📅 ${new Date(req.rentFrom).toLocaleDateString()} → ${new Date(req.rentTo).toLocaleDateString()}`
-            : req.appointmentDate
-            ? `📅 Visit: ${new Date(req.appointmentDate).toLocaleDateString()}`
-            : '';
-          const offerInfo = req.offerPrice ? `💰 Offer: ${Number(req.offerPrice).toLocaleString()} EGP` : '';
-          return `
-            <div class="dash-request-card" data-id="${req._id}">
-              <div class="dash-request-top">
-                <div>
-                  <div class="dash-request-car"> ${req.car ? `${req.car.brand} ${req.car.model} ${req.car.year}` : 'Unknown Car'} </div>
-                  <div class="dash-request-type">${typeLabel}</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <span class="dash-request-status" style="padding:4px 12px;border-radius:20px;font-size:.82rem;font-weight:600;${badgeStyle}" > ${badgeLabel} </span>
-                  ${
-                    status !== 'pending'
-                      ? `<button class="dash-req-edit" data-id="${req._id}" style="padding:4px 10px;font-size:.78rem;background:#f3f4f6;border:1px solid #d1d5db;color:#374151;border-radius:6px;cursor:pointer" > ✏️ Edit </button>`
-                      : ''
-                  }
-                </div>
-              </div>
-              <div class="dash-request-info">
-                <span>👤 ${req.name}</span>
-                <span>📞 ${req.phone}</span>
-                <span>${req.contact === 'whatsapp' ? '💬 WhatsApp' : '📞 Call'}</span>
-                ${dateInfo ? `<span>${dateInfo}</span>` : ''}
-                ${offerInfo ? `<span>${offerInfo}</span>` : ''}
-              </div>
-              ${req.message ? `<div class="dash-request-message">"${req.message}"</div>` : ''}
-              <div class="dash-request-actions">
-                ${
-                  status === 'pending'
-                    ? `<button class="dash-req-btn accept" data-id="${req._id}"> ✓ Accept </button>
-                       <button class="dash-req-btn reject" data-id="${req._id}"> ✕ Reject </button>`
-                    : `<span style="font-size:.85rem;color:#9ca3af;font-style:italic"> ${
-                        status === 'accepted'
-                          ? '✅ You accepted this request — buyer will contact you.'
-                          : '❌ You rejected this request.'
-                      } </span>`
-                }
-              </div>
-            </div>`;
-        })
-        .join('');
+
+      list.innerHTML = requests.map(req => renderIncomingRequestCard(req)).join('');
 
       list.querySelectorAll('.dash-req-btn.accept').forEach(btn => {
         btn.addEventListener('click', async () => {
           btn.disabled = true;
           btn.textContent = '…';
-          await updateRequestStatus(btn.dataset.id, 'accepted');
-          showToast('Request accepted ✓');
-          loadIncomingRequests();
+
+          try {
+            await updateRequestStatus(btn.dataset.id, 'accepted');
+            showToast('Request accepted ✓');
+
+            loadIncomingRequests();
+            loadMySentRequests();
+          } catch (err) {
+            showToast(err.message || 'Update failed');
+            btn.disabled = false;
+            btn.textContent = '✓ Accept';
+          }
         });
       });
+
       list.querySelectorAll('.dash-req-btn.reject').forEach(btn => {
         btn.addEventListener('click', async () => {
           btn.disabled = true;
           btn.textContent = '…';
-          await updateRequestStatus(btn.dataset.id, 'rejected');
-          showToast('Request rejected');
-          loadIncomingRequests();
+
+          try {
+            await updateRequestStatus(btn.dataset.id, 'rejected');
+            showToast('Request rejected');
+
+            loadIncomingRequests();
+            loadMySentRequests();
+          } catch (err) {
+            showToast(err.message || 'Update failed');
+            btn.disabled = false;
+            btn.textContent = '✕ Reject';
+          }
         });
       });
+
       list.querySelectorAll('.dash-req-edit').forEach(btn => {
         btn.addEventListener('click', async () => {
           btn.disabled = true;
           btn.textContent = '…';
-          await updateRequestStatus(btn.dataset.id, 'pending');
-          showToast('Reset to pending — you can accept or reject again');
-          loadIncomingRequests();
+
+          try {
+            await updateRequestStatus(btn.dataset.id, 'pending');
+            showToast('Reset to pending');
+
+            loadIncomingRequests();
+            loadMySentRequests();
+          } catch (err) {
+            showToast(err.message || 'Update failed');
+            btn.disabled = false;
+            btn.textContent = '✏️ Edit';
+          }
         });
       });
     } catch (err) {
       console.error('Load incoming requests error:', err);
+
       list.innerHTML = `
         <div class="dash-empty">
           <span>⚠️</span>
-          <p>Could not load requests.</p>
-        </div>`;
+          <p>Could not load incoming requests.</p>
+        </div>
+      `;
     }
   }
 
   async function updateRequestStatus(id, status) {
     const res = await fetch(`/api/requests/${id}/owner-status`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ status })
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        status
+      })
     });
+
+    const data = await safeJson(res);
+
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || 'Update failed');
+      throw new Error(data.message || 'Update failed');
     }
-    return res.json();
+
+    return data;
   }
 
   // ── Kickoff Initializers ────────────────────────────────────
   loadUserProfile();
   loadMyAds();
   loadSavedAds();
+  loadMySentRequests();
   loadIncomingRequests();
   loadMyPosts();
 });
