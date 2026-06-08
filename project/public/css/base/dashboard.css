@@ -1581,3 +1581,77 @@
 }
 .dash-comments-footer .dp-send-btn:hover:not(:disabled) { opacity: 0.88; transform: scale(1.08); }
 .dash-comments-footer .dp-send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.dash-contact-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 3px 9px;
+    transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.dash-contact-inline:hover {
+    transform: translateY(-1px);
+}
+
+.dash-contact-inline.call {
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+}
+
+.dash-contact-inline.whatsapp {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+/* ── Approved Request Contact Links ─────────────────────────── */
+.dash-accepted-contact {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    margin-bottom: 8px;
+}
+
+.dash-accepted-contact.muted {
+    color: #6b7280;
+    font-size: 0.88rem;
+    font-style: italic;
+}
+
+.dash-contact-link,
+.dash-contact-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 5px 11px;
+    transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.dash-contact-link:hover,
+.dash-contact-inline:hover {
+    transform: translateY(-1px);
+}
+
+.dash-contact-link.call,
+.dash-contact-inline.call {
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+}
+
+.dash-contact-link.whatsapp,
+.dash-contact-inline.whatsapp {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
