@@ -862,6 +862,17 @@
     background: rgba(220,50,50,0.10);
     color: #a32020;
 }
+.dash-rejection-reason {
+  display: block;
+  font-size: .75rem;
+  font-weight: 400;
+  color: #c0392b;
+  margin-top: 4px;
+  opacity: .85;
+  max-width: 200px;
+  white-space: normal;
+  line-height: 1.4;
+}
 
 .dash-request-status.closed {
     background: rgba(0,0,0,0.06);

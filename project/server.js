@@ -21,6 +21,7 @@ mongoose.connect(process.env.MONGO_URI)
     const feedRoutes = require('./routes/feedRoutes');
     const postRoutes = require('./routes/postRoutes');
     const caraRoutes = require('./routes/caraRoutes');
+    
 
     app.use('/api/auth', userRoutes);
     app.use('/api/users', userRoutes);
