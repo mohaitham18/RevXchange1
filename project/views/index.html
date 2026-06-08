@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="/css/base/footer.css">
     <link rel="stylesheet" href="/css/components/car-expand.css">
     <link rel="stylesheet" href="/css/components/footer-melt.css">
-</head
+</head>
 
 <body>
 
@@ -31,9 +31,9 @@
             </a>
 
             <ul class="nav-links">
-                <li><a href="/used-cars.html">Used Cars</a></li>
-                <li><a href="/buy-cars.html">New Cars</a></li>
-                <li><a href="rent-cars.html">Rent Cars</a></li>
+                <li><a href="/used-cars.html" data-i18n="nav.used-cars">Used Cars</a></li>
+                <li><a href="/buy-cars.html" data-i18n="nav.new-cars">New Cars</a></li>
+                <li><a href="/rent-cars.html" data-i18n="nav.rent-cars">Rent Cars</a></li>
                 <li>
                     <a href="#" class="cara-nav-link" id="caraNavBtn">
                         <svg class="cara-icon" viewBox="0 0 24 24" fill="none" width="15" height="15">
@@ -50,14 +50,14 @@
                         <span class="cara-spark"></span>
                     </a>
                 </li>
-                <li><a href="/feed.html">Car Communities</a></li>
+                <li><a href="/feed.html" data-i18n="nav.communities">Car Communities</a></li>
                 <span class="nav-indicator" id="navIndicator"></span>
             </ul>
 
             <div class="nav-actions">
                 <button class="lang-btn" id="langToggleBtn">🌐 العربية</button>
-                <a href="/sell-car.html" class="sell-btn">+ Sell My Car</a>
-                <a href="/login.html" class="login-btn" id="loginBtn">Login</a>
+                <a href="/sell-car.html" class="sell-btn" data-i18n="nav.sell">+ Sell My Car</a>
+                <a href="/login.html" class="login-btn" id="loginBtn" data-i18n="nav.login">Login</a>
 
                 <div class="profile-menu hidden" id="profileMenu">
                     <button class="profile-trigger" id="profileTrigger">
@@ -81,13 +81,13 @@
                             </div>
                             <span id="dropdownName">User</span>
                         </li>
-                        <li><a href="/dashboard.html?tab=ads">My Ads</a></li>
-                        <li><a href="/dashboard.html?tab=saved">Saved Ads</a></li>
-                        <li><a href="/dashboard.html?tab=posts">My Posts</a></li>
-                        <li><a href="/dashboard.html?tab=settings">Settings</a></li>
+                        <li><a href="/dashboard.html?tab=ads" data-i18n="nav.my-ads">My Ads</a></li>
+                        <li><a href="/dashboard.html?tab=saved" data-i18n="nav.saved-ads">Saved Ads</a></li>
+                        <li><a href="/dashboard.html?tab=posts" data-i18n="nav.my-posts">My Posts</a></li>
+                        <li><a href="/dashboard.html?tab=settings" data-i18n="nav.settings">Settings</a></li>
                         <li class="dropdown-logout">
                             <a href="#" id="logoutBtn">
-                                Logout
+                                <span data-i18n="nav.logout">Logout</span>
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
                                 </svg>
@@ -103,9 +103,9 @@
     <section class="hero-bg">
         <div class="hero-content container">
             <div class="hero-text">
-                <h1>Buy &amp; Sell Cars in Egypt</h1>
-                <p>Discover trusted listings, modern tools, and a better way to explore cars with RevXChange.</p>
-                <a href="/used-cars.html" class="hero-btn">Browse All Cars</a>
+                <h1 data-i18n="hero.title">Buy &amp; Sell Cars in Egypt</h1>
+                <p data-i18n="hero.subtitle">Discover trusted listings, modern tools, and a better way to explore cars with RevXChange.</p>
+                <a href="/used-cars.html" class="hero-btn" data-i18n="hero.btn">Browse All Cars</a>
             </div>
             <div class="hero-image">
                 <img src="/images/BMW2.png" alt="Featured Car">
@@ -113,67 +113,56 @@
                 <div class="car-shadow"></div>
             </div>
         </div>
-    
-    <!-- Melt border -->
-      <div class="rx-melt-wrap">
-        <svg viewBox="0 0 1440 74" preserveAspectRatio="none"
-             xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <!-- Main wine-red drip gradient -->
-            <linearGradient id="meltMain" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stop-color="#5a0f1c" stop-opacity="1"/>
-              <stop offset="55%"  stop-color="#6b1222" stop-opacity="0.80"/>
-              <stop offset="100%" stop-color="#3e0a13" stop-opacity="0"/>
-            </linearGradient>
-            <!-- Glow bloom behind the drip -->
-            <linearGradient id="meltBloom" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stop-color="#8b1a2a" stop-opacity="0.45"/>
-              <stop offset="70%"  stop-color="#5a0f1c" stop-opacity="0.15"/>
-              <stop offset="100%" stop-color="#5a0f1c" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
 
-          <!-- Bloom layer — sits behind, bleeds further down -->
-          <path fill="url(#meltBloom)">
-            <animate attributeName="d"
-              dur="9s" repeatCount="indefinite"
-              calcMode="spline"
-              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
-              values="
-                M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z;
-                M0,0 L1440,0 L1440,44 C1260,68 1020,14 840,50 C640,72 440,10 270,48 C120,68 40,24 0,44 Z;
-                M0,0 L1440,0 L1440,68 C1320,40 1060,72 840,38 C620,8  380,68 180,36 C80,18 30,52 0,30 Z;
-                M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z
-              "/>
-          </path>
-
-          <!-- Main drip — sharp wave edge -->
-          <path fill="url(#meltMain)">
-            <animate attributeName="d"
-              dur="9s" repeatCount="indefinite"
-              calcMode="spline"
-              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
-              values="
-                M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z;
-                M0,0 L1440,0 L1440,28 C1260,50 1020,2  840,34 C640,58 440,0  270,32 C120,52 40,10 0,28 Z;
-                M0,0 L1440,0 L1440,52 C1320,24 1060,56 840,22 C620,0  380,52 180,20 C80,4  30,38 0,14 Z;
-                M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z
-              "/>
-          </path>
-        </svg>
-      </div>
+        <!-- Melt border -->
+        <div class="rx-melt-wrap">
+            <svg viewBox="0 0 1440 74" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="meltMain" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stop-color="#5a0f1c" stop-opacity="1"/>
+                        <stop offset="55%"  stop-color="#6b1222" stop-opacity="0.80"/>
+                        <stop offset="100%" stop-color="#3e0a13" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="meltBloom" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stop-color="#8b1a2a" stop-opacity="0.45"/>
+                        <stop offset="70%"  stop-color="#5a0f1c" stop-opacity="0.15"/>
+                        <stop offset="100%" stop-color="#5a0f1c" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <path fill="url(#meltBloom)">
+                    <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+                        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+                        values="
+                            M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z;
+                            M0,0 L1440,0 L1440,44 C1260,68 1020,14 840,50 C640,72 440,10 270,48 C120,68 40,24 0,44 Z;
+                            M0,0 L1440,0 L1440,68 C1320,40 1060,72 840,38 C620,8  380,68 180,36 C80,18 30,52 0,30 Z;
+                            M0,0 L1440,0 L1440,60 C1300,74 1080,28 900,55 C720,74 520,18 360,52 C200,72 80,30 0,58 Z
+                        "/>
+                </path>
+                <path fill="url(#meltMain)">
+                    <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+                        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+                        values="
+                            M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z;
+                            M0,0 L1440,0 L1440,28 C1260,50 1020,2  840,34 C640,58 440,0  270,32 C120,52 40,10 0,28 Z;
+                            M0,0 L1440,0 L1440,52 C1320,24 1060,56 840,22 C620,0  380,52 180,20 C80,4  30,38 0,14 Z;
+                            M0,0 L1440,0 L1440,42 C1300,58 1080,12 900,38 C720,58 520,6  360,36 C200,58 80,16 0,40 Z
+                        "/>
+                </path>
+            </svg>
+        </div>
     </section>
 
     <!-- ── Top Brands / Models / Cities / Prices ─────────────── -->
     <section class="home-brands">
         <div class="container">
             <div class="brands-box">
-                <h2 class="section-title" id="sectionTitle">Top Brands</h2>
+                <h2 class="section-title" id="sectionTitle" data-i18n="brands.title">Top Brands</h2>
                 <div class="tabs">
-                    <button class="active">Top Brands</button>
-                    <button>Top Models</button>
-                    <button>Top Cities</button>
-                    <button>Price Ranges</button>
+                    <button class="active" data-i18n="brands.tab1">Top Brands</button>
+                    <button data-i18n="brands.tab2">Top Models</button>
+                    <button data-i18n="brands.tab3">Top Cities</button>
+                    <button data-i18n="brands.tab4">Price Ranges</button>
                 </div>
                 <div class="brands-grid"></div>
             </div>
@@ -192,10 +181,10 @@
         <div class="container">
             <div class="section-header-row">
                 <div>
-                    <h2 class="section-title-alt">Car Communities</h2>
-                    <p class="section-subtitle">Real owners. Real advice. One community per model.</p>
+                    <h2 class="section-title-alt" data-i18n="communities.title">Car Communities</h2>
+                    <p class="section-subtitle" data-i18n="communities.subtitle">Real owners. Real advice. One community per model.</p>
                 </div>
-                <a href="/communities.html" class="view-all-link">Explore All Communities →</a>
+                <a href="/communities.html" class="view-all-link" data-i18n="communities.view-all">Explore All Communities →</a>
             </div>
             <div class="community-preview-grid" id="communityPreview"></div>
         </div>
@@ -204,24 +193,24 @@
     <!-- ── FAQ ───────────────────────────────────────────────── -->
     <section class="home-faq">
         <div class="container">
-            <h2 class="faq-title">Frequently Asked Questions</h2>
+            <h2 class="faq-title" data-i18n="faq.title">Frequently Asked Questions</h2>
             <div class="faq-container">
                 <div class="faq-item">
-                    <button class="faq-question">What is RevXChange?</button>
+                    <button class="faq-question" data-i18n="faq.q1">What is RevXChange?</button>
                     <div class="faq-answer">
-                        <p>RevXChange is Egypt's premium car marketplace where you can buy, sell, and rent cars with verified listings and an active car enthusiast community.</p>
+                        <p data-i18n="faq.a1">RevXChange is Egypt's premium car marketplace where you can buy, sell, and rent cars with verified listings and an active car enthusiast community.</p>
                     </div>
                 </div>
                 <div class="faq-item">
-                    <button class="faq-question">How do I sell my car on RevXChange?</button>
+                    <button class="faq-question" data-i18n="faq.q2">How do I sell my car on RevXChange?</button>
                     <div class="faq-answer">
-                        <p>Simply click the "+ Sell My Car" button in the navbar. You can list your car for direct sale or enter it into one of our rent listings.</p>
+                        <p data-i18n="faq.a2">Simply click the "+ Sell My Car" button in the navbar. You can list your car for direct sale or enter it into one of our rent listings.</p>
                     </div>
                 </div>
                 <div class="faq-item">
-                    <button class="faq-question">Are the car communities free to join?</button>
+                    <button class="faq-question" data-i18n="faq.q3">Are the car communities free to join?</button>
                     <div class="faq-answer">
-                        <p>Yes! Every car model has a dedicated community where you can share experiences, find trusted mechanics, and ask questions for free.</p>
+                        <p data-i18n="faq.a3">Yes! Every car model has a dedicated community where you can share experiences, find trusted mechanics, and ask questions for free.</p>
                     </div>
                 </div>
             </div>
@@ -230,77 +219,69 @@
 
     <!-- ── Footer ────────────────────────────────────────────── -->
     <footer class="main-footer">
-      <!-- BG → Footer melt (mirror of hero melt) -->
-      <div class="rx-footer-melt-wrap">
-        <svg viewBox="0 0 1440 74" preserveAspectRatio="none"
-             xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="footerMeltMain" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="1"/>
-              <stop offset="55%"  stop-color="#1a1a1a" stop-opacity="0.80"/>
-              <stop offset="100%" stop-color="#1a1a1a" stop-opacity="0"/>
-            </linearGradient>
-            <linearGradient id="footerMeltBloom" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="0.55"/>
-              <stop offset="70%"  stop-color="#0d0d0d" stop-opacity="0.18"/>
-              <stop offset="100%" stop-color="#0d0d0d" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-
-          <path fill="url(#footerMeltBloom)">
-            <animate attributeName="d"
-              dur="9s" repeatCount="indefinite"
-              calcMode="spline"
-              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
-              values="
-                M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z;
-                M0,74 L1440,74 L1440,30 C1260,6  1020,60 840,24 C640,2  440,64 270,26 C120,6  40,50 0,30 Z;
-                M0,74 L1440,74 L1440,6  C1320,34 1060,2  840,36 C620,66 380,6  180,38 C80,56 30,22 0,44 Z;
-                M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z
-              "/>
-          </path>
-
-          <path fill="url(#footerMeltMain)">
-            <animate attributeName="d"
-              dur="9s" repeatCount="indefinite"
-              calcMode="spline"
-              keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
-              values="
-                M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z;
-                M0,74 L1440,74 L1440,46 C1260,24 1020,72 840,40 C640,16 440,74 270,42 C120,22 40,64 0,46 Z;
-                M0,74 L1440,74 L1440,22 C1320,50 1060,18 840,52 C620,74 380,22 180,54 C80,70 30,36 0,60 Z;
-                M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z
-              "/>
-          </path>
-        </svg>
-      </div>
+        <div class="rx-footer-melt-wrap">
+            <svg viewBox="0 0 1440 74" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="footerMeltMain" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="1"/>
+                        <stop offset="55%"  stop-color="#1a1a1a" stop-opacity="0.80"/>
+                        <stop offset="100%" stop-color="#1a1a1a" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="footerMeltBloom" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0%"   stop-color="#0d0d0d" stop-opacity="0.55"/>
+                        <stop offset="70%"  stop-color="#0d0d0d" stop-opacity="0.18"/>
+                        <stop offset="100%" stop-color="#0d0d0d" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <path fill="url(#footerMeltBloom)">
+                    <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+                        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+                        values="
+                            M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z;
+                            M0,74 L1440,74 L1440,30 C1260,6  1020,60 840,24 C640,2  440,64 270,26 C120,6  40,50 0,30 Z;
+                            M0,74 L1440,74 L1440,6  C1320,34 1060,2  840,36 C620,66 380,6  180,38 C80,56 30,22 0,44 Z;
+                            M0,74 L1440,74 L1440,14 C1300,0  1080,46 900,19 C720,0  520,56 360,22 C200,2  80,44 0,16 Z
+                        "/>
+                </path>
+                <path fill="url(#footerMeltMain)">
+                    <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline"
+                        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1"
+                        values="
+                            M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z;
+                            M0,74 L1440,74 L1440,46 C1260,24 1020,72 840,40 C640,16 440,74 270,42 C120,22 40,64 0,46 Z;
+                            M0,74 L1440,74 L1440,22 C1320,50 1060,18 840,52 C620,74 380,22 180,54 C80,70 30,36 0,60 Z;
+                            M0,74 L1440,74 L1440,32 C1300,16 1080,62 900,36 C720,16 520,68 360,38 C200,16 80,58 0,34 Z
+                        "/>
+                </path>
+            </svg>
+        </div>
 
         <div class="container footer-grid">
             <div class="footer-col">
-                <h4>Company</h4>
+                <h4 data-i18n="footer.company">Company</h4>
                 <ul>
-                    <li><a href="#">About Us</a></li>
-                    <li><a href="#">How it Works</a></li>
-                    <li><a href="#">Careers</a></li>
+                    <li><a href="#" data-i18n="footer.about">About Us</a></li>
+                    <li><a href="#" data-i18n="footer.how">How it Works</a></li>
+                    <li><a href="#" data-i18n="footer.careers">Careers</a></li>
                 </ul>
             </div>
             <div class="footer-col">
-                <h4>View Website In</h4>
+                <h4 data-i18n="footer.view-in">View Website In</h4>
                 <ul class="lang-list">
                     <li><a href="#" class="active-lang">✓ English</a></li>
                     <li><a href="#">العربية</a></li>
                 </ul>
             </div>
             <div class="footer-col">
-                <h4>Need Help?</h4>
+                <h4 data-i18n="footer.help">Need Help?</h4>
                 <ul>
-                    <li><a href="#">Help Center</a></li>
-                    <li><a href="#">Contact Sales</a></li>
-                    <li><a href="#">Feedback</a></li>
+                    <li><a href="#" data-i18n="footer.help-center">Help Center</a></li>
+                    <li><a href="#" data-i18n="footer.contact">Contact Sales</a></li>
+                    <li><a href="#" data-i18n="footer.feedback">Feedback</a></li>
                 </ul>
             </div>
             <div class="footer-col">
-                <h4>Connect with Us</h4>
+                <h4 data-i18n="footer.connect">Connect with Us</h4>
                 <div class="social-icons">
                     <a href="#">Facebook</a>
                     <a href="#">Twitter</a>
@@ -314,10 +295,10 @@
         </div>
         <div class="footer-bottom">
             <div class="container">
-                <p>© RevXChange. All rights reserved | 2026 TAS Rights Management LLC.</p>
+                <p data-i18n="footer.rights">© RevXChange. All rights reserved | 2026 TAS Rights Management LLC.</p>
                 <div class="legal-links">
-                    <a href="#">Privacy Policy</a>
-                    <a href="#">Terms of Use</a>
+                    <a href="#" data-i18n="footer.privacy">Privacy Policy</a>
+                    <a href="#" data-i18n="footer.terms">Terms of Use</a>
                 </div>
             </div>
         </div>
@@ -327,9 +308,9 @@
     <script src="/js/cars.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/car-expand.js"></script>
+    <script src="/js/i18n.js"></script>
     <script src="/js/navbar.js"></script>
     <script src="/js/cara.js"></script>
-
 
 </body>
 
