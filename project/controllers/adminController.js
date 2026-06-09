@@ -133,7 +133,7 @@ const updateCarStatus = async (req, res) => {
 
     // 6. Outbound Dispatch Mail Service Setup
     try {
-      const sendMail = require('../utils/sendMail');
+      require('../utils/mailer')
       if (car.user?.email) {
         if (status === 'active') {
           await sendMail({

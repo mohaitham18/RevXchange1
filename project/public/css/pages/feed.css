@@ -2441,3 +2441,116 @@
   -webkit-line-clamp: 6;
   margin-bottom: 10px;
 }
+
+/* ── Report modal ───────────────────────────────────────────── */
+.feed-report-card {
+  max-width: 440px;
+}
+
+.feed-report-reason-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feed-report-reason-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease;
+  border: 1.5px solid transparent;
+}
+
+.feed-report-reason-item:hover {
+  background: rgba(90,15,28,0.04);
+}
+
+.feed-report-reason-item:has(input:checked) {
+  background: rgba(90,15,28,0.06);
+  border-color: rgba(90,15,28,0.18);
+}
+
+.feed-report-reason-item input[type="radio"] {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.feed-report-reason-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-dark);
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+}
+
+/* ── Report toast ───────────────────────────────────────────── */
+.feed-report-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: #1e1e1e;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 10px 20px;
+  border-radius: 999px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.feed-report-toast.rx-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Maintenance banner ─────────────────────────────────────── */
+.feed-maintenance-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 56px 24px;
+  background: #0d0f18;
+  border: 1px solid #1e2130;
+  border-radius: 18px;
+  text-align: center;
+}
+
+.feed-maint-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.feed-maint-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.feed-maint-message {
+  font-size: 0.88rem;
+  color: #64748b;
+  font-family: 'Segoe UI', sans-serif;
+  max-width: 360px;
+}
+
+.feed-maint-back {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f59e0b;
+  font-family: 'Courier New', monospace;
+}

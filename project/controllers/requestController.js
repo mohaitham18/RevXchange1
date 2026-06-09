@@ -146,7 +146,7 @@ const ownerUpdateRequest = async (req, res) => {
 
     // Email the requester
     try {
-      const sendMail = require('../utils/sendMail');
+      require('../utils/mailer')
       if (request.user?.email && ownerStatus !== 'pending') {
         const carTitle = `${request.car.brand} ${request.car.model} ${request.car.year}`;
         await sendMail({

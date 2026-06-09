@@ -21,11 +21,13 @@ mongoose.connect(process.env.MONGO_URI)
     const feedRoutes = require('./routes/feedRoutes');
     const postRoutes = require('./routes/postRoutes');
     const caraRoutes = require('./routes/caraRoutes');
+    const adminCommunityRoutes = require('./routes/adminCommunityRoutes');
 
     app.use('/api/auth', userRoutes);
     app.use('/api/users', userRoutes);
     app.use('/api/cars', carRoutes);
     app.use('/api/admin',  adminRoutes);
+    app.use('/api/admin',  adminCommunityRoutes);
     app.use('/api/requests', requestRoutes);
     app.use('/api/communities', communityRoutes);
     app.use('/api/feed', feedRoutes);
@@ -103,7 +105,6 @@ mongoose.connect(process.env.MONGO_URI)
     app.get('/login.html',         (_, res) => res.sendFile(path.join(views, 'login.html')));
     app.get('/dashboard.html',     (_, res) => res.sendFile(path.join(views, 'dashboard.html')));
     app.get('/admin.html',         (_, res) => res.sendFile(path.join(views, 'admin.html')));
-    app.get('/Auctioned-cars.html',(_, res) => res.sendFile(path.join(views, 'Auctioned-cars.html')));
     app.get('/car/:id',            (_, res) => res.sendFile(path.join(views, 'used-cars.html')));
 
     const PORT = process.env.PORT || 3000;

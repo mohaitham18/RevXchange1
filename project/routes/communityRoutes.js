@@ -5,15 +5,17 @@ const router = express.Router();
 
 const protect = require('../middleware/auth');
 
-const Community = require('../models/Community');
+const Community       = require('../models/Community');
 const CommunityMembership = require('../models/CommunityMembership');
-const CommunityRequest = require('../models/CommunityRequest');
-const Brand = require('../models/Brand');
-const Post = require('../models/Post');
-const Vote = require('../models/Vote');
+const CommunityRequest= require('../models/CommunityRequest');
+const Brand           = require('../models/Brand');
+const Post            = require('../models/Post');
+const Vote            = require('../models/Vote');
+const SystemSettings  = require('../models/SystemSettings');
 
 // Register referenced models for populate()
-require('../models/CarVariant');
+const CarVariant = require('../models/CarVariant');
+
 
 const optionalAuth = async (req, res, next) => {
   try {
@@ -126,6 +128,39 @@ router.post('/suggest', optionalAuth, async (req, res) => {
   } catch (err) {
     console.error('POST /api/communities/suggest error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+
+// GET /api/communities/:slug/variants
+router.get('/:slug/variants', optionalAuth, async (req, res) => {
+  try {
+    const community = await Community.findOne({
+      slug: req.params.slug
+    }).lean();
+
+    if (!community) {
+      return res.status(404).json({
+        message: 'Community not found'
+      });
+    }
+
+    const variants = await CarVariant.find({
+      communityId: community._id
+    })
+      .sort({ order: 1, yearStart: 1, label: 1 })
+      .lean();
+
+    res.json({
+      variants
+    });
+  } catch (err) {
+    console.error('GET /api/communities/:slug/variants error:', err);
+
+    res.status(500).json({
+      message: 'Server error',
+      error: err.message
+    });
   }
 });
 
@@ -266,6 +301,20 @@ router.delete('/:id/leave', protect, async (req, res) => {
 // GET /api/communities/:slug/posts?sort=top|new|hot|controversial&page=N
 router.get('/:slug/posts', optionalAuth, async (req, res) => {
   try {
+    // ── Maintenance mode check ──────────────────────────────
+    const settings = await SystemSettings.get();
+    const maint    = settings.maintenanceMode;
+    if (maint?.active) {
+      if (maint.endsAt && new Date(maint.endsAt) > new Date()) {
+        return res.status(503).json({
+          maintenance: true,
+          message:     maint.message || 'Scheduled maintenance in progress',
+          endsAt:      maint.endsAt
+        });
+      }
+      await SystemSettings.set({ 'maintenanceMode.active': false, 'maintenanceMode.endsAt': null });
+    }
+
     const community = await Community.findOne({
       slug: req.params.slug
     }).lean();
