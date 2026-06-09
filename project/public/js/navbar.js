@@ -236,3 +236,28 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('caraOpen', () => mega.classList.remove('rx-open'));
 
 }());
+
+function setLang(lang) {
+    const langBtn = document.getElementById('langToggleBtn');
+    if (lang === 'ar') {
+        localStorage.setItem('rxLang', 'ar');
+        document.documentElement.dir = 'rtl';
+        document.documentElement.lang = 'ar';
+        if (langBtn) langBtn.textContent = '🌐 English';
+        const select = document.querySelector('.goog-te-combo');
+        if (select) {
+            select.value = 'ar';
+            select.dispatchEvent(new Event('change'));
+        }
+    } else {
+        localStorage.setItem('rxLang', 'en');
+        document.documentElement.dir = 'ltr';
+        document.documentElement.lang = 'en';
+        if (langBtn) langBtn.textContent = '🌐 العربية';
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
+        window.location.reload();
+    }
+}
+window.setLang = setLang;

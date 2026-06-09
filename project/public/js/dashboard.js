@@ -1302,13 +1302,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.querySelectorAll('.dash-lang-btn').forEach(btn => {
+document.querySelectorAll('.dash-lang-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.dash-lang-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      const lang = btn.dataset.lang;
+      console.log('Lang button clicked:', lang, 'setLang exists:', !!window.setLang);
+      if (lang && window.setLang) {
+        window.setLang(lang);
+      }
     });
-  });
 
+    // Mark active button based on saved language
+    const currentLang = localStorage.getItem('rxLang') || 'en';
+    if (btn.dataset.lang === currentLang) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
   // ── Requests Engine ───────────────────────────────────────
 
   function reqEscape(value) {
