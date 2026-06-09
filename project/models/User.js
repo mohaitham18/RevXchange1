@@ -36,9 +36,13 @@ const userSchema = new mongoose.Schema({
       ref: 'Car'
     }
   ],
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 });
 
